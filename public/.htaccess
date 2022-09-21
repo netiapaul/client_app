@@ -1,0 +1,19 @@
+<IfModule mod_rewrite.c>
+
+  # # Enable rewriting
+  # RewriteEngine On
+
+  # # If its not HTTPS
+  # RewriteCond %{HTTPS} off
+  # RewriteBase /
+  #  # Redirect to the same URL with https://, ignoring all further rules if this one is in effect
+  # RewriteRule ^(.*) https://%{HTTP_HOST}/$1 [R,L]
+  # # RewriteRule ^index\.html$ - [L]
+  # RewriteCond %{REQUEST_FILENAME} !-f
+  # RewriteCond %{REQUEST_FILENAME} !-d
+  # RewriteCond %{REQUEST_FILENAME} !-l
+  # # Rewrite all requests to the root
+  # RewriteRule ^(.*) /
+  # # RewriteRule . /index.html [L]
+
+</IfModule>
