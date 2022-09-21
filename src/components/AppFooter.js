@@ -3,20 +3,28 @@ import { CFooter } from '@coreui/react'
 
 const AppFooter = () => {
   return (
-    <CFooter>
-      <div>
-        <a href="https://coreui.io" target="_blank" rel="noopener noreferrer">
-          CoreUI
+    // <CFooter>
+    //   <div>
+    //     <a href="https://coreui.io" target="_blank" rel="noopener noreferrer">
+    //       CoreUI
+    //     </a>
+    //     <span className="ms-1">&copy; 2022 creativeLabs.</span>
+    //   </div>
+    //   <div className="ms-auto">
+    //     <span className="me-1">Powered by</span>
+    //     <a href="https://coreui.io/react" target="_blank" rel="noopener noreferrer">
+    //       CoreUI React Admin &amp; Dashboard Template
+    //     </a>
+    //   </div>
+    // </CFooter>
+    <footer className="footer mt-2 d-flex justify-content-center">
+      <p>
+        All rights Reserved{' '}
+        <a href="https://corebase.co.ke/" rel="noopener noreferrer" target="_blank">
+          &copy; CoreBase Solutions Limited
         </a>
-        <span className="ms-1">&copy; 2022 creativeLabs.</span>
-      </div>
-      <div className="ms-auto">
-        <span className="me-1">Powered by</span>
-        <a href="https://coreui.io/react" target="_blank" rel="noopener noreferrer">
-          CoreUI React Admin &amp; Dashboard Template
-        </a>
-      </div>
-    </CFooter>
+      </p>
+    </footer>
   )
 }
 
