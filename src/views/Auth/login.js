@@ -65,7 +65,7 @@ function Login() {
         </div>
         <div className="col-md-6 m-0">
           <div className="card rounded-0">
-            <div className="card-body">
+            <div className="card-body p-5">
               {data.error && (
                 <div
                   className="alert alert-danger d-flex align-items-center mx-0 mb-3 rounded-0"
