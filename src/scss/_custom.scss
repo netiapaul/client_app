@@ -21,10 +21,12 @@ $primary-color: #F58B40;
 $corebase-color: #ffc107;
 $pragraph-color: #51575d;
 $border-color: #ebebee;
-$danger-color: #ff3547;
+$danger-color: #e55353;
+// $danger-color: #ff3547;
 $global-color: #47404f;
 $gray-color: #a1aab2;
-$success-color: #0DCC26;
+$success-color: #2eb85c;
+// $success-color: #0DCC26;
 $sidebar-color: #F58B40;
 // .react-datepicker {
 //   // font-family: "Helvetica Neue", helvetica, arial, sans-serif;
@@ -36,6 +38,11 @@ $sidebar-color: #F58B40;
 //   display: inline-block;
 //   position: relative;
 // }
+
+input:checked {
+  background-color: #c58c4f !important;
+  border-color: #c58c4f !important;
+}
 
 .logout {
   font-size: 12px !important;
@@ -81,6 +88,13 @@ $sidebar-color: #F58B40;
   // padding: .375rem 2.25rem .375rem .25rem;
 }
 
+.filter-btn {
+  font-size: 10px !important;
+  color: #C58C4F !important;
+  // background-color: #C58C4F !important;
+  border: 1px solid #C58C4F !important;
+}
+
 .form-control:focus,
 .form-select:focus {
   box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25) !important;
@@ -106,26 +120,31 @@ $sidebar-color: #F58B40;
 
 /**** BUtton Style ****/
 .add-btn {
-  background-color: #28A745 !important;
+  background-color: $success-color !important;
   font-size: 10px !important;
-  border: 1px solid #28A745 !important;
-  // color: #28A745 !important;
+  border: 1px solid $success-color !important;
   color: white !important;
 
+}
+
+.delete-btn {
+  font-size: 10px !important;
+  border: 1px solid $danger-color !important;
+  color: $danger-color !important;
 }
 
 .cancel-btn {
   background-color: white !important;
   font-size: 10px !important;
-  border: 1px solid #28A745 !important;
-  color: #28A745 !important;
+  border: 1px solid $success-color !important;
+  color: $success-color !important;
 
 }
 
 // .add-btn:hover {
 //   font-size: 10px !important;
-//   border: 1px solid #28A745 !important;
-//   background-color: #28A745 !important;
+//   border: 1px solid $success-color !important;
+//   background-color: $success-color !important;
 //   color: white !important;
 // }
 
@@ -180,6 +199,12 @@ $sidebar-color: #F58B40;
 }
 
 /**** Material Table UI styles *****/
+
+.MuiIconButton-root {
+
+  padding: 0rem !important;
+
+}
 
 .MuiTableCell-root {
   padding: 0px !important;
