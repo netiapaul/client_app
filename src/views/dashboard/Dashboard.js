@@ -7,7 +7,7 @@ const axios = require('axios')
 
 const Dashboard = () => {
   //  "material-table": "^2.0.3",
-  const [error, setError] = useState('I am Headed to greatness with Kinjoz')
+  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [rowId, setRowId] = useState('')
   const [data, setData] = useState({
@@ -28,7 +28,7 @@ const Dashboard = () => {
         },
       },
       {
-        title: 'Id',
+        title: 'ID',
         field: 'id',
         render: (rowData) => (
           <Link className="text-decoration-underline" to={`/client/${rowData.id}`}>
@@ -48,7 +48,7 @@ const Dashboard = () => {
         title: 'Active',
         field: 'psActivated',
         render: (rowData) => (
-          <div className={rowData.psActivated !== '1' ? 'not-active-r' : 'Active-r'}></div>
+          <div className={rowData.psActivated === '1' ? 'Active-r' : 'not-active-r'}></div>
         ),
         cellStyle: {
           width: '1%',
@@ -57,9 +57,13 @@ const Dashboard = () => {
       {
         title: 'Expiry',
         field: 'psActivateExpiryDate',
-        // render: (rowData) => <Moment format="DD/MM/YYYY">{rowData.psActivateExpiryDate}</Moment>,
+        // render: (rowData) => <span>{rowData.psPickBios/rowData.psPickCpu}</span>,
       },
-      { title: 'CPU/BIOS', field: 'psPickBios' },
+      {
+        title: 'CPU/BIOS',
+        field: 'psPickBios',
+        render: (rowData) => <span>{rowData.psPickCpu + '/' + rowData.psPickBios}</span>,
+      },
       { title: 'Company', field: 'psPickCompany' },
     ],
     clients: [],
