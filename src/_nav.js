@@ -6,9 +6,20 @@ import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 const _nav = [
   {
     component: CNavItem,
-    name: 'Dashboard',
+    name: 'Clients',
     to: '/dashboard',
     icon: <span className="material-icons nav-icon">home</span>,
+    // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    // badge: {
+    //   color: 'info',
+    //   text: 'NEW',
+    // },
+  },
+  {
+    component: CNavItem,
+    name: 'Activities',
+    to: '/activities',
+    icon: <span className="material-icons nav-icon">summarize</span>,
     // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
     // badge: {
     //   color: 'info',
