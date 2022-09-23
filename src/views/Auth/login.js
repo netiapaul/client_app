@@ -32,6 +32,7 @@ function Login() {
         })
         localStorage.setItem('accessToken', response.data.accessToken)
         localStorage.setItem('ID', response.data.id)
+        localStorage.setItem('name', response.data.name)
         navigate('/dashboard')
         console.log(response)
       }
