@@ -27,6 +27,7 @@ const UpdateClient = () => {
     querySerialNo: '',
     queryExpiryDate: new Date(),
     queryDays: '',
+    isActive: true,
     /*3*/
     queryUserCount: '',
     /*4*/
@@ -50,6 +51,7 @@ const UpdateClient = () => {
     psActivateExpiryDate: '',
     psSerialNo: '',
     psStockTakeCals: '',
+    psActivated: '',
     psStockTakeStartDate: '',
     stockTakeEndDate: '',
     addons: '',
@@ -275,7 +277,8 @@ const UpdateClient = () => {
           },
           body: JSON.stringify({
             serialNo: editFormData.querySerialNo,
-            isActive: true,
+            isActive: editFormData.isActive,
+            cusCode: data.psCusCode,
             expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
           }),
         },
@@ -307,7 +310,11 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateUserCals?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&userCals=${editFormData.queryUserCount}`,
+        `http://102.37.102.247:5023/api/Clients/UpdateUserCals?id=${id}&cpu=${
+          data.psPickCpu
+        }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&userCals=${Number(
+          editFormData.queryUserCount,
+        )}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -344,7 +351,11 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateBranchCals?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&branchCals=${editFormData.queryBranchCount}`,
+        `http://102.37.102.247:5023/api/Clients/UpdateBranchCals?id=${id}&cpu=${
+          data.psPickCpu
+        }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&branchCals=${Number(
+          editFormData.queryBranchCount,
+        )}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -392,8 +403,8 @@ const UpdateClient = () => {
           },
           body: JSON.stringify({
             stocktakeCalls: editFormData.queryStockTakeCals,
-            fromDate: editFormData.queryStockTakeStartDate,
-            toDate: editFormData.queryStockTakeEndDate,
+            fromDate: moment(editFormData.queryStockTakeStartDate).format('DD/MM/YYYY'),
+            toDate: moment(editFormData.queryStockTakeEndDate).format('DD/MM/YYYY'),
           }),
         },
       )
@@ -558,7 +569,10 @@ const UpdateClient = () => {
                 <div className="d-flex">
                   {/* <div className="vr fw-bold mx-2"></div> */}
                   <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
-                    Status: <span className="text-success">Active</span>
+                    Status:{' '}
+                    <span className={data.psActivated === '1' ? 'text-success' : 'text-danger'}>
+                      {data.psActivated === '1' ? 'Active' : 'Not Active'}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -639,12 +653,12 @@ const UpdateClient = () => {
                 </div>
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-3">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                  <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
                     Serial No
                   </label>
                   <div className="col-md ps-1">
                     <div className="row">
-                      <div className="col-8 pe-1">
+                      <div className="col-6">
                         <input
                           type="text"
                           name="psSerialNo"
@@ -655,19 +669,40 @@ const UpdateClient = () => {
                           readOnly
                         />
                       </div>
-                      <div className="col-4 ps-1">
-                        <input
-                          type="text"
-                          name=""
-                          id=""
-                          className="form-control form-control-sm rounded-0"
-                          disabled
-                          readOnly
-                        />
+                      <div className="col-6">
+                        <div className="row">
+                          <label htmlFor="blocked" className="col-3 col-form-label">
+                            {/* Item Name */}
+                          </label>
+                          <div className="col ps-0">
+                            <div className="form-check">
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={data.psActivated === '1'}
+                                name="blocked"
+                                id="blocked"
+                                disabled
+                                readOnly
+                              />
+                              <label
+                                className={
+                                  data.psActivated === '1'
+                                    ? 'form-check-label text-success fw-bold'
+                                    : 'form-check-label text-danger fw-bold'
+                                }
+                                htmlFor="blocked"
+                              >
+                                {data.psActivated === '1' ? 'Is Active' : 'Not Active'}
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Expiry Date
@@ -722,7 +757,6 @@ const UpdateClient = () => {
                     role="button"
                     style={{ fontSize: '10px', color: '#c58c4f' }}
                     onClick={() => setSerialModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 2 })}
                   >
                     Change
                   </p>
@@ -921,7 +955,7 @@ const UpdateClient = () => {
                   <span className=" fs-6">{data.psPickBios}</span>
                 </li>
                 <li className="list-group-item p-1 d-flex flex-column">
-                  <span className="fw-bold fs-6">Hdd</span>
+                  <span className="fw-bold fs-6">Hard Disk</span>
                   <span className="fs-6">{data.psPickHdd}</span>
                 </li>
                 <li className="list-group-item p-1 d-flex flex-column">
@@ -939,13 +973,13 @@ const UpdateClient = () => {
                   >
                     Last Service Date
                   </p>
-                  <p
+                  {/* <p
                     className="mb-0 text-decoration-underline"
                     style={{ color: '#C58C4F' }}
                     role="button"
                   >
                     View Activity
-                  </p>
+                  </p> */}
                 </li>
               </ul>
             </div>
@@ -1101,12 +1135,12 @@ const UpdateClient = () => {
         <CModalBody>
           <form autoComplete="off" onSubmit={UpdateSerialsDetails}>
             <div className="row mb-3">
-              <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                Serial No
-              </label>
-              <div className="col-md ps-1">
+              <div className="col-md">
                 <div className="row">
-                  <div className="col-8 pe-1">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Serial No
+                  </label>
+                  <div className="col-md ps-1">
                     <select
                       className="form-select form-select-sm rounded-0"
                       aria-label="Default select example"
@@ -1119,6 +1153,7 @@ const UpdateClient = () => {
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, querySerialNo: e.target.value })
                       }
+                      disabled={!editFormData.queryAcctCode || !editFormData.queryBranchCode}
                     >
                       <option value={''}></option>
                       {serialNo.map((serial, index) => (
@@ -1127,33 +1162,49 @@ const UpdateClient = () => {
                         </option>
                       ))}
                     </select>
-                    {/* <input
-                          type="text"
-                          name="querySerialNo"
-                          id="querySerialNo"
-                          value={data.querySerialNo}
-                          className="form-control form-control-sm rounded-0"
-                          onChange={(e) => setData({ ...data, querySerialNo: e.target.value })}
-                        /> */}
                   </div>
-                  <div className="col-4 ps-1">
-                    <input
-                      type="text"
-                      name=""
-                      id=""
-                      className="form-control form-control-sm rounded-0"
-                    />
+                </div>
+              </div>
+              <div className="col-md">
+                <div className="row">
+                  <label htmlFor="nonregistered" className="col-md-3 col-form-label">
+                    {/* Item Name */}
+                  </label>
+                  <div className="col-md ps-1">
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={editFormData.isActive}
+                        name="blocked"
+                        id="blocked"
+                        onChange={(e) =>
+                          setEditFormData({ ...editFormData, isActive: e.target.checked })
+                        }
+                      />
+                      {/* form-check-label */}
+                      <label
+                        className={
+                          editFormData.isActive
+                            ? 'form-check-label text-success fw-bold'
+                            : 'form-check-label text-danger fw-bold'
+                        }
+                        htmlFor="blocked"
+                      >
+                        {editFormData.isActive ? 'Is Active' : 'Not Active'}
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
             <div className="row mb-1">
-              <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                Expiry Date
-              </label>
-              <div className="col-md ps-1">
+              <div className="col-md">
                 <div className="row">
-                  <div className="col-6">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Expiry Date
+                  </label>
+                  <div className="col-md ps-1">
                     <DatePicker
                       className="form-control form-control-sm rounded-0"
                       selected={editFormData.queryExpiryDate}
@@ -1168,28 +1219,28 @@ const UpdateClient = () => {
                       }
                     />
                   </div>
-                  <div className="col-6">
-                    <div className="row">
-                      <label htmlFor="branchCode" className="col-3 col-form-label divider">
-                        Days
-                      </label>
-                      <div className="col ps-0">
-                        <input
-                          type="text"
-                          name="queryDays"
-                          id="queryDays"
-                          value={editFormData.queryDays}
-                          className="form-control form-control-sm rounded-0"
-                          onChange={(e) =>
-                            setEditFormData({
-                              ...editFormData,
-                              queryDays: e.target.value,
-                              // queryExpiryDate: new Date().getDate() + e.target.value,
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
+                </div>
+              </div>
+              <div className="col-md">
+                <div className="row">
+                  <label htmlFor="branchCode" className="col-3 col-form-label divider">
+                    Days
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="text"
+                      name="queryDays"
+                      id="queryDays"
+                      value={editFormData.queryDays}
+                      className="form-control form-control-sm rounded-0"
+                      onChange={(e) =>
+                        setEditFormData({
+                          ...editFormData,
+                          queryDays: e.target.value,
+                          // queryExpiryDate: new Date().getDate() + e.target.value,
+                        })
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -1248,7 +1299,7 @@ const UpdateClient = () => {
               </label>
               <div className="col-md ps-1">
                 <input
-                  type="text"
+                  type="number"
                   name="queryUserCount"
                   id="queryUserCount"
                   value={editFormData.queryUserCount}
@@ -1313,7 +1364,7 @@ const UpdateClient = () => {
               </label>
               <div className="col-md ps-1">
                 <input
-                  type="text"
+                  type="number"
                   name="queryBranchCount"
                   id="queryBranchCount"
                   value={editFormData.queryBranchCount}
@@ -1392,6 +1443,7 @@ const UpdateClient = () => {
                   id="queryStockTakeCals"
                   value={editFormData.queryStockTakeCals}
                   className="form-control form-control-sm rounded-0"
+                  required
                   onChange={(e) =>
                     setEditFormData({ ...editFormData, queryStockTakeCals: e.target.value })
                   }
@@ -1425,6 +1477,7 @@ const UpdateClient = () => {
                       onChange={(date) =>
                         setEditFormData({ ...editFormData, queryStockTakeStartDate: date })
                       }
+                      required
                     />
                   </div>
                   <div className="col-6">
@@ -1453,6 +1506,7 @@ const UpdateClient = () => {
                           onChange={(date) =>
                             setEditFormData({ ...editFormData, queryStockTakeEndDate: date })
                           }
+                          required
                         />
                       </div>
                     </div>
