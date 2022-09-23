@@ -10,6 +10,7 @@ const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const [error, setError] = useState('')
+  const [bcode, SetBcode] = useState('')
   const [clientModal, setClientModal] = useState(false)
   const [serialModal, setSerialModal] = useState(false)
   const [userCALSModal, setUserCALSModal] = useState(false)
@@ -17,6 +18,27 @@ const UpdateClient = () => {
   const [stockTakeCALSModal, setStockTakeCALSModal] = useState(false)
   const [addOnsModal, setAddOnsModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [data, setData] = useState({
+    error: '',
+    psCusCode: '',
+    psCompanyName: '',
+    branchCode: '',
+    psBranchName: '',
+    psActivateExpiryDate: '',
+    psSerialNo: '',
+    psStockTakeCals: '',
+    psActivated: false,
+    psStockTakeStartDate: '',
+    stockTakeEndDate: '',
+    addons: '',
+    psBranchCount: '',
+    psUserCount: '',
+    psPickCpu: '',
+    psPickBios: '',
+    psPickCompany: '',
+    psPickBcode: '',
+    psPickHdd: '',
+  })
   const [editFormData, setEditFormData] = useState({
     /*** Change Details ***/
     queryAcctCode: '',
@@ -25,9 +47,9 @@ const UpdateClient = () => {
     queryBranchName: '',
     /*2*/
     querySerialNo: '',
-    queryExpiryDate: new Date(),
+    queryExpiryDate: '',
     queryDays: '',
-    isActive: true,
+    isActive: false,
     /*3*/
     queryUserCount: '',
     /*4*/
@@ -42,27 +64,7 @@ const UpdateClient = () => {
   const [customers, setCustomers] = useState([])
   const [serialNo, setSerialNo] = useState([])
   const [customerMembers, setCustomerMembers] = useState([])
-  const [data, setData] = useState({
-    error: '',
-    psCusCode: '',
-    psCompanyName: '',
-    branchCode: '',
-    psBranchName: '',
-    psActivateExpiryDate: '',
-    psSerialNo: '',
-    psStockTakeCals: '',
-    psActivated: '',
-    psStockTakeStartDate: '',
-    stockTakeEndDate: '',
-    addons: '',
-    psBranchCount: '',
-    psUserCount: '',
-    psPickCpu: '',
-    psPickBios: '',
-    psPickCompany: '',
-    psPickBcode: '',
-    psPickHdd: '',
-  })
+
   const GetClientDetails = async (id) => {
     setIsLoading(true)
 
@@ -84,24 +86,54 @@ const UpdateClient = () => {
         setIsLoading(false)
         setData({
           ...data,
-          psCusCode: result.psCusCode,
-          psCompanyName: result.psCompanyName,
-          branchCode: result.branchCode,
-          psBranchName: result.psBranchName,
-          psActivateExpiryDate: result?.psActivateExpiryDate,
-          psSerialNo: result.psSerialNo,
-          psStockTakeCals: result.psStockTakeCals,
-          psStockTakeStartDate: new Date(result?.psStockTakeStartDate),
-          stockTakeEndDate: new Date(result?.stockTakeEndDate),
-          psUserCount: result.psUserCount,
-          addons: result.addons,
-          psBranchCount: result.psBranchCount,
-          psPickCpu: result.psPickCpu,
-          psPickBios: result.psPickBios,
-          psPickHdd: result.psPickHdd,
-          psPickCompany: result.psPickCompany,
-          psPickBcode: result.psPickBcode,
+          psCusCode: !result?.psCusCode ? '' : result?.psCusCode,
+          psCompanyName: result?.psCompanyName,
+          branchCode: !result?.branchCode ? '' : result?.branchCode,
+          // branchCode: result?.branchCode,
+
+          psBranchName: result?.psBranchName,
+          psActivateExpiryDate: !result?.psActivateExpiryDate
+            ? ''
+            : moment(editFormData.psActivateExpiryDate).format('DD/MM/YYYY'),
+          psSerialNo: result?.psSerialNo,
+          psStockTakeCals: result?.psStockTakeCals,
+          psStockTakeStartDate: !result?.psStockTakeStartDate
+            ? ''
+            : new Date(result?.psStockTakeStartDate),
+          stockTakeEndDate: !result?.stockTakeEndDate ? '' : new Date(result?.stockTakeEndDate),
+          psUserCount: result?.psUserCount,
+          addons: result?.addons,
+          psActivated: result?.psActivated === '1' ? true : false,
+          psBranchCount: result?.psBranchCount,
+          psPickCpu: result?.psPickCpu,
+          psPickBios: result?.psPickBios,
+          psPickHdd: result?.psPickHdd,
+          psPickCompany: result?.psPickCompany,
+          psPickBcode: result?.psPickBcode,
         })
+        setEditFormData({
+          ...editFormData,
+          queryAcctCode: result?.psCusCode,
+          queryAcctName: result?.psCompanyName,
+          queryBranchCode: result?.branchCode,
+          querySerialNo: result?.psSerialNo,
+          queryBranchName: result?.psBranchName,
+          queryExpiryDate: !result?.psActivateExpiryDate
+            ? ''
+            : new Date(result?.psActivateExpiryDate),
+          isActive: result?.psActivated === '1' ? true : false,
+          queryStockTakeStartDate: !result?.psStockTakeStartDate
+            ? ''
+            : new Date(result?.psStockTakeStartDate),
+          queryStockTakeEndDate: !result?.stockTakeEndDate
+            ? ''
+            : new Date(result?.stockTakeEndDate),
+          queryUserCount: result?.psUserCount,
+          queryAddOns: result?.addons,
+          queryStockTakeCals: result?.psStockTakeCals,
+          queryBranchCount: result?.psBranchCount,
+        })
+        // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
         const result = await response.json()
         setIsLoading(false)
@@ -127,6 +159,7 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setCustomers(result)
+        setError(result.message)
         setIsLoading(false)
       } else {
         const result = await response.json()
@@ -153,6 +186,7 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setSerialNo(result)
+        setError(result.message)
         setIsLoading(false)
       } else {
         const result = await response.json()
@@ -182,6 +216,7 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setCustomerMembers(result)
+        setError(result.message)
         setIsLoading(false)
       } else {
         const result = await response.json()
@@ -214,6 +249,10 @@ const UpdateClient = () => {
         (customerMember) => customerMember.branchCode === e.target.value,
       )[0]?.branchName,
     })
+    SetBcode(
+      customerMembers.filter((customerMember) => customerMember.branchCode === data.branchCode)[0]
+        ?.bcode,
+    )
   }
 
   const UpdateClientDetails = async (e) => {
@@ -279,6 +318,7 @@ const UpdateClient = () => {
             serialNo: editFormData.querySerialNo,
             isActive: editFormData.isActive,
             cusCode: data.psCusCode,
+            branchCode: data.branchCode,
             expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
           }),
         },
@@ -555,6 +595,12 @@ const UpdateClient = () => {
           <span> {data.error} </span>
         </div>
       )}
+      {error && (
+        <div className="alert alert-danger align-items-center rounded-0" role="alert">
+          <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+          <span> {error} </span>
+        </div>
+      )}
       <div className="row g-2">
         <div className="col-md">
           <div className="card h-100 rounded-0">
@@ -570,8 +616,8 @@ const UpdateClient = () => {
                   {/* <div className="vr fw-bold mx-2"></div> */}
                   <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
                     Status:{' '}
-                    <span className={data.psActivated === '1' ? 'text-success' : 'text-danger'}>
-                      {data.psActivated === '1' ? 'Active' : 'Not Active'}
+                    <span className={data.psActivated ? 'text-success' : 'text-danger'}>
+                      {data.psActivated ? 'Active' : 'Not Active'}
                     </span>
                   </p>
                 </div>
@@ -679,7 +725,7 @@ const UpdateClient = () => {
                               <input
                                 className="form-check-input"
                                 type="checkbox"
-                                checked={data.psActivated === '1'}
+                                checked={data.psActivated}
                                 name="blocked"
                                 id="blocked"
                                 disabled
@@ -687,13 +733,13 @@ const UpdateClient = () => {
                               />
                               <label
                                 className={
-                                  data.psActivated === '1'
+                                  data.psActivated
                                     ? 'form-check-label text-success fw-bold'
                                     : 'form-check-label text-danger fw-bold'
                                 }
                                 htmlFor="blocked"
                               >
-                                {data.psActivated === '1' ? 'Is Active' : 'Not Active'}
+                                {data.psActivated ? 'Is Active' : 'Not Active'}
                               </label>
                             </div>
                           </div>
@@ -752,14 +798,19 @@ const UpdateClient = () => {
                   </div>
                 </div>
                 <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setSerialModal(true)}
-                  >
-                    Change
-                  </p>
+                  {data.psCusCode === '' || data.branchCode === '' ? (
+                    ''
+                  ) : (
+                    <p
+                      className="my-1 fw-bold"
+                      role="button"
+                      style={{ fontSize: '10px', color: '#c58c4f' }}
+                      disabled={!data.psCusCode || !data.branchCode}
+                      onClick={() => setSerialModal(true)}
+                    >
+                      Change
+                    </p>
+                  )}
                 </div>
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
@@ -947,20 +998,20 @@ const UpdateClient = () => {
               <hr className="my-1" />
               <ul className="list-group list-group-flush" style={{ fontSize: '10px' }}>
                 <li className="list-group-item p-1 d-flex flex-column">
-                  <span className="fw-bold fs-6">CPU</span>
-                  <span className="fs-6">{data.psPickCpu}</span>
+                  <span className="fw-bold ">CPU</span>
+                  <span>{data.psPickCpu}</span>
                 </li>
                 <li className="list-group-item p-1 d-flex flex-column">
-                  <span className="fw-bold fs-6">BIOS</span>
-                  <span className=" fs-6">{data.psPickBios}</span>
+                  <span className="fw-bold ">BIOS</span>
+                  <span>{data.psPickBios}</span>
                 </li>
                 <li className="list-group-item p-1 d-flex flex-column">
-                  <span className="fw-bold fs-6">Hard Disk</span>
-                  <span className="fs-6">{data.psPickHdd}</span>
+                  <span className="fw-bold ">Hard Disk</span>
+                  <span>{data.psPickHdd}</span>
                 </li>
                 <li className="list-group-item p-1 d-flex flex-column">
-                  <span className="fw-bold fs-6">Company</span>
-                  <span className="fs-6">
+                  <span className="fw-bold">Company</span>
+                  <span>
                     {data.psPickCompany} - {data.psPickBcode}
                   </span>
                 </li>
@@ -1149,13 +1200,17 @@ const UpdateClient = () => {
                       }}
                       id="querySerialNo"
                       name="querySerialNo"
-                      value={data.querySerialNo}
+                      value={editFormData.querySerialNo}
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, querySerialNo: e.target.value })
                       }
-                      disabled={!editFormData.queryAcctCode || !editFormData.queryBranchCode}
+                      disabled={
+                        !editFormData.queryAcctCode ||
+                        !editFormData.queryBranchCode ||
+                        data.psSerialNo
+                      }
                     >
-                      <option value={''}></option>
+                      <option value={data.psSerialNo}>{data.psSerialNo}</option>
                       {serialNo.map((serial, index) => (
                         <option key={index} value={serial.serialId}>
                           {serial.serialId}
@@ -1176,6 +1231,7 @@ const UpdateClient = () => {
                         className="form-check-input"
                         type="checkbox"
                         checked={editFormData.isActive}
+                        // checked={editFormData.isActive === '1'}
                         name="blocked"
                         id="blocked"
                         onChange={(e) =>
@@ -1205,6 +1261,13 @@ const UpdateClient = () => {
                     Expiry Date
                   </label>
                   <div className="col-md ps-1">
+                    {/* <input
+                      type="date"
+                      name="queryExpiryDate"
+                      className="form-control form-control-sm rounded-0"
+                      id="queryExpiryDate"
+                      value={editFormData.queryExpiryDate}
+                    /> */}
                     <DatePicker
                       className="form-control form-control-sm rounded-0"
                       selected={editFormData.queryExpiryDate}
@@ -1438,7 +1501,7 @@ const UpdateClient = () => {
               </label>
               <div className="col-md ps-1">
                 <input
-                  type="text"
+                  type="number"
                   name="queryStockTakeCals"
                   id="queryStockTakeCals"
                   value={editFormData.queryStockTakeCals}

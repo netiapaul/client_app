@@ -179,7 +179,7 @@ const ActivityLogs = () => {
                 <i className="fa fa-filter" style={{ marginRight: 2 }}></i> Filters
               </button>
               <Drawer
-                sx={{ width: 720 }}
+                // sx={{ width: 540, bgcolor: '#C58C4F' }}
                 anchor={'right'}
                 open={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(true)}
@@ -191,7 +191,10 @@ const ActivityLogs = () => {
                 <div className="container">
                   {/* <h1>Headed to greatness with Kinjoz</h1> */}
                   <div className="row my-3">
-                    <div className="col-3 pe-md-1 d-flex align-items-center">
+                    <label htmlFor="queryCompanyName" className="col-md-3 col-form-label divider">
+                      Compnay Name
+                    </label>
+                    {/* <div className="col-3 pe-md-1 d-flex align-items-center">
                       <div className="input-group">
                         <input
                           className="form-check-input rounded-0"
@@ -210,14 +213,13 @@ const ActivityLogs = () => {
                           By Customer Name
                         </label>
                       </div>
-                    </div>
+                    </div> */}
                     <div className="col ps-md-1">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="queryCompanyName"
                         name="queryCompanyName"
                         value={queryParams.queryCompanyName}
-                        disabled={!queryParams.byQueryCompanyName}
                         aria-label="acctType"
                         onChange={(e) =>
                           setQueryParams({
@@ -236,7 +238,10 @@ const ActivityLogs = () => {
                     </div>
                   </div>
                   <div className="row my-3">
-                    <div className="col-3 pe-md-1 d-flex align-items-center">
+                    <label htmlFor="querySectionId" className="col-md-3 col-form-label divider">
+                      Section ID
+                    </label>
+                    {/* <div className="col-3 pe-md-1 d-flex align-items-center">
                       <div className="input-group">
                         <input
                           className="form-check-input rounded-0"
@@ -255,15 +260,15 @@ const ActivityLogs = () => {
                           By Section ID
                         </label>
                       </div>
-                    </div>
+                    </div> */}
                     <div className="col ps-md-1">
                       <select
                         className="form-select form-select-sm rounded-0"
-                        id="acctType"
-                        name="acctType"
+                        id="querySectionId"
+                        name="querySectionId"
                         value={queryParams.querySectionId}
-                        disabled={!queryParams.byQuerySectionId}
-                        aria-label="acctType"
+                        // disabled={!queryParams.byQuerySectionId}
+                        aria-label="querySectionId"
                         onChange={(e) =>
                           setQueryParams({
                             ...queryParams,
@@ -282,7 +287,10 @@ const ActivityLogs = () => {
                     </div>
                   </div>
                   <div className="row my-3">
-                    <div className="col-3 pe-md-1 d-flex align-items-center">
+                    <label htmlFor="queryUserName" className="col-md-3 col-form-label divider">
+                      User Name
+                    </label>
+                    {/* <div className="col-3 pe-md-1 d-flex align-items-center">
                       <div className="input-group">
                         <input
                           className="form-check-input rounded-0"
@@ -301,15 +309,15 @@ const ActivityLogs = () => {
                           By UserName
                         </label>
                       </div>
-                    </div>
+                    </div> */}
                     <div className="col ps-md-1">
                       <select
                         className="form-select form-select-sm rounded-0"
-                        id="acctType"
-                        name="acctType"
-                        disabled={!queryParams.byQueryUserName}
+                        id="queryUserName"
+                        name="queryUserName"
+                        // disabled={!queryParams.byQueryUserName}
                         value={queryParams.queryUserName}
-                        aria-label="acctType"
+                        aria-label="queryUserName"
                         onChange={(e) =>
                           setQueryParams({
                             ...queryParams,
@@ -397,7 +405,7 @@ const ActivityLogs = () => {
                     <div className="card border border-0 pt-0">
                       <div className="card-body">
                         <h6 className="offcanvas-title fw-bold" id="filtersLabel">
-                          Activities
+                          Activities: {rowData.logId}
                         </h6>
                         <hr className="my-1" />
                         <ul className="list-group list-group-numbered">

@@ -35,6 +35,11 @@ function Login() {
         localStorage.setItem('name', response.data.name)
         navigate('/dashboard')
         console.log(response)
+      } else {
+        setData({
+          ...data,
+          isLoading: false,
+        })
       }
     } catch (err) {
       setData({
@@ -64,7 +69,7 @@ function Login() {
             // }}
           ></div>
         </div>
-        <div className="col-md-6 m-0">
+        <div className="col-md-7 m-0">
           <div className="card rounded-0">
             <div className="card-body p-5">
               {data.error && (

@@ -41,7 +41,10 @@ const AppHeaderDropdown = () => {
   return (
     <CDropdown variant="nav-item">
       <CDropdownToggle placement="bottom-end" className="py-0" caret={false}>
-        <Avatar {...stringAvatar(localStorage.getItem('name'))} sx={{ bgcolor: '#C58C4F' }} />
+        <Avatar
+          {...stringAvatar(localStorage.getItem('name'))}
+          sx={{ bgcolor: '#C58C4F', width: 24, height: 24, fontSize: '11px' }}
+        />
         {/* <CAvatar src={avatar8} size="md" /> */}
       </CDropdownToggle>
       <CDropdownMenu className="pt-0 rounded-0" placement="bottom-end">
