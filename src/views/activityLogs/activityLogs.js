@@ -58,7 +58,7 @@ const ActivityLogs = () => {
     },
     { title: 'Company', field: 'company' },
     {
-      title: 'Session No',
+      title: 'Section',
       field: 'sessionNo',
       cellStyle: {
         width: '10%',
@@ -239,7 +239,7 @@ const ActivityLogs = () => {
                   </div>
                   <div className="row my-3">
                     <label htmlFor="querySectionId" className="col-md-3 col-form-label divider">
-                      Section ID
+                      Section
                     </label>
                     {/* <div className="col-3 pe-md-1 d-flex align-items-center">
                       <div className="input-group">

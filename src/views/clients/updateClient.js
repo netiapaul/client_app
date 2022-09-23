@@ -5,7 +5,7 @@ import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
 import moment from 'moment'
 // import { useForm } from 'react-hook-form'
 const axios = require('axios')
-
+// "homepage": ".",
 const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -67,7 +67,6 @@ const UpdateClient = () => {
 
   const GetClientDetails = async (id) => {
     setIsLoading(true)
-
     try {
       const response = await fetch(
         `http://102.37.102.247:5023/api/Clients/GetClientDetails?id=${id}`,
@@ -94,7 +93,7 @@ const UpdateClient = () => {
           psBranchName: result?.psBranchName,
           psActivateExpiryDate: !result?.psActivateExpiryDate
             ? ''
-            : moment(editFormData.psActivateExpiryDate).format('DD/MM/YYYY'),
+            : moment(result?.psActivateExpiryDate).format('DD/MM/YYYY'),
           psSerialNo: result?.psSerialNo,
           psStockTakeCals: result?.psStockTakeCals,
           psStockTakeStartDate: !result?.psStockTakeStartDate
@@ -540,6 +539,27 @@ const UpdateClient = () => {
     }
   }
 
+  const handleDay = (e) => {
+    let correctDate = new Date(
+      data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'),
+    )
+    let finalDate = new Date(correctDate.setDate(correctDate.getDate() + Number(e.target.value)))
+    setEditFormData({
+      ...editFormData,
+      queryDays: e.target.value,
+      queryExpiryDate: finalDate,
+    })
+    // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
+    console.log(data.psActivateExpiryDate)
+    console.log(finalDate)
+  }
+
+  const handleDate = (date) => {
+    let diffDate = new Date().getTime() - new Date(moment(date).format('DD/MM/YYYY')).getTime()
+    setEditFormData({ ...editFormData, queryExpiryDate: date })
+    console.log(Math.abs(diffDate) / (1000 * 60 * 60 * 24))
+  }
+
   useEffect(() => {
     GetClientDetails(id)
     getCustomers()
@@ -728,7 +748,7 @@ const UpdateClient = () => {
                                 checked={data.psActivated}
                                 name="blocked"
                                 id="blocked"
-                                disabled
+                                // disabled
                                 readOnly
                               />
                               <label
@@ -748,7 +768,6 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Expiry Date
@@ -756,15 +775,6 @@ const UpdateClient = () => {
                   <div className="col-md ps-1">
                     <div className="row">
                       <div className="col-6">
-                        <input
-                          type="text"
-                          name="psActivateExpiryDate"
-                          id="psActivateExpiryDate"
-                          value={data.psActivateExpiryDate}
-                          className="form-control form-control-sm rounded-0"
-                          readOnly
-                          disabled
-                        />
                         {/* <DatePicker
                           className="form-control form-control-sm rounded-0"
                           selected={data.psActivateExpiryDate}
@@ -773,9 +783,20 @@ const UpdateClient = () => {
                           showMonthDropdown
                           showYearDropdown
                           dropdownMode="select"
-                          disabled
+                          minDate={new Date()}
+                          onChange={(date) => setData({ ...data, psActivateExpiryDate: date })}
                           readOnly
+                          disabled
                         /> */}
+                        <input
+                          type="text"
+                          name="psActivateExpiryDate"
+                          id="psActivateExpiryDate"
+                          value={moment(data.psActivateExpiryDate).format('DD/MM/YYYY')}
+                          className="form-control form-control-sm rounded-0"
+                          readOnly
+                          disabled
+                        />
                       </div>
                       <div className="col-6">
                         <div className="row">
@@ -1277,9 +1298,7 @@ const UpdateClient = () => {
                       showYearDropdown
                       dropdownMode="select"
                       minDate={new Date()}
-                      onChange={(date) =>
-                        setEditFormData({ ...editFormData, queryExpiryDate: date })
-                      }
+                      onChange={(date) => handleDate(date)}
                     />
                   </div>
                 </div>
@@ -1291,18 +1310,12 @@ const UpdateClient = () => {
                   </label>
                   <div className="col-md ps-1">
                     <input
-                      type="text"
+                      type="number"
                       name="queryDays"
                       id="queryDays"
                       value={editFormData.queryDays}
                       className="form-control form-control-sm rounded-0"
-                      onChange={(e) =>
-                        setEditFormData({
-                          ...editFormData,
-                          queryDays: e.target.value,
-                          // queryExpiryDate: new Date().getDate() + e.target.value,
-                        })
-                      }
+                      onChange={handleDay}
                     />
                   </div>
                 </div>
