@@ -329,8 +329,8 @@ const UpdateClient = () => {
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
-          serialNo: '',
-          expiryDate: '',
+          ...editFormData,
+          queryDays: '',
         })
         console.log(result)
         GetClientDetails(id)
@@ -541,18 +541,22 @@ const UpdateClient = () => {
   }
 
   const handleDay = (e) => {
-    let correctDate = new Date(
-      data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'),
-    )
-    let finalDate = new Date(correctDate.setDate(correctDate.getDate() + Number(e.target.value)))
+    // let correctDate = new Date(
+    //   data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'),
+    // )
+    // let finalDate = new Date(correctDate.setDate(correctDate.getDate() + Number(e.target.value)))
+    var res = new Date(data.psActivateExpiryDate)
     setEditFormData({
       ...editFormData,
       queryDays: e.target.value,
-      queryExpiryDate: finalDate,
+      queryExpiryDate: !e.target.value
+        ? editFormData.queryExpiryDate
+        : new Date(res.setDate(res.getDate() + Number(e.target.value))),
     })
     // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
-    console.log(data.psActivateExpiryDate)
-    console.log(finalDate)
+    console.log(res.setDate(res.getDate() + Number(e.target.value)))
+    console.log(new Date(res.setDate(res.getDate() + Number(e.target.value))))
+    // console.log(finalDate)
   }
 
   const handleDate = (date) => {
