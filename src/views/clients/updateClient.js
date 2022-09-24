@@ -93,7 +93,8 @@ const UpdateClient = () => {
           psBranchName: result?.psBranchName,
           psActivateExpiryDate: !result?.psActivateExpiryDate
             ? ''
-            : moment(result?.psActivateExpiryDate).format('DD/MM/YYYY'),
+            : new Date(result?.psActivateExpiryDate),
+          //  moment(result?.psActivateExpiryDate).format('DD/MM/YYYY')
           psSerialNo: result?.psSerialNo,
           psStockTakeCals: result?.psStockTakeCals,
           psStockTakeStartDate: !result?.psStockTakeStartDate
@@ -555,9 +556,16 @@ const UpdateClient = () => {
   }
 
   const handleDate = (date) => {
-    let diffDate = new Date().getTime() - new Date(moment(date).format('DD/MM/YYYY')).getTime()
-    setEditFormData({ ...editFormData, queryExpiryDate: date })
-    console.log(Math.abs(diffDate) / (1000 * 60 * 60 * 24))
+    let diffDate = new Date().getTime() - date.getTime()
+    let conv = Math.abs(diffDate)
+    setEditFormData({
+      ...editFormData,
+      queryExpiryDate: date,
+      queryDays: Math.round(conv / (1000 * 60 * 60 * 24)),
+    })
+    console.log(conv)
+    console.log(Math.round(conv / (1000 * 60 * 60 * 24)))
+    // console.log(new Date(moment(date).format('DD/MM/YYYY')))
   }
 
   useEffect(() => {
