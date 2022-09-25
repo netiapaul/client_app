@@ -6,11 +6,14 @@ import App from './App'
 import reportWebVitals from './reportWebVitals'
 import { Provider } from 'react-redux'
 import store from './store'
+import { ToastContainer } from 'react-toastify'
 import 'react-datepicker/dist/react-datepicker.css'
+import 'react-toastify/dist/ReactToastify.css'
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
     <App />
+    <ToastContainer pauseOnFocusLoss={false} />
   </Provider>,
 )
 

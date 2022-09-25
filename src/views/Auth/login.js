@@ -1,9 +1,12 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { loginRequest } from '../../utils/requests'
+import { toast } from 'react-toastify'
 const axios = require('axios')
 
 function Login() {
   const navigate = useNavigate()
+  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [data, setData] = useState({
     isLoading: false,
     email: '',
@@ -13,42 +16,39 @@ function Login() {
   const handleChange = (field) => {
     return (e) => setData((name) => ({ ...name, [field]: e.target.value }))
   }
-  const handleAuth = async (e) => {
+  /**
+   *
+   * * @Login User
+   */
+
+  async function handleAuth(e) {
     e.preventDefault()
     setData({
       ...data,
       isLoading: true,
       error: '',
     })
-    try {
-      const response = await axios.post('http://102.37.102.247:5023/api/Auth/Login', {
-        email: data.email,
-        password: data.password,
-      })
-      if (response.statusText === 'OK') {
+    loginRequest(data)
+      .then((res) => {
         setData({
           ...data,
           isLoading: false,
         })
-        localStorage.setItem('accessToken', response.data.accessToken)
-        localStorage.setItem('ID', response.data.id)
-        localStorage.setItem('name', response.data.name)
+        localStorage.setItem('accessToken', res.accessToken)
+        localStorage.setItem('ID', res.id)
+        localStorage.setItem('name', res.name)
         navigate('/dashboard')
-        console.log(response)
-      } else {
+        console.log(res)
+      })
+      .catch((error) => {
         setData({
           ...data,
-          isLoading: false,
+          error: error.response.data.message,
         })
-      }
-    } catch (err) {
-      setData({
-        ...data,
-        error: err.response.data.message,
-        isLoading: false,
+        console.log(error)
+        // toast.error('could not fetch customers')
+        // throw new Error("Couldn't list customers!")
       })
-      console.log(err)
-    }
     return setTimeout(() => {
       setData({
         ...data,
@@ -56,6 +56,82 @@ function Login() {
       })
     }, 8000)
   }
+
+  // const handleAuth = async (e) => {
+  //   e.preventDefault()
+  //   setData({
+  //     ...data,
+  //     isLoading: true,
+  //     error: '',
+  //   })
+  //   try {
+  //     const response = await axios.post('http://102.37.102.247:5023/api/Auth/Login', {
+  //       email: data.email,
+  //       password: data.password,
+  //     })
+  //     if (response.statusText === 'OK') {
+  //       setData({
+  //         ...data,
+  //         isLoading: false,
+  //       })
+  //       localStorage.setItem('accessToken', response.data.accessToken)
+  //       localStorage.setItem('ID', response.data.id)
+  //       localStorage.setItem('name', response.data.name)
+  //       navigate('/dashboard')
+  //       console.log(response)
+  //     } else {
+  //       setData({
+  //         ...data,
+  //         isLoading: false,
+  //       })
+  //     }
+  //   } catch (err) {
+  //     setData({
+  //       ...data,
+  //       error: err.response.data.message,
+  //       isLoading: false,
+  //     })
+  //     console.log(err)
+  //   }
+  //   return setTimeout(() => {
+  //     setData({
+  //       ...data,
+  //       error: '',
+  //     })
+  //   }, 8000)
+  // }
+
+  useEffect(() => {
+    // Update network status
+    const handleStatusChange = () => {
+      setIsOnline(navigator.onLine)
+      console.log(navigator.onLine)
+      if (navigator.onLine) {
+        return toast.success('You are Online !', {
+          position: toast.POSITION.BOTTOM_LEFT,
+          theme: 'colored',
+        })
+      } else {
+        return toast.error('You are Offline !', {
+          position: toast.POSITION.BOTTOM_LEFT,
+          theme: 'colored',
+        })
+      }
+    }
+
+    // Listen to the online status
+    window.addEventListener('online', handleStatusChange)
+
+    // Listen to the offline status
+    window.addEventListener('offline', handleStatusChange)
+
+    // Specify how to clean up after this effect for performance improvment
+    // return () => {
+    //   window.removeEventListener('online', handleStatusChange)
+    //   window.removeEventListener('offline', handleStatusChange)
+    // }
+  }, [isOnline])
+
   return (
     <div className="container px-md-0">
       <div className="row w-100 g-5 min-vh-100 align-items-center m-0">
@@ -72,6 +148,15 @@ function Login() {
         <div className="col-md-7 m-0">
           <div className="card rounded-0">
             <div className="card-body p-5">
+              {/* {isOnline
+                ? toast.success('You are Online !', {
+                    position: toast.POSITION.BOTTOM_LEFT,
+                    theme: 'colored',
+                  })
+                : toast.error('You are Offline !', {
+                    position: toast.POSITION.BOTTOM_LEFT,
+                    theme: 'colored',
+                  })} */}
               {data.error && (
                 <div
                   className="alert alert-danger d-flex align-items-center mx-0 mb-3 rounded-0"
