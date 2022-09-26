@@ -584,6 +584,7 @@ const UpdateClient = () => {
   }
 
   const handleDay = (e) => {
+    const date = new Date()
     let res =
       data.psActivateExpiryDate === '' || data.psActivateExpiryDate === null
         ? new Date()
@@ -593,8 +594,11 @@ const UpdateClient = () => {
       ...editFormData,
       queryDays: e.target.value,
       queryExpiryDate: e.target.value
-        ? new Date(res.setDate(res.getDate() + Number(e.target.value)))
+        ? new Date(date.setDate(date.getDate() + Number(e.target.value)))
         : new Date(),
+      // queryExpiryDate: e.target.value
+      //   ? new Date(res.setDate(res.getDate() + Number(e.target.value)))
+      //   : new Date(),
     })
     // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
     console.log(res)

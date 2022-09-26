@@ -286,6 +286,32 @@ input:checked {
   background-position: center !important;
 }
 
+.sidebar-nav .nav-title {
+  text-align: center !important;
+  color: $phAMACore-color !important;
+  margin-top: 0px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+// .sidebar-nav .nav-icon {
+  //   font-size: 1rem !important;
+  //   color: $phAMACore-color !important;
+  // }
+
+// .sidebar-nav .nav-item-icon {
+//   flex: 0 0 4rem;
+//   height: 1.25rem;
+//   font-size: 1rem !important;
+//   text-align: center;
+//   color: $phAMACore-color !important;
+//   // color: $primary-color;
+//   // fill: currentColor;
+//   transition: inherit;
+// }
+
+
+
 .nav-link {
   // padding: 10px 15px !important;
   padding-top: 10px !important;
