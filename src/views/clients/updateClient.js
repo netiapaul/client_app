@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
 import moment from 'moment'
+import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
 import Chip from '@mui/material/Chip'
 const axios = require('axios')
@@ -39,6 +40,7 @@ const UpdateClient = () => {
     psPickCompany: '',
     psPickBcode: '',
     psPickHdd: '',
+    pickDate: '',
   })
   const [editFormData, setEditFormData] = useState({
     /*** Change Details ***/
@@ -116,6 +118,7 @@ const UpdateClient = () => {
           psPickHdd: result?.clientDetails.psPickHdd,
           psPickCompany: result?.clientDetails.psPickCompany,
           psPickBcode: result?.clientDetails.psPickBcode,
+          pickDate: result?.clientDetails.pickDate,
         })
         setEditFormData({
           ...editFormData,
@@ -581,21 +584,22 @@ const UpdateClient = () => {
   }
 
   const handleDay = (e) => {
-    // let correctDate = new Date(
-    //   data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'),
-    // )
-    // let finalDate = new Date(correctDate.setDate(correctDate.getDate() + Number(e.target.value)))
-    var res = new Date(data.psActivateExpiryDate)
+    let res =
+      data.psActivateExpiryDate === '' || data.psActivateExpiryDate === null
+        ? new Date()
+        : new Date(data.psActivateExpiryDate)
+
     setEditFormData({
       ...editFormData,
       queryDays: e.target.value,
-      queryExpiryDate: !e.target.value
-        ? editFormData.queryExpiryDate
-        : new Date(res.setDate(res.getDate() + Number(e.target.value))),
+      queryExpiryDate: e.target.value
+        ? new Date(res.setDate(res.getDate() + Number(e.target.value)))
+        : new Date(),
     })
     // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
-    console.log(res.setDate(res.getDate() + Number(e.target.value)))
-    console.log(new Date(res.setDate(res.getDate() + Number(e.target.value))))
+    console.log(res)
+    // console.log(res.setDate(res.getDate() + Number(e.target.value)))
+    // console.log(new Date(res.setDate(res.getDate() + Number(e.target.value))))
     // console.log(finalDate)
   }
 
@@ -1121,22 +1125,11 @@ const UpdateClient = () => {
                     {data.psPickCompany} - {data.psPickBcode}
                   </span>
                 </li>
-
-                <li className="list-group-item p-1">
-                  <p
-                    className="mb-1 text-decoration-underline"
-                    style={{ color: '#C58C4F' }}
-                    role="button"
-                  >
-                    Last Service Date
-                  </p>
-                  {/* <p
-                    className="mb-0 text-decoration-underline"
-                    style={{ color: '#C58C4F' }}
-                    role="button"
-                  >
-                    View Activity
-                  </p> */}
+                <li className="list-group-item p-1 d-flex flex-column">
+                  <span className="fw-bold">Last Service Date</span>
+                  <span>
+                    <Moment format="DD/MM/YYYY">{data.pickDate}</Moment>
+                  </span>
                 </li>
               </ul>
             </div>
