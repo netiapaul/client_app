@@ -138,10 +138,17 @@ const UpdateClient = () => {
             ? ''
             : new Date(result?.clientDetails.stockTakeEndDate),
           queryUserCount: result?.clientDetails.psUserCount,
-          queryAddOns: result?.clientDetails.addons,
+          //       selectedList.forEach((item) => {
+          //   data.push(item.addonId)
+          // })
+          // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
+          //   data.push(item.addonId)
+          // }),
+          AddOnsArray: result?.clientAddOn.map((item) => item),
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
+        console.log(result?.clientAddOn.map((item) => item.addonID))
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
         const result = await response.json()
@@ -531,6 +538,7 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setAddOnsModal(false)
+
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
@@ -538,6 +546,39 @@ const UpdateClient = () => {
           AddOnsArray: [],
           selectedAdons: '',
         })
+        console.log(result)
+        GetClientDetails(id)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+  const DeleteAddsOn = async (addonId) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(
+        `http://102.37.102.247:5023/api/Clients/RemoveAddons?cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
+        {
+          method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        // setAddOnsModal(false)
+        // setData({ ...data, editModal: false, editModalInterface: 0 })
+        setIsLoading(false)
         console.log(result)
         GetClientDetails(id)
       } else {
@@ -631,7 +672,7 @@ const UpdateClient = () => {
       AddOnsArray: selectedList,
       selectedAdons: data.join(','),
     })
-    console.log(data)
+    // console.log(data)
   }
   const OnAddOnRemove = (selectedList, selectedItem) => {
     let data = []
@@ -644,7 +685,7 @@ const UpdateClient = () => {
       AddOnsArray: selectedList,
       selectedAdons: data.join(','),
     })
-    console.log(data)
+    // console.log(data)
   }
 
   useEffect(() => {
@@ -1071,9 +1112,15 @@ const UpdateClient = () => {
                     Add Ons
                   </label>
                   <div className="col-md ps-1">
-                    <div className="row ">
+                    <div className="d-flex">
+                      {/* addonName addonID onDelete={handleDelete}*/}
                       {data.addons.map((addOn, index) => (
-                        <Chip className="chip col" key={index} label={addOn.addonName} />
+                        <Chip
+                          size="small"
+                          className="chip col"
+                          key={index}
+                          label={addOn.addonName}
+                        />
                       ))}
                     </div>
                     {/* <input
@@ -1720,19 +1767,47 @@ const UpdateClient = () => {
         </CModalHeader>
         <CModalBody>
           <form autoComplete="off" onSubmit={UpdateAddsOn}>
+            <div className="hstack gap-2 mb-3 ">
+              {/* addonName addonID onDelete={handleDelete}*/}
+              {/* <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+              </label>
+              <div className="col-md ps-1">
+                {data.addons.map((addOn, index) => (
+                  <Chip
+                    className="chip col"
+                    size="small"
+                    key={index}
+                    label={addOn.addonName}
+                    onDelete={() => alert(addOn.addonID)}
+                  />
+                ))}
+              </div> */}
+              {data.addons.map((addOn, index) => (
+                <Chip
+                  className="chip ms-auto"
+                  size="small"
+                  key={index}
+                  label={addOn.addonName}
+                  onDelete={() => DeleteAddsOn(addOn.addonId)}
+                />
+              ))}
+            </div>
             <div className="row mb-1">
               <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                 Add Ons
               </label>
               <div className="col-md ps-1">
                 <Multiselect
+                  closeIcon={''}
                   className="rounded-0"
+                  // hideSelectedList
                   options={addOns} // Options to display in the dropdown
                   selectedValues={editFormData.AddOnsArray} // Preselected value to persist in dropdown
                   onSelect={OnAddOnSelect} // Function will trigger on select event
                   onRemove={OnAddOnRemove} // Function will trigger on remove event
                   displayValue="addonName" // Property name to display in the dropdown options
                   showCheckbox
+                  hideSelectedList={true}
                 />
                 {/* <input
                   type="text"
