@@ -148,7 +148,7 @@ const UpdateClient = () => {
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
-        console.log(result?.clientAddOn.map((item) => item.addonID))
+        console.log(result?.clientAddOn.map((item) => item.addonId))
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
         const result = await response.json()
@@ -1849,6 +1849,12 @@ const UpdateClient = () => {
                 onClick={() => {
                   setAddOnsModal(false)
                   setError('')
+                  setEditFormData({
+                    ...editFormData,
+                    queryAddOns: [],
+                    AddOnsArray: [],
+                    selectedAdons: '',
+                  })
                 }}
               >
                 Cancel
