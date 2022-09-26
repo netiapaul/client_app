@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
 import moment from 'moment'
-// import { useForm } from 'react-hook-form'
+import Multiselect from 'multiselect-react-dropdown'
+import Chip from '@mui/material/Chip'
 const axios = require('axios')
 // "homepage": ".",
 const UpdateClient = () => {
@@ -30,7 +31,7 @@ const UpdateClient = () => {
     psActivated: false,
     psStockTakeStartDate: '',
     stockTakeEndDate: '',
-    addons: '',
+    addons: [],
     psBranchCount: '',
     psUserCount: '',
     psPickCpu: '',
@@ -59,11 +60,14 @@ const UpdateClient = () => {
     queryStockTakeStartDate: '',
     queryStockTakeEndDate: '',
     /*6*/
-    queryAddOns: '',
+    queryAddOns: [],
+    AddOnsArray: [],
+    selectedAdons: '',
   })
   const [customers, setCustomers] = useState([])
   const [serialNo, setSerialNo] = useState([])
   const [customerMembers, setCustomerMembers] = useState([])
+  const [addOns, setAddOns] = useState([])
 
   const GetClientDetails = async (id) => {
     setIsLoading(true)
@@ -85,53 +89,55 @@ const UpdateClient = () => {
         setIsLoading(false)
         setData({
           ...data,
-          psCusCode: !result?.psCusCode ? '' : result?.psCusCode,
-          psCompanyName: result?.psCompanyName,
-          branchCode: !result?.branchCode ? '' : result?.branchCode,
+          psCusCode: !result?.clientDetails.psCusCode ? '' : result?.clientDetails.psCusCode,
+          psCompanyName: result?.clientDetails.psCompanyName,
+          branchCode: !result?.clientDetails.branchCode ? '' : result?.clientDetails.branchCode,
           // branchCode: result?.branchCode,
 
-          psBranchName: result?.psBranchName,
-          psActivateExpiryDate: !result?.psActivateExpiryDate
+          psBranchName: result?.clientDetails.psBranchName,
+          psActivateExpiryDate: !result?.clientDetails.psActivateExpiryDate
             ? ''
-            : new Date(result?.psActivateExpiryDate),
+            : new Date(result?.clientDetails.psActivateExpiryDate),
           //  moment(result?.psActivateExpiryDate).format('DD/MM/YYYY')
-          psSerialNo: result?.psSerialNo,
-          psStockTakeCals: result?.psStockTakeCals,
-          psStockTakeStartDate: !result?.psStockTakeStartDate
+          psSerialNo: result?.clientDetails.psSerialNo,
+          psStockTakeCals: result?.clientDetails.psStockTakeCals,
+          psStockTakeStartDate: !result?.clientDetails.psStockTakeStartDate
             ? ''
-            : new Date(result?.psStockTakeStartDate),
-          stockTakeEndDate: !result?.stockTakeEndDate ? '' : new Date(result?.stockTakeEndDate),
-          psUserCount: result?.psUserCount,
-          addons: result?.addons,
-          psActivated: result?.psActivated === '1' ? true : false,
-          psBranchCount: result?.psBranchCount,
-          psPickCpu: result?.psPickCpu,
-          psPickBios: result?.psPickBios,
-          psPickHdd: result?.psPickHdd,
-          psPickCompany: result?.psPickCompany,
-          psPickBcode: result?.psPickBcode,
+            : new Date(result?.clientDetails.psStockTakeStartDate),
+          stockTakeEndDate: !result?.clientDetails.stockTakeEndDate
+            ? ''
+            : new Date(result?.clientDetails.stockTakeEndDate),
+          psUserCount: result?.clientDetails.psUserCount,
+          addons: result?.clientAddOn,
+          psActivated: result?.clientDetails.psActivated === '1' ? true : false,
+          psBranchCount: result?.clientDetails.psBranchCount,
+          psPickCpu: result?.clientDetails.psPickCpu,
+          psPickBios: result?.clientDetails.psPickBios,
+          psPickHdd: result?.clientDetails.psPickHdd,
+          psPickCompany: result?.clientDetails.psPickCompany,
+          psPickBcode: result?.clientDetails.psPickBcode,
         })
         setEditFormData({
           ...editFormData,
-          queryAcctCode: result?.psCusCode,
-          queryAcctName: result?.psCompanyName,
-          queryBranchCode: result?.branchCode,
-          querySerialNo: result?.psSerialNo,
-          queryBranchName: result?.psBranchName,
-          queryExpiryDate: !result?.psActivateExpiryDate
+          queryAcctCode: result?.clientDetails.psCusCode,
+          queryAcctName: result?.clientDetails.psCompanyName,
+          queryBranchCode: result?.clientDetails.branchCode,
+          querySerialNo: result?.clientDetails.psSerialNo,
+          queryBranchName: result?.clientDetails.psBranchName,
+          queryExpiryDate: !result?.clientDetails.psActivateExpiryDate
             ? ''
-            : new Date(result?.psActivateExpiryDate),
-          isActive: result?.psActivated === '1' ? true : false,
+            : new Date(result?.clientDetails.psActivateExpiryDate),
+          isActive: result?.clientDetails.psActivated === '1' ? true : false,
           queryStockTakeStartDate: !result?.psStockTakeStartDate
             ? ''
-            : new Date(result?.psStockTakeStartDate),
-          queryStockTakeEndDate: !result?.stockTakeEndDate
+            : new Date(result?.clientDetails.psStockTakeStartDate),
+          queryStockTakeEndDate: !result?.clientDetails.stockTakeEndDate
             ? ''
-            : new Date(result?.stockTakeEndDate),
-          queryUserCount: result?.psUserCount,
-          queryAddOns: result?.addons,
-          queryStockTakeCals: result?.psStockTakeCals,
-          queryBranchCount: result?.psBranchCount,
+            : new Date(result?.clientDetails.stockTakeEndDate),
+          queryUserCount: result?.clientDetails.psUserCount,
+          queryAddOns: result?.clientDetails.addons,
+          queryStockTakeCals: result?.clientDetails.psStockTakeCals,
+          queryBranchCount: result?.clientDetails.psBranchCount,
         })
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
@@ -186,6 +192,33 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setSerialNo(result)
+        setError(result.message)
+        setIsLoading(false)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+  const GetAddOns = async () => {
+    setIsLoading({ isLoading: true })
+    try {
+      const response = await fetch('http://102.37.102.247:5023/api/Logs/GetAddOns', {
+        headers: {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          // Authorization: `Bearer ${token}`,
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setAddOns(result)
         setError(result.message)
         setIsLoading(false)
       } else {
@@ -476,7 +509,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&addons=${editFormData.queryAddOns}`,
+        `http://102.37.102.247:5023/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -485,6 +518,11 @@ const UpdateClient = () => {
             Accept: '*/*',
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            psCusCode: data.psCusCode,
+            branchCode: data.branchCode,
+            addonId: editFormData.selectedAdons.split(','),
+          }),
         },
       )
       if (response.ok) {
@@ -493,7 +531,9 @@ const UpdateClient = () => {
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
-          queryAddOns: '',
+          ...editFormData,
+          AddOnsArray: [],
+          selectedAdons: '',
         })
         console.log(result)
         GetClientDetails(id)
@@ -572,10 +612,38 @@ const UpdateClient = () => {
     // console.log(new Date(moment(date).format('DD/MM/YYYY')))
   }
 
+  const OnAddOnSelect = (selectedList, selectedItem) => {
+    let data = []
+    selectedList.forEach((item) => {
+      data.push(item.addonId)
+    })
+
+    setEditFormData({
+      ...editFormData,
+      AddOnsArray: selectedList,
+      selectedAdons: data.join(','),
+    })
+    console.log(data)
+  }
+  const OnAddOnRemove = (selectedList, selectedItem) => {
+    let data = []
+    selectedList.forEach((item) => {
+      data.push(item.addonId)
+    })
+
+    setEditFormData({
+      ...editFormData,
+      AddOnsArray: selectedList,
+      selectedAdons: data.join(','),
+    })
+    console.log(data)
+  }
+
   useEffect(() => {
     GetClientDetails(id)
     getCustomers()
     GetSerialNumbers()
+    GetAddOns()
   }, [])
 
   return (
@@ -995,7 +1063,12 @@ const UpdateClient = () => {
                     Add Ons
                   </label>
                   <div className="col-md ps-1">
-                    <input
+                    <div className="row ">
+                      {data.addons.map((addOn, index) => (
+                        <Chip className="chip col" key={index} label={addOn.addonName} />
+                      ))}
+                    </div>
+                    {/* <input
                       type="text"
                       name="addons"
                       id="addons"
@@ -1003,7 +1076,7 @@ const UpdateClient = () => {
                       className="form-control form-control-sm rounded-0"
                       disabled
                       readOnly
-                    />
+                    /> */}
                   </div>
                 </div>
                 <div className="d-flex justify-content-end">
@@ -1655,7 +1728,16 @@ const UpdateClient = () => {
                 Add Ons
               </label>
               <div className="col-md ps-1">
-                <input
+                <Multiselect
+                  className="rounded-0"
+                  options={addOns} // Options to display in the dropdown
+                  selectedValues={editFormData.AddOnsArray} // Preselected value to persist in dropdown
+                  onSelect={OnAddOnSelect} // Function will trigger on select event
+                  onRemove={OnAddOnRemove} // Function will trigger on remove event
+                  displayValue="addonName" // Property name to display in the dropdown options
+                  showCheckbox
+                />
+                {/* <input
                   type="text"
                   name="queryAddOns"
                   id="queryAddOns"
@@ -1664,7 +1746,7 @@ const UpdateClient = () => {
                   onChange={(e) =>
                     setEditFormData({ ...editFormData, queryAddOns: e.target.value })
                   }
-                />
+                /> */}
               </div>
             </div>
             <div className="d-flex justify-content-end mt-3">

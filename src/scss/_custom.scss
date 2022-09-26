@@ -347,6 +347,27 @@ input:checked {
   }
 }
 
+.searchWrapper {
+  border: 1px solid #ccc;
+  border-radius: 0rem !important;
+  min-height: 22px;
+  padding: 5px;
+  position: relative;
+}
+
+.chip {
+  align-items: center !important;
+  background: $phAMACore-color !important;
+  border-radius: 11px !important;
+  color: #fff !important;
+  display: inline-flex !important;
+  font-size: 10px !important;
+  line-height: 19px !important;
+  margin-bottom: 0rem !important;
+  margin-right: 5px !important;
+  padding: 4px 10px !important;
+}
+
 /***** CUSTOM SHAPE STYLE *****/
 // @media (min-width: 1200px) {
 //   .w-cover {

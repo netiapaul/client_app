@@ -42,6 +42,7 @@
     "core-js": "^3.24.1",
     "material-table": "^1.69.3",
     "moment": "^2.29.4",
+    "multiselect-react-dropdown": "^2.0.25",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-app-polyfill": "^3.0.0",

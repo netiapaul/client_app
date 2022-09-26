@@ -190,9 +190,9 @@ const ActivityLogs = () => {
                 <hr className="my-1" />
                 <div className="container">
                   {/* <h1>Headed to greatness with Kinjoz</h1> */}
-                  <div className="row my-3">
+                  <div className="row my-3 100">
                     <label htmlFor="queryCompanyName" className="col-md-3 col-form-label divider">
-                      Compnay Name
+                      Company
                     </label>
                     {/* <div className="col-3 pe-md-1 d-flex align-items-center">
                       <div className="input-group">
@@ -214,7 +214,7 @@ const ActivityLogs = () => {
                         </label>
                       </div>
                     </div> */}
-                    <div className="col ps-md-1">
+                    <div className="col-md ps-md-1">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="queryCompanyName"
@@ -237,7 +237,7 @@ const ActivityLogs = () => {
                       </select>
                     </div>
                   </div>
-                  <div className="row my-3">
+                  <div className="row my-3 w-100">
                     <label htmlFor="querySectionId" className="col-md-3 col-form-label divider">
                       Section
                     </label>
@@ -261,7 +261,7 @@ const ActivityLogs = () => {
                         </label>
                       </div>
                     </div> */}
-                    <div className="col ps-md-1">
+                    <div className="col-md ps-md-1">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="querySectionId"
@@ -286,9 +286,9 @@ const ActivityLogs = () => {
                       </select>
                     </div>
                   </div>
-                  <div className="row my-3">
+                  <div className="row my-3 100">
                     <label htmlFor="queryUserName" className="col-md-3 col-form-label divider">
-                      User Name
+                      User
                     </label>
                     {/* <div className="col-3 pe-md-1 d-flex align-items-center">
                       <div className="input-group">
@@ -310,7 +310,7 @@ const ActivityLogs = () => {
                         </label>
                       </div>
                     </div> */}
-                    <div className="col ps-md-1">
+                    <div className="col-md ps-md-1">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="queryUserName"
