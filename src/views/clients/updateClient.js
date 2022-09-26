@@ -1807,7 +1807,8 @@ const UpdateClient = () => {
                   onRemove={OnAddOnRemove} // Function will trigger on remove event
                   displayValue="addonName" // Property name to display in the dropdown options
                   showCheckbox
-                  hideSelectedList={true}
+                  // hideSelectedList={true}
+                  disablePreSelectedValues
                 />
                 {/* <input
                   type="text"
