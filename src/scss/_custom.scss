@@ -358,7 +358,7 @@ input:checked {
 .chip {
   align-items: center !important;
   background: $phAMACore-color !important;
-  border-radius: 11px !important;
+  border-radius: 15px !important;
   color: #fff !important;
   display: inline-flex !important;
   font-size: 10px !important;
@@ -366,6 +366,14 @@ input:checked {
   margin-bottom: 0rem !important;
   margin-right: 5px !important;
   padding: 4px 10px !important;
+}
+
+.css-6od3lo-MuiChip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 0rem !important;
+  padding-right: 0rem !important;
+  white-space: nowrap;
 }
 
 /***** CUSTOM SHAPE STYLE *****/
