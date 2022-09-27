@@ -119,6 +119,33 @@ input:checked {
 
 }
 
+.new-btn {
+  // background-color: #C58C4F !important;
+  font-size: 10px !important;
+  border: 1px solid $success-color !important;
+  color: $success-color !important;
+}
+
+.new-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid $success-color !important;
+  background-color: $success-color !important;
+  color: white !important;
+}
+
+.delete-btn {
+  font-size: 10px !important;
+  border: 1px solid $danger-color !important;
+  color: $danger-color !important;
+}
+
+.delete-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid $danger-color !important;
+  background-color: $danger-color !important;
+  color: white !important;
+}
+
 .delete-btn {
   font-size: 10px !important;
   border: 1px solid $danger-color !important;
@@ -295,9 +322,9 @@ input:checked {
 }
 
 // .sidebar-nav .nav-icon {
-  //   font-size: 1rem !important;
-  //   color: $phAMACore-color !important;
-  // }
+//   font-size: 1rem !important;
+//   color: $phAMACore-color !important;
+// }
 
 // .sidebar-nav .nav-item-icon {
 //   flex: 0 0 4rem;

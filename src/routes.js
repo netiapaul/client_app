@@ -4,6 +4,7 @@ const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 // const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const UpdateClient = React.lazy(() => import('./views/clients/updateClient'))
 const ActivityLog = React.lazy(() => import('./views/activityLogs/activityLogs'))
+const Users = React.lazy(() => import('./views/users/users'))
 // const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
 
 // // Base
@@ -57,6 +58,7 @@ const routes = [
   { path: '/dashboard', exact: true, name: 'Dashboard', element: Dashboard },
   { path: '/client/:id', name: 'Update Client', element: UpdateClient, exact: true },
   { path: '/activities', name: 'Activities', element: ActivityLog, exact: true },
+  { path: '/users', name: 'Users', element: Users, exact: true },
   // { path: '/theme', name: 'Theme', element: Colors, exact: true },
   // { path: '/theme/colors', name: 'Colors', element: Colors },
   // { path: '/theme/typography', name: 'Typography', element: Typography },

@@ -531,7 +531,9 @@ const UpdateClient = () => {
           body: JSON.stringify({
             psCusCode: data.psCusCode,
             branchCode: data.branchCode,
-            addonId: editFormData.selectedAdons.split(','),
+            addonId: editFormData.selectedAdons.split(',').filter(function (entry) {
+              return entry.trim() !== ''
+            }),
           }),
         },
       )
