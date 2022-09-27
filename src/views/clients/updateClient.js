@@ -1809,17 +1809,8 @@ const UpdateClient = () => {
                   showCheckbox
                   // hideSelectedList={true}
                   disablePreSelectedValues
+                  required
                 />
-                {/* <input
-                  type="text"
-                  name="queryAddOns"
-                  id="queryAddOns"
-                  value={editFormData.queryAddOns}
-                  className="form-control form-control-sm rounded-0"
-                  onChange={(e) =>
-                    setEditFormData({ ...editFormData, queryAddOns: e.target.value })
-                  }
-                /> */}
               </div>
             </div>
             <div className="d-flex justify-content-end mt-3">
@@ -1827,7 +1818,7 @@ const UpdateClient = () => {
                 type="submit"
                 className="btn add-btn btn-sm shadow rounded-0 me-1"
                 style={{ width: '4rem' }}
-                disabled={data.editModalInterface === 0}
+                disabled={!editFormData.AddOnsArray}
               >
                 {isLoading ? (
                   <>
