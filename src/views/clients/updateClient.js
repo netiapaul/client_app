@@ -11,8 +11,8 @@ const axios = require('axios')
 const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [error, setError] = useState('')
   const [bcode, SetBcode] = useState('')
+  const [error, setError] = useState('')
   const [clientModal, setClientModal] = useState(false)
   const [serialModal, setSerialModal] = useState(false)
   const [userCALSModal, setUserCALSModal] = useState(false)
@@ -145,6 +145,7 @@ const UpdateClient = () => {
           //   data.push(item.addonId)
           // }),
           AddOnsArray: result?.clientAddOn.map((item) => item),
+          selectedAdons: result?.clientAddOn.map((item) => item.addonId),
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
@@ -517,6 +518,7 @@ const UpdateClient = () => {
   const UpdateAddsOn = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    // console.log(editFormData.selectedAdons)
     try {
       const response = await fetch(
         `http://102.37.102.247:5023/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
@@ -524,24 +526,22 @@ const UpdateClient = () => {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${token}`,
             Accept: '*/*',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             psCusCode: data.psCusCode,
             branchCode: data.branchCode,
-            addonId: editFormData.selectedAdons.split(',').filter(function (entry) {
-              return entry.trim() !== ''
-            }),
+            addonId: editFormData.selectedAdons,
+            // addonId: editFormData?.selectedAdons?.split(',').filter(function (entry) {
+            //   return entry.trim() !== ''
+            // }),
           }),
         },
       )
       if (response.ok) {
         const result = await response.json()
         setAddOnsModal(false)
-
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
           ...editFormData,
@@ -560,6 +560,9 @@ const UpdateClient = () => {
       setIsLoading(false)
       console.log(error)
     }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
   }
   const DeleteAddsOn = async (addonId) => {
     setIsLoading(true)
@@ -672,9 +675,10 @@ const UpdateClient = () => {
     setEditFormData({
       ...editFormData,
       AddOnsArray: selectedList,
-      selectedAdons: data.join(','),
+      selectedAdons: data,
+      // selectedAdons: data.join(','),
     })
-    // console.log(data)
+    console.log(data)
   }
   const OnAddOnRemove = (selectedList, selectedItem) => {
     let data = []
@@ -1769,21 +1773,13 @@ const UpdateClient = () => {
         </CModalHeader>
         <CModalBody>
           <form autoComplete="off" onSubmit={UpdateAddsOn}>
+            {error && (
+              <div className="alert alert-danger align-items-center rounded-0" role="alert">
+                <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+                <span> {error} </span>
+              </div>
+            )}
             <div className="hstack gap-2 mb-3 ">
-              {/* addonName addonID onDelete={handleDelete}*/}
-              {/* <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-              </label>
-              <div className="col-md ps-1">
-                {data.addons.map((addOn, index) => (
-                  <Chip
-                    className="chip col"
-                    size="small"
-                    key={index}
-                    label={addOn.addonName}
-                    onDelete={() => alert(addOn.addonID)}
-                  />
-                ))}
-              </div> */}
               {data.addons.map((addOn, index) => (
                 <Chip
                   className="chip ms-auto"

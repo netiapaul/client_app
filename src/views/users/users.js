@@ -10,6 +10,7 @@ const Users = () => {
   //  "material-table": "^2.0.3",
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [error, setError] = useState('')
+  const [controllerError, setControllerError] = useState([])
   const [roles, setRoles] = useState([])
   const [formData, setFormData] = useState({
     fullNames: '',
@@ -20,7 +21,7 @@ const Users = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [delLoading, setDelLoading] = useState(false)
-  const [rowID, setRowID] = useState(null)
+  const [rowID, setRowID] = useState('')
   const [selectedRow, setSelectedRow] = useState([])
   const [data, setData] = useState({
     tableRef: React.createRef(),
@@ -139,31 +140,41 @@ const Users = () => {
       if (response.ok) {
         const data = await response.json()
         console.log(data)
+        setFormData({
+          fullNames: '',
+          email: '',
+          phoneNumber: '',
+          role: '',
+          password: '',
+        })
         setIsLoading(false)
         setIsDrawerOpen(false)
+        GetUsers()
       } else {
         const data = await response.json()
         setError(data.message)
+        // setControllerError(Object.keys(data.errors).map((key, value) => data.errors[key]))
         console.log(data)
         setIsDrawerOpen(false)
         setIsLoading(false)
       }
     } catch (error) {
       console.log(error)
-      setError(`${error?.code}: ${error?.message}`)
+      setError(data.message)
       setIsLoading(false)
     }
     return setTimeout(() => {
       setError('')
     }, 8000)
   }
-  const DeleteUser = async (e) => {
-    e.preventDefault()
+  const DeleteUser = async () => {
     setDelLoading(true)
     setError('')
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Users/DeleteUser?id=${rowID}&email=${selectedRow.email}`,
+        `http://102.37.102.247:5023/api/Users/DeleteUser?id=${Number(selectedRow.id)}&email=${
+          selectedRow.email
+        }`,
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -355,6 +366,8 @@ const Users = () => {
                               password: e.target.value,
                             })
                           }
+                          pattern="[a-zA-Z0-9]{6,20}"
+                          title="Please enter the 6-digit password"
                           required
                           // onChange={this.function.handleChange}
                         />
@@ -417,6 +430,16 @@ const Users = () => {
         >
           <i className="fa fa-exclamation-triangle me-3" aria-hidden="true"></i>
           <span>{error}</span>
+        </div>
+      )}
+
+      {controllerError.length > 0 && (
+        <div className="alert alert-danger mb-1" role="alert">
+          <ul className="m-0">
+            {controllerError.map((err, index) => (
+              <li key={index}>{err}</li>
+            ))}
+          </ul>
         </div>
       )}
       <div className="card rounded-0">

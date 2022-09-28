@@ -190,8 +190,8 @@ const ActivityLogs = () => {
                 <hr className="my-1" />
                 <div className="container">
                   {/* <h1>Headed to greatness with Kinjoz</h1> */}
-                  <div className="row my-3 100">
-                    <label htmlFor="queryCompanyName" className="col-md-3 col-form-label divider">
+                  <div className="row my-3">
+                    <label htmlFor="queryCompanyName" className="col-md-4 col-form-label divider">
                       Company
                     </label>
                     {/* <div className="col-3 pe-md-1 d-flex align-items-center">
@@ -214,7 +214,7 @@ const ActivityLogs = () => {
                         </label>
                       </div>
                     </div> */}
-                    <div className="col-md ps-md-1">
+                    <div className="col-md">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="queryCompanyName"
@@ -237,31 +237,11 @@ const ActivityLogs = () => {
                       </select>
                     </div>
                   </div>
-                  <div className="row my-3 w-100">
-                    <label htmlFor="querySectionId" className="col-md-3 col-form-label divider">
+                  <div className="row my-3">
+                    <label htmlFor="querySectionId" className="col-md-4 col-form-label divider">
                       Section
                     </label>
-                    {/* <div className="col-3 pe-md-1 d-flex align-items-center">
-                      <div className="input-group">
-                        <input
-                          className="form-check-input rounded-0"
-                          type="checkbox"
-                          checked={queryParams.byQuerySectionId}
-                          name="byQuerySectionId"
-                          id="byQuerySectionId"
-                          onChange={(e) =>
-                            setQueryParams({
-                              ...queryParams,
-                              byQuerySectionId: e.target.checked,
-                            })
-                          }
-                        />
-                        <label className="form-check-label ms-2" htmlFor="bydate">
-                          By Section ID
-                        </label>
-                      </div>
-                    </div> */}
-                    <div className="col-md ps-md-1">
+                    <div className="col-md">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="querySectionId"
@@ -286,8 +266,8 @@ const ActivityLogs = () => {
                       </select>
                     </div>
                   </div>
-                  <div className="row my-3 100">
-                    <label htmlFor="queryUserName" className="col-md-3 col-form-label divider">
+                  <div className="row my-3">
+                    <label htmlFor="queryUserName" className="col-md-4 col-form-label divider">
                       User
                     </label>
                     {/* <div className="col-3 pe-md-1 d-flex align-items-center">
@@ -310,7 +290,7 @@ const ActivityLogs = () => {
                         </label>
                       </div>
                     </div> */}
-                    <div className="col-md ps-md-1">
+                    <div className="col-md">
                       <select
                         className="form-select form-select-sm rounded-0"
                         id="queryUserName"
