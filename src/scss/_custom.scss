@@ -217,6 +217,30 @@ input:checked {
   border-radius: 0 !important;
 }
 
+/**** Swal Modal UI styles *****/
+
+.swal-modal {
+  border-radius: 0rem !important;
+}
+
+.swal-button--cancel {
+  // color: #555;
+  background-color: #bfbfbf !important;
+}
+
+.swal-button {
+  // background-color: #7cd1f9;
+  color: #fff !important;
+  border: 1px solid !important;
+  // box-shadow: none;
+  border-radius: 0rem !important;
+  font-weight: 600 !important;
+  // font-size: 14px;
+  // padding: 10px 24px;
+  // margin: 0;
+  // cursor: pointer;
+}
+
 /**** Material Table UI styles *****/
 
 .MuiIconButton-root {

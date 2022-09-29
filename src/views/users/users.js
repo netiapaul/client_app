@@ -4,6 +4,7 @@ import { tableIcons, tableOptions } from '../../utils/helpers'
 import Moment from 'react-moment'
 // import { Link } from 'react-router-dom'
 import Drawer from '@mui/material/Drawer'
+import swal from 'sweetalert'
 const axios = require('axios')
 
 const Users = () => {
@@ -235,13 +236,7 @@ const Users = () => {
                 {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
                 New
               </button>
-              {/* <button
-                type="button"
-                className="btn btn-sm filter-btn rounded-0"
-                onClick={() => setIsDrawerOpen(true)}
-              >
-                <i className="fa fa-filter" style={{ marginRight: 2 }}></i> Filters
-              </button> */}
+
               <Drawer
                 // sx={{ width: 540, bgcolor: '#C58C4F' }}
                 anchor={'right'}
@@ -407,7 +402,22 @@ const Users = () => {
               className="btn btn-sm delete-btn ms-1 top-btn rounded-0"
               style={{ width: '4rem' }}
               disabled={selectedRow.length === 0}
-              onClick={DeleteUser}
+              onClick={() =>
+                swal({
+                  title: 'Are you sure?',
+                  text: 'Once deleted, you will not be able to recover',
+                  icon: 'warning',
+                  buttons: true,
+                  dangerMode: true,
+                }).then((willDelete) => {
+                  if (willDelete) {
+                    DeleteUser()
+                    // alert('I am Headed to greatness With Kinjoz')
+                  } else {
+                    return
+                  }
+                })
+              }
             >
               {delLoading ? (
                 <span
