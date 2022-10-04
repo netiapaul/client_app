@@ -40,7 +40,7 @@ const Dashboard = () => {
           width: '1%',
         },
       },
-      { title: 'Acct', field: 'branchCode' },
+      { title: 'Acct', field: 'psCusCode' },
       { title: 'AcctName', field: 'psCompanyName' },
       { title: 'Branch', field: 'psBranchName' },
       { title: 'Serial No', field: 'psSerialNo' },

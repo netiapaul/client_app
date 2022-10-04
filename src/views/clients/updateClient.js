@@ -970,106 +970,132 @@ const UpdateClient = () => {
                 </div>
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    User CALS
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psUserCount"
-                      id="psUserCount"
-                      value={data.psUserCount}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    />
+                  <div className="col-md">
+                    <div className="row">
+                      <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                        User CALS
+                      </label>
+                      <div className="col-md ps-1">
+                        <div className="row">
+                          <div className="col">
+                            <input
+                              type="text"
+                              name="psUserCount"
+                              id="psUserCount"
+                              value={data.psUserCount}
+                              className="form-control form-control-sm rounded-0"
+                              disabled
+                              readOnly
+                            />
+                            <div className="d-flex justify-content-end">
+                              <p
+                                className="my-1 fw-bold"
+                                role="button"
+                                style={{ fontSize: '10px', color: '#c58c4f' }}
+                                onClick={() => setUserCALSModal(true)}
+                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
+                              >
+                                Change
+                              </p>
+                            </div>
+                          </div>
+                          <div className="col">
+                            <div className="row">
+                              <label
+                                htmlFor="branchCode"
+                                className="col-md-5 col-form-label divider"
+                              >
+                                Branch CALS
+                              </label>
+                              <div className="col-md ps-1">
+                                <input
+                                  type="text"
+                                  name="psBranchCount"
+                                  id="psBranchCount"
+                                  value={data.psBranchCount}
+                                  className="form-control form-control-sm rounded-0"
+                                  disabled
+                                  readOnly
+                                />
+                              </div>
+                            </div>
+                            <div className="d-flex justify-content-end">
+                              <p
+                                className="my-1 fw-bold"
+                                role="button"
+                                style={{ fontSize: '10px', color: '#c58c4f' }}
+                                onClick={() => setBranchCALSModal(true)}
+                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
+                              >
+                                Change
+                              </p>
+                            </div>
+                          </div>
+                          {/* <div className="col">
+                            <div className="row">
+                              <label
+                                htmlFor="branchCode"
+                                className="col-md-5 col-form-label divider"
+                              >
+                                Stock Take CALS
+                              </label>
+                              <div className="col-md ps-1">
+                                <input
+                                  type="text"
+                                  name="psStockTakeCals"
+                                  id="psStockTakeCals"
+                                  value={data.psStockTakeCals}
+                                  className="form-control form-control-sm rounded-0"
+                                  disabled
+                                  readOnly
+                                />
+                              </div>
+                            </div>
+                          </div> */}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setUserCALSModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
-                  >
-                    Change
-                  </p>
                 </div>
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Branch CALS
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psBranchCount"
-                      id="psBranchCount"
-                      value={data.psBranchCount}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    />
-                  </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setBranchCALSModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-3">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Stock Take CALS
                   </label>
                   <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psStockTakeCals"
-                      id="psStockTakeCals"
-                      value={data.psStockTakeCals}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    />
-                  </div>
-                </div>
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Stock Dates
-                  </label>
-                  <div className="col-md ps-1">
                     <div className="row">
-                      <div className="col-6">
-                        {/* <input
+                      <div className="col">
+                        <input
                           type="text"
-                          name="psStockTakeStartDate"
-                          id="psStockTakeStartDate"
-                          value={data.psStockTakeStartDate}
+                          name="psStockTakeCals"
+                          id="psStockTakeCals"
+                          value={data.psStockTakeCals}
                           className="form-control form-control-sm rounded-0"
-                          readOnly
-                          disabled
-                        /> */}
-                        <DatePicker
-                          className="form-control form-control-sm rounded-0"
-                          selected={data.psStockTakeStartDate}
-                          dateFormat="dd/MM/yyyy"
-                          peekNextMonth
-                          showMonthDropdown
-                          showYearDropdown
-                          dropdownMode="select"
                           disabled
                           readOnly
                         />
                       </div>
-                      <div className="col-6">
+                      <div className="col">
+                        <div className="row">
+                          <label htmlFor="branchCode" className="col-3 col-form-label divider">
+                            From
+                          </label>
+                          <div className="col ps-0">
+                            <DatePicker
+                              className="form-control form-control-sm rounded-0"
+                              selected={data.psStockTakeStartDate}
+                              dateFormat="dd/MM/yyyy"
+                              peekNextMonth
+                              showMonthDropdown
+                              showYearDropdown
+                              dropdownMode="select"
+                              disabled
+                              readOnly
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col">
                         <div className="row">
                           <label htmlFor="branchCode" className="col-3 col-form-label divider">
                             To
@@ -1112,14 +1138,113 @@ const UpdateClient = () => {
                     Change
                   </p>
                 </div>
+                {/* <div className="row mb-1">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    User CALS
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="text"
+                      name="psUserCount"
+                      id="psUserCount"
+                      value={data.psUserCount}
+                      className="form-control form-control-sm rounded-0"
+                      disabled
+                      readOnly
+                    />
+                  </div>
+                </div>
+                <div className="d-flex justify-content-end">
+                  <p
+                    className="my-1 fw-bold"
+                    role="button"
+                    style={{ fontSize: '10px', color: '#c58c4f' }}
+                    onClick={() => setUserCALSModal(true)}
+                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
+                  >
+                    Change
+                  </p>
+                </div>
+                <hr className="mb-3 mt-1" />
+                 <div className="row mb-1">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Branch CALS
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="text"
+                      name="psBranchCount"
+                      id="psBranchCount"
+                      value={data.psBranchCount}
+                      className="form-control form-control-sm rounded-0"
+                      disabled
+                      readOnly
+                    />
+                  </div>
+                </div>
+                <div className="d-flex justify-content-end">
+                  <p
+                    className="my-1 fw-bold"
+                    role="button"
+                    style={{ fontSize: '10px', color: '#c58c4f' }}
+                    onClick={() => setBranchCALSModal(true)}
+                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
+                  >
+                    Change
+                  </p>
+                </div>
+                <hr className="mb-3 mt-1" />
+                <div className="row mb-3">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Stock Take CALS
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="text"
+                      name="psStockTakeCals"
+                      id="psStockTakeCals"
+                      value={data.psStockTakeCals}
+                      className="form-control form-control-sm rounded-0"
+                      disabled
+                      readOnly
+                    />
+                  </div>
+                </div> */}
+
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Add Ons
                   </label>
                   <div className="col-md ps-1">
-                    <div className="d-flex">
-                      {/* addonName addonID onDelete={handleDelete}*/}
+                    <ul className="list-group list-group-flush">
+                      {data.addons.map((addOn, index) => (
+                        // <Chip
+                        //   size="small"
+                        //   className="chip col"
+                        //   key={index}
+                        //   label={addOn.addonName}
+                        // />
+                        <li className="list-group-item py-1" key={index}>
+                          <input
+                            className="form-check-input me-1"
+                            type="checkbox"
+                            checked
+                            // value=""
+                            id={addOn.addonName}
+                            readOnly
+                            onChange={(e) => console.log(e)}
+                          />
+                          <label
+                            className="form-check-label stretched-link fw-bold"
+                            htmlFor={addOn.addonName}
+                          >
+                            {addOn.addonName}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                    {/* <div className="d-flex">
                       {data.addons.map((addOn, index) => (
                         <Chip
                           size="small"
@@ -1128,16 +1253,7 @@ const UpdateClient = () => {
                           label={addOn.addonName}
                         />
                       ))}
-                    </div>
-                    {/* <input
-                      type="text"
-                      name="addons"
-                      id="addons"
-                      value={data.addons}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    /> */}
+                    </div> */}
                   </div>
                 </div>
                 <div className="d-flex justify-content-end">
