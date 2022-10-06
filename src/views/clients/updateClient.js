@@ -97,9 +97,9 @@ const UpdateClient = () => {
           // branchCode: result?.branchCode,
 
           psBranchName: result?.clientDetails.psBranchName,
-          psActivateExpiryDate: !result?.clientDetails.psActivateExpiryDate
+          psActivateExpiryDate: !result?.clientDetails?.psActivateExpiryDate
             ? ''
-            : new Date(result?.clientDetails.psActivateExpiryDate),
+            : new Date(result?.clientDetails?.psActivateExpiryDate),
           //  moment(result?.psActivateExpiryDate).format('DD/MM/YYYY')
           psSerialNo: result?.clientDetails.psSerialNo,
           psStockTakeCals: result?.clientDetails.psStockTakeCals,
@@ -127,9 +127,9 @@ const UpdateClient = () => {
           queryBranchCode: result?.clientDetails.branchCode,
           querySerialNo: result?.clientDetails.psSerialNo,
           queryBranchName: result?.clientDetails.psBranchName,
-          queryExpiryDate: !result?.clientDetails.psActivateExpiryDate
+          queryExpiryDate: !result?.clientDetails?.psActivateExpiryDate
             ? ''
-            : new Date(result?.clientDetails.psActivateExpiryDate),
+            : new Date(result?.clientDetails?.psActivateExpiryDate),
           isActive: result?.clientDetails.psActivated === '1' ? true : false,
           queryStockTakeStartDate: !result?.psStockTakeStartDate
             ? ''
@@ -150,6 +150,8 @@ const UpdateClient = () => {
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
         console.log(result?.clientAddOn.map((item) => item.addonId))
+        console.log(new Date(result?.clientDetails.psActivateExpiryDate))
+        console.log(result?.clientDetails.psActivateExpiryDate)
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
         const result = await response.json()
@@ -927,7 +929,11 @@ const UpdateClient = () => {
                           type="text"
                           name="psActivateExpiryDate"
                           id="psActivateExpiryDate"
-                          value={moment(data.psActivateExpiryDate).format('DD/MM/YYYY')}
+                          value={
+                            !data.psActivateExpiryDate
+                              ? ''
+                              : moment(data.psActivateExpiryDate).format('DD/MM/YYYY')
+                          }
                           className="form-control form-control-sm rounded-0"
                           readOnly
                           disabled

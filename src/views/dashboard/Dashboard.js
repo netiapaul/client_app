@@ -57,7 +57,12 @@ const Dashboard = () => {
       {
         title: 'Expiry',
         field: 'psActivateExpiryDate',
-        render: (rowData) => <Moment format="DD/MM/YYYY">{rowData.psActivateExpiryDate}</Moment>,
+        render: (rowData) =>
+          !rowData?.psActivateExpiryDate ? (
+            ''
+          ) : (
+            <Moment format="DD/MM/YYYY">{rowData?.psActivateExpiryDate}</Moment>
+          ),
       },
       {
         title: 'CPU/BIOS',
