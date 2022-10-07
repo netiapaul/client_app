@@ -89,68 +89,67 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setIsLoading(false)
-        setData({
-          ...data,
-          psCusCode: !result?.clientDetails.psCusCode ? '' : result?.clientDetails.psCusCode,
-          psCompanyName: result?.clientDetails.psCompanyName,
-          branchCode: !result?.clientDetails.branchCode ? '' : result?.clientDetails.branchCode,
-          // branchCode: result?.branchCode,
+        // setData({
+        //   ...data,
+        //   psCusCode: !result?.clientDetails.psCusCode ? '' : result?.clientDetails.psCusCode,
+        //   psCompanyName: result?.clientDetails.psCompanyName,
+        //   branchCode: !result?.clientDetails.branchCode ? '' : result?.clientDetails.branchCode,
+        //   // branchCode: result?.branchCode,
 
-          psBranchName: result?.clientDetails.psBranchName,
-          psActivateExpiryDate: !result?.clientDetails?.psActivateExpiryDate
-            ? ''
-            : new Date(result?.clientDetails?.psActivateExpiryDate),
-          //  moment(result?.psActivateExpiryDate).format('DD/MM/YYYY')
-          psSerialNo: result?.clientDetails.psSerialNo,
-          psStockTakeCals: result?.clientDetails.psStockTakeCals,
-          psStockTakeStartDate: !result?.clientDetails.psStockTakeStartDate
-            ? ''
-            : new Date(result?.clientDetails.psStockTakeStartDate),
-          stockTakeEndDate: !result?.clientDetails.stockTakeEndDate
-            ? ''
-            : new Date(result?.clientDetails.stockTakeEndDate),
-          psUserCount: result?.clientDetails.psUserCount,
-          addons: result?.clientAddOn,
-          psActivated: result?.clientDetails.psActivated === '1' ? true : false,
-          psBranchCount: result?.clientDetails.psBranchCount,
-          psPickCpu: result?.clientDetails.psPickCpu,
-          psPickBios: result?.clientDetails.psPickBios,
-          psPickHdd: result?.clientDetails.psPickHdd,
-          psPickCompany: result?.clientDetails.psPickCompany,
-          psPickBcode: result?.clientDetails.psPickBcode,
-          pickDate: result?.clientDetails.pickDate,
-        })
-        setEditFormData({
-          ...editFormData,
-          queryAcctCode: result?.clientDetails.psCusCode,
-          queryAcctName: result?.clientDetails.psCompanyName,
-          queryBranchCode: result?.clientDetails.branchCode,
-          querySerialNo: result?.clientDetails.psSerialNo,
-          queryBranchName: result?.clientDetails.psBranchName,
-          queryExpiryDate: !result?.clientDetails?.psActivateExpiryDate
-            ? ''
-            : new Date(result?.clientDetails?.psActivateExpiryDate),
-          isActive: result?.clientDetails.psActivated === '1' ? true : false,
-          queryStockTakeStartDate: !result?.psStockTakeStartDate
-            ? ''
-            : new Date(result?.clientDetails.psStockTakeStartDate),
-          queryStockTakeEndDate: !result?.clientDetails.stockTakeEndDate
-            ? ''
-            : new Date(result?.clientDetails.stockTakeEndDate),
-          queryUserCount: result?.clientDetails.psUserCount,
-          //       selectedList.forEach((item) => {
-          //   data.push(item.addonId)
-          // })
-          // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
-          //   data.push(item.addonId)
-          // }),
-          AddOnsArray: result?.clientAddOn.map((item) => item),
-          selectedAdons: result?.clientAddOn.map((item) => item.addonId),
-          queryStockTakeCals: result?.clientDetails.psStockTakeCals,
-          queryBranchCount: result?.clientDetails.psBranchCount,
-        })
+        //   psBranchName: result?.clientDetails.psBranchName,
+        //   psActivateExpiryDate: !result?.clientDetails?.psActivateExpiryDate
+        //     ? ''
+        //     : new Date(result?.clientDetails?.psActivateExpiryDate),
+        //   //  moment(result?.psActivateExpiryDate).format('DD/MM/YYYY')
+        //   psSerialNo: result?.clientDetails.psSerialNo,
+        //   psStockTakeCals: result?.clientDetails.psStockTakeCals,
+        //   psStockTakeStartDate: !result?.clientDetails.psStockTakeStartDate
+        //     ? ''
+        //     : new Date(result?.clientDetails.psStockTakeStartDate),
+        //   stockTakeEndDate: !result?.clientDetails.stockTakeEndDate
+        //     ? ''
+        //     : new Date(result?.clientDetails.stockTakeEndDate),
+        //   psUserCount: result?.clientDetails.psUserCount,
+        //   addons: result?.clientAddOn,
+        //   psActivated: result?.clientDetails.psActivated === '1' ? true : false,
+        //   psBranchCount: result?.clientDetails.psBranchCount,
+        //   psPickCpu: result?.clientDetails.psPickCPU,
+        //   psPickBios: result?.clientDetails.psPickBios,
+        //   psPickHdd: result?.clientDetails.psPickHDD,
+        //   psPickCompany: result?.clientDetails.psPickCompany,
+        //   psPickBcode: result?.clientDetails.psPickBcode,
+        //   pickDate: result?.clientDetails.pickDate,
+        // })
+        // setEditFormData({
+        //   ...editFormData,
+        //   queryAcctCode: result?.clientDetails.psCusCode,
+        //   queryAcctName: result?.clientDetails.psCompanyName,
+        //   queryBranchCode: result?.clientDetails.branchCode,
+        //   querySerialNo: result?.clientDetails.psSerialNo,
+        //   queryBranchName: result?.clientDetails.psBranchName,
+        //   queryExpiryDate: !result?.clientDetails?.psActivateExpiryDate
+        //     ? ''
+        //     : new Date(result?.clientDetails?.psActivateExpiryDate),
+        //   isActive: result?.clientDetails.psActivated === '1' ? true : false,
+        //   queryStockTakeStartDate: !result?.psStockTakeStartDate
+        //     ? ''
+        //     : new Date(result?.clientDetails.psStockTakeStartDate),
+        //   queryStockTakeEndDate: !result?.clientDetails.stockTakeEndDate
+        //     ? ''
+        //     : new Date(result?.clientDetails.stockTakeEndDate),
+        //   queryUserCount: result?.clientDetails.psUserCount,
+        //   //       selectedList.forEach((item) => {
+        //   //   data.push(item.addonId)
+        //   // })
+        //   // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
+        //   //   data.push(item.addonId)
+        //   // }),
+        //   AddOnsArray: result?.clientAddOn.map((item) => item),
+        //   selectedAdons: result?.clientAddOn.map((item) => item.addonId),
+        //   queryStockTakeCals: result?.clientDetails.psStockTakeCals,
+        //   queryBranchCount: result?.clientDetails.psBranchCount,
+        // })
         console.log(result?.clientAddOn.map((item) => item.addonId))
-        console.log(new Date(result?.clientDetails.psActivateExpiryDate))
         console.log(result?.clientDetails.psActivateExpiryDate)
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
