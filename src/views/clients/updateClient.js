@@ -1555,7 +1555,7 @@ const UpdateClient = () => {
                       className="form-control form-control-sm rounded-0"
                       id="queryExpiryDate"
                       value={editFormData.queryExpiryDate}
-                    /> */} 
+                    /> */}
                     <DatePicker
                       className="form-control form-control-sm rounded-0"
                       selected={editFormData.queryExpiryDate}
