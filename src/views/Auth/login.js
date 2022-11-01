@@ -200,7 +200,6 @@ function Login() {
                     required
                   />
                 </div>
-
                 <button
                   type="submit"
                   className="btn w-100 rounded-0 auth-btn"

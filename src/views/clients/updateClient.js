@@ -89,66 +89,62 @@ const UpdateClient = () => {
       if (response.ok) {
         const result = await response.json()
         setIsLoading(false)
-        // setData({
-        //   ...data,
-        //   psCusCode: !result?.clientDetails.psCusCode ? '' : result?.clientDetails.psCusCode,
-        //   psCompanyName: result?.clientDetails.psCompanyName,
-        //   branchCode: !result?.clientDetails.branchCode ? '' : result?.clientDetails.branchCode,
-        //   // branchCode: result?.branchCode,
-
-        //   psBranchName: result?.clientDetails.psBranchName,
-        //   psActivateExpiryDate: !result?.clientDetails?.psActivateExpiryDate
-        //     ? ''
-        //     : new Date(result?.clientDetails?.psActivateExpiryDate),
-        //   //  moment(result?.psActivateExpiryDate).format('DD/MM/YYYY')
-        //   psSerialNo: result?.clientDetails.psSerialNo,
-        //   psStockTakeCals: result?.clientDetails.psStockTakeCals,
-        //   psStockTakeStartDate: !result?.clientDetails.psStockTakeStartDate
-        //     ? ''
-        //     : new Date(result?.clientDetails.psStockTakeStartDate),
-        //   stockTakeEndDate: !result?.clientDetails.stockTakeEndDate
-        //     ? ''
-        //     : new Date(result?.clientDetails.stockTakeEndDate),
-        //   psUserCount: result?.clientDetails.psUserCount,
-        //   addons: result?.clientAddOn,
-        //   psActivated: result?.clientDetails.psActivated === '1' ? true : false,
-        //   psBranchCount: result?.clientDetails.psBranchCount,
-        //   psPickCpu: result?.clientDetails.psPickCPU,
-        //   psPickBios: result?.clientDetails.psPickBios,
-        //   psPickHdd: result?.clientDetails.psPickHDD,
-        //   psPickCompany: result?.clientDetails.psPickCompany,
-        //   psPickBcode: result?.clientDetails.psPickBcode,
-        //   pickDate: result?.clientDetails.pickDate,
-        // })
-        // setEditFormData({
-        //   ...editFormData,
-        //   queryAcctCode: result?.clientDetails.psCusCode,
-        //   queryAcctName: result?.clientDetails.psCompanyName,
-        //   queryBranchCode: result?.clientDetails.branchCode,
-        //   querySerialNo: result?.clientDetails.psSerialNo,
-        //   queryBranchName: result?.clientDetails.psBranchName,
-        //   queryExpiryDate: !result?.clientDetails?.psActivateExpiryDate
-        //     ? ''
-        //     : new Date(result?.clientDetails?.psActivateExpiryDate),
-        //   isActive: result?.clientDetails.psActivated === '1' ? true : false,
-        //   queryStockTakeStartDate: !result?.psStockTakeStartDate
-        //     ? ''
-        //     : new Date(result?.clientDetails.psStockTakeStartDate),
-        //   queryStockTakeEndDate: !result?.clientDetails.stockTakeEndDate
-        //     ? ''
-        //     : new Date(result?.clientDetails.stockTakeEndDate),
-        //   queryUserCount: result?.clientDetails.psUserCount,
-        //   //       selectedList.forEach((item) => {
-        //   //   data.push(item.addonId)
-        //   // })
-        //   // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
-        //   //   data.push(item.addonId)
-        //   // }),
-        //   AddOnsArray: result?.clientAddOn.map((item) => item),
-        //   selectedAdons: result?.clientAddOn.map((item) => item.addonId),
-        //   queryStockTakeCals: result?.clientDetails.psStockTakeCals,
-        //   queryBranchCount: result?.clientDetails.psBranchCount,
-        // })
+        setData({
+          ...data,
+          psCusCode: result?.clientDetails.psCusCode,
+          psCompanyName: result?.clientDetails.psCompanyName,
+          branchCode: result?.clientDetails.branchCode,
+          psBranchName: result?.clientDetails.psBranchName,
+          psSerialNo: result?.clientDetails.psSerialNo,
+          psActivated: result?.clientDetails.psActivated === '1' ? true : false,
+          psActivateExpiryDate: result?.clientDetails?.psActivateExpiryDate,
+          psUserCount: result?.clientDetails.psUserCount,
+          psBranchCount: result?.clientDetails.psBranchCount,
+          psStockTakeCals: result?.clientDetails.psStockTakeCals,
+          psStockTakeStartDate: result?.clientDetails.psStockTakeStartDate,
+          stockTakeEndDate: result?.clientDetails.stockTakeEndDate,
+          addons: result?.clientAddOn,
+          psPickCpu: result?.clientDetails.psPickCPU,
+          psPickBios: result?.clientDetails.psPickBios,
+          psPickHdd: result?.clientDetails.psPickHDD,
+          psPickCompany: result?.clientDetails.psPickCompany,
+          psPickBcode: result?.clientDetails.psPickBcode,
+          pickDate: result?.clientDetails.pickDate,
+        })
+        setEditFormData({
+          ...editFormData,
+          queryAcctCode: result?.clientDetails.psCusCode,
+          queryAcctName: result?.clientDetails.psCompanyName,
+          queryBranchCode: result?.clientDetails.branchCode,
+          querySerialNo: result?.clientDetails.psSerialNo,
+          queryBranchName: result?.clientDetails.psBranchName,
+          queryExpiryDate:
+            result.clientDetails.psActivateExpiryDate === '' ||
+            result.clientDetails.psActivateExpiryDate === null
+              ? ''
+              : new Date(result?.clientDetails?.psActivateExpiryDate),
+          isActive: result?.clientDetails.psActivated === '1' ? true : false,
+          queryStockTakeStartDate:
+            result.psStockTakeStartDate === '' || result.psStockTakeStartDate === null
+              ? ''
+              : new Date(result?.clientDetails.psStockTakeStartDate),
+          queryStockTakeEndDate:
+            result.clientDetails.stockTakeEndDate === '' ||
+            result.clientDetails.stockTakeEndDate === null
+              ? ''
+              : new Date(result?.clientDetails.stockTakeEndDate),
+          queryUserCount: result?.clientDetails.psUserCount,
+          //       selectedList.forEach((item) => {
+          //   data.push(item.addonId)
+          // })
+          // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
+          //   data.push(item.addonId)
+          // }),
+          AddOnsArray: result?.clientAddOn.map((item) => item),
+          selectedAdons: result?.clientAddOn.map((item) => item.addonId),
+          queryStockTakeCals: result?.clientDetails.psStockTakeCals,
+          queryBranchCount: result?.clientDetails.psBranchCount,
+        })
         console.log(result?.clientAddOn.map((item) => item.addonId))
         console.log(result?.clientDetails.psActivateExpiryDate)
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
@@ -643,9 +639,6 @@ const UpdateClient = () => {
       queryExpiryDate: e.target.value
         ? new Date(date.setDate(date.getDate() + Number(e.target.value)))
         : new Date(),
-      // queryExpiryDate: e.target.value
-      //   ? new Date(res.setDate(res.getDate() + Number(e.target.value)))
-      //   : new Date(),
     })
     // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
     console.log(res)
@@ -1086,7 +1079,20 @@ const UpdateClient = () => {
                             From
                           </label>
                           <div className="col ps-0">
-                            <DatePicker
+                            <input
+                              type="text"
+                              name="psStockTakeStartDate"
+                              id="psStockTakeStartDate"
+                              value={
+                                !data.psStockTakeStartDate
+                                  ? ''
+                                  : moment(data.psStockTakeStartDate).format('DD/MM/YYYY')
+                              }
+                              className="form-control form-control-sm rounded-0"
+                              disabled
+                              readOnly
+                            />
+                            {/* <DatePicker
                               className="form-control form-control-sm rounded-0"
                               selected={data.psStockTakeStartDate}
                               dateFormat="dd/MM/yyyy"
@@ -1096,7 +1102,7 @@ const UpdateClient = () => {
                               dropdownMode="select"
                               disabled
                               readOnly
-                            />
+                            /> */}
                           </div>
                         </div>
                       </div>
@@ -1106,16 +1112,20 @@ const UpdateClient = () => {
                             To
                           </label>
                           <div className="col ps-0">
-                            {/* <input
+                            <input
                               type="text"
                               name="stockTakeEndDate"
                               id="stockTakeEndDate"
-                              value={data.stockTakeEndDate}
+                              value={
+                                !data.stockTakeEndDate
+                                  ? ''
+                                  : moment(data.stockTakeEndDate).format('DD/MM/YYYY')
+                              }
                               className="form-control form-control-sm rounded-0"
-                              readOnly
                               disabled
-                            /> */}
-                            <DatePicker
+                              readOnly
+                            />
+                            {/* <DatePicker
                               className="form-control form-control-sm rounded-0"
                               selected={data.stockTakeEndDate}
                               dateFormat="dd/MM/yyyy"
@@ -1125,7 +1135,7 @@ const UpdateClient = () => {
                               dropdownMode="select"
                               disabled
                               readOnly
-                            />
+                            /> */}
                           </div>
                         </div>
                       </div>
@@ -1452,6 +1462,7 @@ const UpdateClient = () => {
       {/* Serial Modal */}
       <CModal
         alignment="center"
+        // visible={true}
         visible={serialModal}
         backdrop="static"
         size="lg"
@@ -1488,7 +1499,7 @@ const UpdateClient = () => {
                       }
                     >
                       <option value={data.psSerialNo}>{data.psSerialNo}</option>
-                      {serialNo.map((serial, index) => (
+                      {serialNo.slice(0, 10).map((serial, index) => (
                         <option key={index} value={serial.serialId}>
                           {serial.serialId}
                         </option>
@@ -1544,8 +1555,19 @@ const UpdateClient = () => {
                       className="form-control form-control-sm rounded-0"
                       id="queryExpiryDate"
                       value={editFormData.queryExpiryDate}
-                    /> */}
+                    /> */} 
                     <DatePicker
+                      className="form-control form-control-sm rounded-0"
+                      selected={editFormData.queryExpiryDate}
+                      dateFormat="dd/MM/yyyy"
+                      peekNextMonth
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      onChange={(date) => handleDate(date)}
+                      required
+                    />
+                    {/* <DatePicker
                       className="form-control form-control-sm rounded-0"
                       selected={editFormData.queryExpiryDate}
                       dateFormat="dd/MM/yyyy"
@@ -1555,7 +1577,7 @@ const UpdateClient = () => {
                       dropdownMode="select"
                       minDate={new Date()}
                       onChange={(date) => handleDate(date)}
-                    />
+                    /> */}
                   </div>
                 </div>
               </div>
