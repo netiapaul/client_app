@@ -565,7 +565,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/RemoveAddons?cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
+        `http://102.37.102.247:5023/api/Clients/RemoveAddons?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {
