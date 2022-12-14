@@ -23,6 +23,7 @@ const Users = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [delLoading, setDelLoading] = useState(false)
   const [rowID, setRowID] = useState('')
+  const [toEdit, setToEdit] = useState(false)
   const [selectedRow, setSelectedRow] = useState([])
   const [data, setData] = useState({
     tableRef: React.createRef(),
@@ -149,6 +150,68 @@ const Users = () => {
           password: '',
         })
         setIsLoading(false)
+        setSelectedRow([])
+        setRowID('')
+        setToEdit(false)
+        setIsDrawerOpen(false)
+        GetUsers()
+      } else {
+        const data = await response.json()
+        setError(data.message)
+        // setControllerError(Object.keys(data.errors).map((key, value) => data.errors[key]))
+        console.log(data)
+        setIsDrawerOpen(false)
+        setIsLoading(false)
+      }
+    } catch (error) {
+      console.log(error)
+      setError(data.message)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
+  }
+  const UpdateUser = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `http://102.37.102.247:5023/api/Users/UpdateUser?id=${Number(selectedRow.id)}&email=${
+          selectedRow.email
+        }`,
+        {
+          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.fullNames,
+            email: formData.email,
+            phoneNumber: formData.phoneNumber,
+            role: formData.role,
+            password: formData.password,
+          }),
+        },
+      )
+      if (response.ok) {
+        const data = await response.json()
+        console.log(data)
+        setFormData({
+          fullNames: '',
+          email: '',
+          phoneNumber: '',
+          role: '',
+          password: '',
+        })
+        setIsLoading(false)
+        setSelectedRow([])
+        setRowID('')
+        setToEdit(false)
         setIsDrawerOpen(false)
         GetUsers()
       } else {
@@ -190,6 +253,8 @@ const Users = () => {
         const data = await response.json()
         console.log(data)
         setDelLoading(false)
+        setSelectedRow([])
+        setRowID('')
         GetUsers()
       } else {
         const data = await response.json()
@@ -209,6 +274,7 @@ const Users = () => {
   const handleRowClick = (evt, rowData) => {
     setRowID(rowData.tableData.id)
     setSelectedRow(rowData)
+    setToEdit(true)
     console.log(rowData)
   }
 
@@ -231,7 +297,12 @@ const Users = () => {
                 type="button"
                 style={{ width: '4rem' }}
                 className="btn btn-sm new-btn me-1 top-btn rounded-0"
-                onClick={() => setIsDrawerOpen(true)}
+                onClick={() => {
+                  setIsDrawerOpen(true)
+                  setSelectedRow([])
+                  setRowID('')
+                  setToEdit(false)
+                }}
               >
                 {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
                 New
@@ -241,14 +312,14 @@ const Users = () => {
                 // sx={{ width: 540, bgcolor: '#C58C4F' }}
                 anchor={'right'}
                 open={isDrawerOpen}
-                onClose={() => setIsDrawerOpen(true)}
+                PaperProps={{ style: { width: '30rem' } }}
               >
                 <h6 className="offcanvas-title my-2 px-2" id="filtersLabel">
                   New User
                 </h6>
                 <hr className="my-1" />
                 <div className="container">
-                  <form autoComplete="off" onSubmit={CreateUser}>
+                  <form autoComplete="off" onSubmit={toEdit ? UpdateUser : CreateUser}>
                     <div className="row my-3">
                       <label htmlFor="fullNames" className="col-md-4 col-form-label divider">
                         Full Names
@@ -382,14 +453,21 @@ const Users = () => {
                             role="status"
                             aria-hidden="true"
                           ></span>
-                        ) : (
+                        ) : toEdit ? (
                           'Update'
+                        ) : (
+                          'Create'
                         )}
                       </button>
                       <button
                         type="button"
                         className="btn delete-btn rounded-0 ms-1"
-                        onClick={() => setIsDrawerOpen(false)}
+                        onClick={() => {
+                          setIsDrawerOpen(false)
+                          setSelectedRow([])
+                          setRowID('')
+                          setToEdit(false)
+                        }}
                       >
                         close
                       </button>
@@ -399,9 +477,29 @@ const Users = () => {
               </Drawer>
             </React.Fragment>
             <button
-              className="btn btn-sm delete-btn ms-1 top-btn rounded-0"
+              type="button"
               style={{ width: '4rem' }}
-              disabled={selectedRow.length === 0}
+              className="btn btn-sm edit-btn me-1 top-btn rounded-0"
+              disabled={selectedRow.length <= 0}
+              onClick={() => {
+                setIsDrawerOpen(true)
+                console.log(selectedRow)
+                setFormData({
+                  ...formData,
+                  fullNames: selectedRow.name,
+                  email: selectedRow.email,
+                  phoneNumber: selectedRow.phoneNumber,
+                  role: selectedRow.role,
+                })
+              }}
+            >
+              {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
+              Edit
+            </button>
+            <button
+              className="btn btn-sm delete-btn top-btn rounded-0"
+              style={{ width: '4rem' }}
+              disabled={selectedRow.length <= 0}
               onClick={() =>
                 swal({
                   title: 'Are you sure?',

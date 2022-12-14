@@ -67,7 +67,7 @@ const Dashboard = () => {
       {
         title: 'CPU/BIOS',
         field: 'psPickBios',
-        render: (rowData) => <span>{rowData.psPickCpu + '/' + rowData.psPickBios}</span>,
+        render: (rowData) => <span>{rowData.psPickCPU + '/' + rowData.psPickBios}</span>,
       },
       { title: 'Company', field: 'psPickCompany' },
     ],

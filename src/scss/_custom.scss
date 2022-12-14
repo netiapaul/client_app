@@ -17,6 +17,7 @@ $body-font-family: 'Nunito Sans',
 sans-serif;
 $body-bg-color: #eef5f9;
 $template-text-color: #47404f;
+$edit-color: #2962ff;
 $primary-color: #F58B40;
 $corebase-color: #ffc107;
 $pragraph-color: #51575d;
@@ -130,6 +131,20 @@ input:checked {
   font-size: 10px !important;
   border: 1px solid $success-color !important;
   background-color: $success-color !important;
+  color: white !important;
+}
+
+.edit-btn {
+  // background-color: #C58C4F !important;
+  font-size: 10px !important;
+  border: 1px solid $edit-color !important;
+  color: $edit-color !important;
+}
+
+.edit-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid $edit-color !important;
+  background-color: $edit-color !important;
   color: white !important;
 }
 

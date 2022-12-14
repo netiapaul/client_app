@@ -125,15 +125,16 @@ const UpdateClient = () => {
               : new Date(result?.clientDetails?.psActivateExpiryDate),
           isActive: result?.clientDetails.psActivated === '1' ? true : false,
           queryStockTakeStartDate:
-            result.psStockTakeStartDate === '' || result.psStockTakeStartDate === null
+            result.clientDetails.psStockTakeStartDate === '' ||
+            result.clientDetails.psStockTakeStartDate === null
               ? ''
-              : new Date(result?.clientDetails.psStockTakeStartDate),
+              : new Date(result?.clientDetails?.psStockTakeStartDate),
           queryStockTakeEndDate:
             result.clientDetails.stockTakeEndDate === '' ||
             result.clientDetails.stockTakeEndDate === null
               ? ''
-              : new Date(result?.clientDetails.stockTakeEndDate),
-          queryUserCount: result?.clientDetails.psUserCount,
+              : new Date(result?.clientDetails?.stockTakeEndDate),
+          queryUserCount: result?.clientDetails?.psUserCount,
           //       selectedList.forEach((item) => {
           //   data.push(item.addonId)
           // })
@@ -146,7 +147,9 @@ const UpdateClient = () => {
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
         console.log(result?.clientAddOn.map((item) => item.addonId))
-        console.log(result?.clientDetails.psActivateExpiryDate)
+        console.log('psActivateExpiryDate', result?.clientDetails.psActivateExpiryDate)
+        console.log('psStockTakeStartDate', result?.clientDetails.psStockTakeStartDate)
+        console.log('stockTakeEndDate', result?.clientDetails.stockTakeEndDate)
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
         const result = await response.json()
