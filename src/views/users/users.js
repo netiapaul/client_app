@@ -315,7 +315,7 @@ const Users = () => {
                 PaperProps={{ style: { width: '30rem' } }}
               >
                 <h6 className="offcanvas-title my-2 px-2" id="filtersLabel">
-                  New User
+                  {toEdit ? 'Edit User' : 'New User'}
                 </h6>
                 <hr className="my-1" />
                 <div className="container">
@@ -432,7 +432,9 @@ const Users = () => {
                               password: e.target.value,
                             })
                           }
-                          pattern="[a-zA-Z0-9]{6,20}"
+                          pattern="[-@.\/#&+\w\s]{6,20}"
+                          minLength={6}
+                          // pattern="[a-zA-Z0-9]{6,20}"
                           title="Please enter the 6-digit password"
                           required
                           // onChange={this.function.handleChange}
