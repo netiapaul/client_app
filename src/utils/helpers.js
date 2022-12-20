@@ -51,7 +51,7 @@ const tableOptions = {
   //   minBodyHeight: 535,
   // exportButton: true,
   pageSize: 20,
-  pageSizeOptions: [10, 20, 30],
+  pageSizeOptions: [5, 10, 20, 30],
   actionsColumnIndex: -1,
   showSelectAllCheckbox: false,
   emptyRowsWhenPaging: false,

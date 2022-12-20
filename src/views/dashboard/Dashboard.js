@@ -140,7 +140,8 @@ const Dashboard = () => {
               icons={tableIcons}
               options={{
                 ...tableOptions,
-                paging: false,
+                search: true,
+                paging: data.clients.length <= 20 ? false : true,
                 sorting: true,
                 // rowStyle: (rowData) => ({
                 //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',

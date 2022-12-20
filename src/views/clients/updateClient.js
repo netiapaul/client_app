@@ -864,7 +864,7 @@ const UpdateClient = () => {
                           value={data.psSerialNo}
                           className="form-control form-control-sm rounded-0"
                           disabled
-                          readOnly
+                          // readOnly
                         />
                       </div>
                       <div className="col-6">
@@ -1496,9 +1496,10 @@ const UpdateClient = () => {
                         setEditFormData({ ...editFormData, querySerialNo: e.target.value })
                       }
                       disabled={
-                        !editFormData.queryAcctCode ||
-                        !editFormData.queryBranchCode ||
-                        data.psSerialNo
+                        (!editFormData.queryAcctCode ||
+                          !editFormData.queryBranchCode ||
+                          data.psSerialNo) &&
+                        data.psSerialNo.length > 15
                       }
                     >
                       <option value={data.psSerialNo}>{data.psSerialNo}</option>
