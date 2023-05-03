@@ -123,41 +123,24 @@ const Dashboard = () => {
         </div>
       )}
       <div className="card rounded-0">
-        <div className="card-body pt-0">
-          {isLoading ? (
-            <div className="text-center mt-2">
-              <span
-                className="spinner-border spinner-border-sm me-3"
-                role="status"
-                aria-hidden="true"
-              ></span>
-              <span>Loading...</span>
-            </div>
-          ) : (
-            <MaterialTable
-              columns={data.column}
-              tableRef={data.tableRef}
-              icons={tableIcons}
-              options={{
-                ...tableOptions,
-                search: true,
-                paging: data.clients.length <= 20 ? false : true,
-                sorting: true,
-                // rowStyle: (rowData) => ({
-                //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-                // }),
-              }}
-              components={{
-                Toolbar: (props) => (
-                  <div className="bg-white">
-                    <MTableToolbar {...props} />
-                  </div>
-                ),
-              }}
-              data={data.clients}
-              title=""
-            />
-          )}
+        <div className="card-body">
+          <MaterialTable
+            columns={data.column}
+            tableRef={data.tableRef}
+            icons={tableIcons}
+            options={{
+              ...tableOptions,
+              search: true,
+              paging: data.clients.length <= 20 ? false : true,
+              sorting: true,
+              // rowStyle: (rowData) => ({
+              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+              // }),
+            }}
+            isLoading={isLoading}
+            data={data.clients}
+            title=""
+          />
         </div>
       </div>
     </>

@@ -9,6 +9,11 @@ import store from './store'
 import { ToastContainer } from 'react-toastify'
 import 'react-datepicker/dist/react-datepicker.css'
 import 'react-toastify/dist/ReactToastify.css'
+import 'react-phone-input-2/lib/style.css'
+// Bootstrap CSS
+import 'bootstrap/dist/css/bootstrap.min.css'
+// Bootstrap Bundle JS
+import 'bootstrap/dist/js/bootstrap.bundle.min'
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>

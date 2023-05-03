@@ -38,6 +38,17 @@ const _nav = [
     //   text: 'NEW',
     // },
   },
+  {
+    component: CNavItem,
+    name: 'Company',
+    to: '/company-users',
+    icon: <span className="material-icons nav-icon">group</span>,
+    // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    // badge: {
+    //   color: 'info',
+    //   text: 'NEW',
+    // },
+  },
   // {
   //   component: CNavTitle,
   //   name: 'Theme',
