@@ -468,6 +468,29 @@ input:checked {
   white-space: nowrap;
 }
 
+.update-btn {
+  background-color: #28A745 !important;
+  font-size: 10px !important;
+  color: white !important;
+}
+
+.reverse-btn {
+  font-size: 10px !important;
+  border: 1px solid #28A745 !important;
+  color: #28A745 !important;
+}
+
+.reverse-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid #28A745 !important;
+  // background-color: #28A745;
+  // color: white !important;
+}
+
+.modal-header .btn-close {
+  display: none !important;
+}
+
 /***** CUSTOM SHAPE STYLE *****/
 // @media (min-width: 1200px) {
 //   .w-cover {

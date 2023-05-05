@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import MaterialTable from 'material-table'
+import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import Drawer from '@mui/material/Drawer'
 import { FaCaretRight } from 'react-icons/fa'
 import PhoneInput from 'react-phone-input-2'
+import { CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter } from '@coreui/react'
 
 const axios = require('axios')
 
@@ -12,14 +13,21 @@ const CompanyUsers = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [visible, setVisible] = useState(false)
+  const [deleteModal, setDeleteModal] = useState(false)
   const [companyRowId, setCompanyRowId] = useState('')
   const [userRowId, setUserRowId] = useState('')
+  const [dataBases, setDataBases] = useState([])
   const [formData, setFormData] = useState({
     username: '',
     fullusername: '',
     cellnumber: '',
     cellname: '',
     cellcountry: '',
+  })
+  const [DBFormData, setDBFormData] = useState({
+    companyName: '',
+    clientCode: '',
   })
   const [rowDetails, setRowDetails] = useState({
     selectedRow: [],
@@ -52,7 +60,7 @@ const CompanyUsers = () => {
       },
     },
     { title: 'Company Name', field: 'companyName' },
-    { title: 'Client Code', field: 'clientCode' },
+    { title: 'Database', field: 'clientCode' },
     // {
     //   title: 'Active',
     //   field: 'psActivated',
@@ -129,6 +137,33 @@ const CompanyUsers = () => {
     // console.log(formattedValue, '+254 223 4')
     // console.log(value)
     // console.log(country)
+  }
+  const Getdatabase = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_URL_CONFIG}/api/SetUpUser/Getdatabase`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      setDataBases(response.data)
+      setIsLoading(false)
+      console.log(response)
+    } catch (error) {
+      console.log(error)
+      setError(`${error?.code}: ${error?.message}`)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
   }
   const GetCompany = async () => {
     setIsLoading(true)
@@ -233,7 +268,94 @@ const CompanyUsers = () => {
       setError('')
     }, 8000)
   }
-
+  const CreateNewCompany = async (userData) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_URL_CONFIG}/api/SetUpUser/CreateCompany`,
+        {
+          companyName: userData?.companyName,
+          clientCode: userData?.clientCode,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      console.log(response)
+      setData({ ...data, company: response.data })
+      setVisible(false)
+      setDBFormData({
+        companyName: '',
+        clientCode: '',
+      })
+      // setData({ ...data, user: response.data })
+      setIsLoading(false)
+    } catch (error) {
+      console.log(error)
+      setError(`${error?.code}: ${error?.request?.response}`)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
+  }
+  const DeleteCompany = async (userData) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.delete(
+        `${process.env.REACT_APP_URL_CONFIG}/api/SetUpUser/DeleteCompany`,
+        {
+          params: {
+            companyid: userData.companyid,
+          },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      console.log(response)
+      setData({ ...data, company: response.data })
+      setDeleteModal(false)
+      setRowDetails({
+        selectedRow: [],
+        companyDetailId: 0,
+      })
+      // setData({ ...data, user: response.data })
+      setIsLoading(false)
+    } catch (error) {
+      console.log(error)
+      setError(`${error?.code}: ${error?.request?.response}`)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
+  }
+  /**
+   * TODO: CREATE COMPANY DB
+   */
+  const CreateCompany = (e) => {
+    e.preventDefault()
+    const data = {
+      companyName: DBFormData?.companyName.trim(),
+      clientCode: DBFormData?.clientCode.trim(),
+    }
+    CreateNewCompany(data)
+    // console.log(data)
+  }
+  /**
+   * TODO: CREATE USER
+   */
   const handleSubmit = (e) => {
     e.preventDefault()
     const data = {
@@ -247,9 +369,19 @@ const CompanyUsers = () => {
     AddCompanyUser(data)
     // console.log(data)
   }
-
+  /**
+   * TODO: HANDLE DELETE COMPANY
+   */
+  const handleDeleteCompany = () => {
+    const data = {
+      companyid: rowDetails.companyDetailId,
+    }
+    DeleteCompany(data)
+    // console.log(data)
+  }
   useEffect(() => {
     GetCompany()
+    Getdatabase()
   }, [])
 
   return (
@@ -262,25 +394,6 @@ const CompanyUsers = () => {
           </div>
           <div className="">
             <React.Fragment key={'right'}>
-              <button
-                type="button"
-                style={{ width: '5rem' }}
-                className="btn btn-sm new-btn rounded-0"
-                disabled={rowDetails.selectedRow?.length <= 0}
-                onClick={() => {
-                  setIsDrawerOpen(true)
-                  setFormData({
-                    username: '',
-                    fullusername: '',
-                    cellnumber: '',
-                    cellname: '',
-                    cellcountry: '',
-                  })
-                }}
-              >
-                {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
-                New
-              </button>
               <Drawer
                 anchor={'right'}
                 open={isDrawerOpen}
@@ -473,6 +586,38 @@ const CompanyUsers = () => {
                   GetCompanyUsers(selectedRow.companyDetailId)
                   console.log(selectedRow)
                 }}
+                components={{
+                  Toolbar: (props) => (
+                    <div className="d-flex flex-row justify-content-between py-0">
+                      <p
+                        className="align-self-end mb-2 flex-fill mb-2 fw-bold"
+                        style={{ fontSize: '10px' }}
+                      >
+                        Company DataBase
+                      </p>
+
+                      <button
+                        type="button"
+                        style={{ width: '5rem' }}
+                        className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
+                        onClick={() => setVisible(true)}
+                      >
+                        New
+                      </button>
+                      <button
+                        type="button"
+                        style={{ width: '5rem' }}
+                        className="btn btn-sm delete-btn rounded-0 align-self-end mb-2  ms-2"
+                        disabled={rowDetails.selectedRow?.length <= 0}
+                        onClick={() => setDeleteModal(true)}
+                      >
+                        Delete
+                      </button>
+
+                      <MTableToolbar className="px-0" {...props} />
+                    </div>
+                  ),
+                }}
                 data={data.company}
                 title=""
               />
@@ -499,6 +644,40 @@ const CompanyUsers = () => {
                   setUserRowId(selectedRow.tableData.id)
                   console.log(selectedRow)
                 }}
+                components={{
+                  Toolbar: (props) => (
+                    <div className="d-flex flex-row justify-content-between py-0">
+                      <p
+                        className="align-self-end mb-2 flex-fill mb-2 fw-bold"
+                        style={{ fontSize: '10px' }}
+                      >
+                        DataBase Users
+                      </p>
+
+                      <button
+                        type="button"
+                        style={{ width: '5rem' }}
+                        className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
+                        disabled={rowDetails.selectedRow?.length <= 0}
+                        onClick={() => {
+                          setIsDrawerOpen(true)
+                          setFormData({
+                            username: '',
+                            fullusername: '',
+                            cellnumber: '',
+                            cellname: '',
+                            cellcountry: '',
+                          })
+                        }}
+                      >
+                        {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
+                        New
+                      </button>
+
+                      <MTableToolbar className="px-0" {...props} />
+                    </div>
+                  ),
+                }}
                 isLoading={isLoading}
                 data={data.user}
                 title=""
@@ -507,6 +686,133 @@ const CompanyUsers = () => {
           </div>
         </div>
       </div>
+      <CModal visible={visible} alignment="center" backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Add Company DB</CModalTitle>
+        </CModalHeader>
+        <form autoComplete="off" onSubmit={CreateCompany}>
+          <CModalBody>
+            <div className="row mb-3">
+              <label htmlFor="companyName" className="col-md-4 col-form-label divider">
+                Company Name
+              </label>
+              <div className="col-md">
+                <input
+                  type="text"
+                  className="form-control form-control-sm rounded-0"
+                  id="companyName"
+                  value={DBFormData.companyName}
+                  onChange={(e) => {
+                    setDBFormData({ ...DBFormData, companyName: e.target.value })
+                  }}
+                  required
+                />
+              </div>
+            </div>
+            <div className="row">
+              <label htmlFor="companyName" className="col-md-4 col-form-label divider">
+                Company DB
+              </label>
+              <div className="col-md">
+                <input
+                  type="text"
+                  className="form-control form-control-sm rounded-0"
+                  list="datalistOptions"
+                  id="companyName"
+                  value={DBFormData.clientCode}
+                  onChange={(e) => {
+                    setDBFormData({ ...DBFormData, clientCode: e.target.value })
+                  }}
+                  required
+                />
+                <datalist id="datalistOptions">
+                  <option value={''}></option>
+                  {dataBases.map((item, key) => (
+                    <option value={item.clientCode} key={key}>
+                      {item.clientCode}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
+            </div>
+          </CModalBody>
+          <CModalFooter>
+            <div className="d-flex justify-content-end">
+              <button
+                type="submit"
+                className="btn update-btn btn-sm rounded-0 me-2"
+                style={{ width: '5rem' }}
+                // onClick={this.GenerateCnote}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm m-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </>
+                ) : (
+                  'Save'
+                )}
+              </button>
+
+              <button
+                type="button"
+                style={{ width: '5rem' }}
+                className="btn btn-sm reverse-btn rounded-0"
+                onClick={() => {
+                  setVisible(false)
+                  setDBFormData({ companyName: '', clientCode: '' })
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </CModalFooter>
+        </form>
+      </CModal>
+      <CModal alignment="center" visible={deleteModal} backdrop="static">
+        <CModalHeader>
+          <CModalTitle className="fw-bold" id="filtersLabel" style={{ fontSize: '14px' }}>
+            {/* Error */}
+            {/* <h6 className="alert-title mb-3">{modalTitle} Record</h6> */}
+            Delete Record
+          </CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <div className="container-fluid">
+            <p className="alert-text m-0">Are you sure you want to delete this record?</p>
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <div className="d-flex justify-content-end">
+            <button
+              type="submit"
+              className="btn update-btn btn-sm rounded-0 me-2 fw-bold"
+              style={{ width: '4rem' }}
+              onClick={handleDeleteCompany}
+            >
+              Ok
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm reverse-btn rounded-0 fw-bold"
+              style={{ width: '4rem' }}
+              onClick={() => {
+                setDeleteModal(false)
+                setRowDetails({
+                  selectedRow: [],
+                  companyDetailId: 0,
+                })
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </CModalFooter>
+      </CModal>
     </>
   )
 }

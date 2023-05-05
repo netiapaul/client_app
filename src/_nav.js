@@ -1,13 +1,14 @@
 import React from 'react'
-// import CIcon from '@coreui/icons-react'
+import CIcon from '@coreui/icons-react'
 
 // import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 import { CNavItem } from '@coreui/react'
+import { cilBuilding } from '@coreui/icons'
 
 const _nav = [
   {
     component: CNavItem,
-    name: 'Clients',
+    name: 'Lincenses',
     to: '/dashboard',
     icon: <span className="material-icons nav-icon">home</span>,
     // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
@@ -33,6 +34,7 @@ const _nav = [
     to: '/users',
     icon: <span className="material-icons nav-icon">group</span>,
     // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    // <span className="material-icons nav-icon">group</span>
     // badge: {
     //   color: 'info',
     //   text: 'NEW',
@@ -40,10 +42,10 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Company',
+    name: 'Database',
     to: '/company-users',
-    icon: <span className="material-icons nav-icon">group</span>,
-    // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
+    // icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
     // badge: {
     //   color: 'info',
     //   text: 'NEW',
