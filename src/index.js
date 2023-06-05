@@ -18,7 +18,18 @@ import 'bootstrap/dist/js/bootstrap.bundle.min'
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
     <App />
-    <ToastContainer pauseOnFocusLoss={false} />
+    <ToastContainer
+      limit={1}
+      autoClose={5000}
+      hideProgressBar={true}
+      newestOnTop={false}
+      closeOnClick={false}
+      rtl={false}
+      pauseOnFocusLoss={false}
+      draggable={false}
+      pauseOnHover={false}
+      theme="colored"
+    />
   </Provider>,
 )
 
