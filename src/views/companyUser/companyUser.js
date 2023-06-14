@@ -18,6 +18,7 @@ const CompanyUsers = () => {
   const [companyRowId, setCompanyRowId] = useState('')
   const [userRowId, setUserRowId] = useState('')
   const [dataBases, setDataBases] = useState([])
+  const [clients, setClients] = useState([])
   const [formData, setFormData] = useState({
     username: '',
     fullusername: '',
@@ -27,6 +28,7 @@ const CompanyUsers = () => {
   })
   const [DBFormData, setDBFormData] = useState({
     companyName: '',
+    cuscode: '',
     clientCode: '',
   })
   const [rowDetails, setRowDetails] = useState({
@@ -37,6 +39,7 @@ const CompanyUsers = () => {
     tableRef: React.createRef(),
     company: [],
     user: [],
+    clients: [],
   })
   let column1 = [
     {
@@ -277,6 +280,7 @@ const CompanyUsers = () => {
         {
           companyName: userData?.companyName,
           clientCode: userData?.clientCode,
+          cuscode: userData?.cuscode,
         },
         {
           headers: {
@@ -293,6 +297,7 @@ const CompanyUsers = () => {
       setDBFormData({
         companyName: '',
         clientCode: '',
+        cuscode: '',
       })
       // setData({ ...data, user: response.data })
       setIsLoading(false)
@@ -341,14 +346,38 @@ const CompanyUsers = () => {
       setError('')
     }, 8000)
   }
+  const getClients = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.get('http://102.37.102.247:5023/api/Clients/GetClients', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      })
+      setClients(response.data)
+      setIsLoading(false)
+    } catch (error) {
+      console.log(error)
+      setError(`${error?.code}: ${error?.message}`)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
+  }
   /**
    * TODO: CREATE COMPANY DB
    */
   const CreateCompany = (e) => {
     e.preventDefault()
     const data = {
-      companyName: DBFormData?.companyName.trim(),
-      clientCode: DBFormData?.clientCode.trim(),
+      companyName: DBFormData?.companyName,
+      cuscode: DBFormData?.cuscode,
+      clientCode: DBFormData?.clientCode,
     }
     CreateNewCompany(data)
     // console.log(data)
@@ -382,6 +411,7 @@ const CompanyUsers = () => {
   useEffect(() => {
     GetCompany()
     Getdatabase()
+    getClients()
   }, [])
 
   return (
@@ -600,7 +630,15 @@ const CompanyUsers = () => {
                         type="button"
                         style={{ width: '5rem' }}
                         className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
-                        onClick={() => setVisible(true)}
+                        onClick={() => {
+                          setVisible(true)
+                          setUserRowId('')
+                          setCompanyRowId('')
+                          setRowDetails({
+                            selectedRow: [],
+                            companyDetailId: '',
+                          })
+                        }}
                       >
                         New
                       </button>
@@ -697,7 +735,29 @@ const CompanyUsers = () => {
                 Company Name
               </label>
               <div className="col-md">
-                <input
+                <select
+                  className="form-select form-select-sm rounded-0"
+                  id="companyName"
+                  value={DBFormData.cuscode}
+                  onChange={(e) => {
+                    setDBFormData({
+                      ...DBFormData,
+                      companyName: clients.filter(
+                        (client) => client.psCusCode === e.target.value,
+                      )[0]?.psCompanyName,
+                      cuscode: e.target.value,
+                    })
+                  }}
+                  required
+                >
+                  <option value={''}></option>
+                  {clients.map((item, key) => (
+                    <option value={item.psCusCode} key={key}>
+                      {item.psCompanyName}
+                    </option>
+                  ))}
+                </select>
+                {/* <input
                   type="text"
                   className="form-control form-control-sm rounded-0"
                   id="companyName"
@@ -706,7 +766,7 @@ const CompanyUsers = () => {
                     setDBFormData({ ...DBFormData, companyName: e.target.value })
                   }}
                   required
-                />
+                /> */}
               </div>
             </div>
             <div className="row">
@@ -714,7 +774,23 @@ const CompanyUsers = () => {
                 Company DB
               </label>
               <div className="col-md">
-                <input
+                <select
+                  className="form-select form-select-sm rounded-0"
+                  id="companyName"
+                  value={DBFormData.clientCode}
+                  onChange={(e) => {
+                    setDBFormData({ ...DBFormData, clientCode: e.target.value })
+                  }}
+                  required
+                >
+                  <option value={''}></option>
+                  {dataBases.map((item, key) => (
+                    <option value={item.clientCode} key={key}>
+                      {item.clientCode}
+                    </option>
+                  ))}
+                </select>
+                {/* <input
                   type="text"
                   className="form-control form-control-sm rounded-0"
                   list="datalistOptions"
@@ -732,7 +808,7 @@ const CompanyUsers = () => {
                       {item.clientCode}
                     </option>
                   ))}
-                </datalist>
+                </datalist> */}
               </div>
             </div>
           </CModalBody>
