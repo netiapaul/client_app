@@ -4,6 +4,7 @@ import CIcon from '@coreui/icons-react'
 // import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 import { CNavItem } from '@coreui/react'
 import { cilBuilding } from '@coreui/icons'
+import { cilAlignCenter } from '@coreui/icons'
 
 const _nav = [
   {
@@ -45,6 +46,17 @@ const _nav = [
     name: 'Database',
     to: '/company-users',
     icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
+    // icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
+    // badge: {
+    //   color: 'info',
+    //   text: 'NEW',
+    // },
+  },
+  {
+    component: CNavItem,
+    name: 'Branches',
+    to: '/user-branches',
+    icon: <CIcon icon={cilAlignCenter} customClassName="nav-icon" />,
     // icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
     // badge: {
     //   color: 'info',

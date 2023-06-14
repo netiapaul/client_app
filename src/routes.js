@@ -6,6 +6,7 @@ const UpdateClient = React.lazy(() => import('./views/clients/updateClient'))
 const ActivityLog = React.lazy(() => import('./views/activityLogs/activityLogs'))
 const Users = React.lazy(() => import('./views/users/users'))
 const CompanyUsers = React.lazy(() => import('./views/companyUser/companyUser'))
+const Branches = React.lazy(() => import('./views/branches/branches'))
 // const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
 
 // // Base
@@ -61,6 +62,7 @@ const routes = [
   { path: '/activities', name: 'Activities', element: ActivityLog, exact: true },
   { path: '/users', name: 'Users', element: Users, exact: true },
   { path: '/company-users', name: 'Company Users', element: CompanyUsers, exact: true },
+  { path: '/user-branches', name: 'User Branches', element: Branches, exact: true },
   // { path: '/theme', name: 'Theme', element: Colors, exact: true },
   // { path: '/theme/colors', name: 'Colors', element: Colors },
   // { path: '/theme/typography', name: 'Typography', element: Typography },
