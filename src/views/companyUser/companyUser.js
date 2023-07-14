@@ -542,6 +542,7 @@ const CompanyUsers = () => {
         showallcustomertrans: true,
         showallcustomer: true,
       })
+      setBranchRowId('')
       setIsBranchModalVisible(false)
       setIsLoading(false)
       console.log(response.data)
