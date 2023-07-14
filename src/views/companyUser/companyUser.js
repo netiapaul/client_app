@@ -18,6 +18,7 @@ const CompanyUsers = () => {
   const [deleteModal, setDeleteModal] = useState(false)
   const [companyRowId, setCompanyRowId] = useState('')
   const [userRowId, setUserRowId] = useState('')
+  const [BranchRowId, setBranchRowId] = useState('')
   const [dataBases, setDataBases] = useState([])
   const [clients, setClients] = useState([])
   const [branches, setBranches] = useState([])
@@ -911,13 +912,13 @@ const CompanyUsers = () => {
                       paging: data.user?.length <= 20 ? false : true,
                       sorting: true,
                       rowStyle: (rowData) => ({
-                        backgroundColor: userRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+                        backgroundColor: BranchRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
                       }),
                     }}
-                    // onRowClick={(e, selectedRow) => {
-                    //   setUserRowId(selectedRow.tableData.id)
-                    //   console.log(selectedRow)
-                    // }}
+                    onRowClick={(e, selectedRow) => {
+                      setBranchRowId(selectedRow.tableData.id)
+                      console.log(selectedRow)
+                    }}
                     components={{
                       Toolbar: (props) => (
                         <div className="d-flex flex-row justify-content-between py-0">
