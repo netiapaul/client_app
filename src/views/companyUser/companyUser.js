@@ -308,6 +308,7 @@ const CompanyUsers = () => {
       setData({ ...data, user: response.data })
       setIsLoading(false)
       setUserRowId('')
+      setBranchRowId('')
     } catch (error) {
       console.log(error)
       setError(`${error?.code}: ${error?.message}`)
