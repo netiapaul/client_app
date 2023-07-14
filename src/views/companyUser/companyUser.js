@@ -144,7 +144,7 @@ const CompanyUsers = () => {
     {
       title: '',
       field: 'icon',
-      render: (rowData) => (userRowId === rowData.tableData.id ? <FaCaretRight /> : ''),
+      render: (rowData) => (BranchRowId === rowData.tableData.id ? <FaCaretRight /> : ''),
       cellStyle: {
         width: '1%',
         textAlign: 'center',
