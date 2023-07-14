@@ -52,17 +52,17 @@ const _nav = [
     //   text: 'NEW',
     // },
   },
-  {
-    component: CNavItem,
-    name: 'Branches',
-    to: '/user-branches',
-    icon: <CIcon icon={cilAlignCenter} customClassName="nav-icon" />,
-    // icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
-    // badge: {
-    //   color: 'info',
-    //   text: 'NEW',
-    // },
-  },
+  // {
+  //   component: CNavItem,
+  //   name: 'Branches',
+  //   to: '/user-branches',
+  //   icon: <CIcon icon={cilAlignCenter} customClassName="nav-icon" />,
+  //   // icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
+  //   // badge: {
+  //   //   color: 'info',
+  //   //   text: 'NEW',
+  //   // },
+  // },
   // {
   //   component: CNavTitle,
   //   name: 'Theme',

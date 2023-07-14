@@ -14,17 +14,35 @@ const CompanyUsers = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [visible, setVisible] = useState(false)
+  const [isBranchModalVisible, setIsBranchModalVisible] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
   const [companyRowId, setCompanyRowId] = useState('')
   const [userRowId, setUserRowId] = useState('')
   const [dataBases, setDataBases] = useState([])
   const [clients, setClients] = useState([])
+  const [branches, setBranches] = useState([])
   const [formData, setFormData] = useState({
     username: '',
     fullusername: '',
     cellnumber: '',
     cellname: '',
     cellcountry: '',
+  })
+  const [cusData, setCusData] = useState({
+    psCusCode: '',
+    psCompanyName: '',
+  })
+  const [branchformData, setBranchFormData] = useState({
+    bcode: '',
+    branchcode: '',
+    name: '',
+    email: '',
+    phoneNumber: '',
+    enabled: true,
+    mainbranch: false,
+    acct: true,
+    showallcustomertrans: true,
+    showallcustomer: true,
   })
   const [DBFormData, setDBFormData] = useState({
     companyName: '',
@@ -41,7 +59,7 @@ const CompanyUsers = () => {
     user: [],
     clients: [],
   })
-  let column1 = [
+  let DbColumn = [
     {
       title: '',
       field: 'icon',
@@ -75,7 +93,7 @@ const CompanyUsers = () => {
     //   },
     // },
   ]
-  let column2 = [
+  let UserColumn = [
     {
       title: '',
       field: 'icon',
@@ -118,6 +136,52 @@ const CompanyUsers = () => {
       },
       headerStyle: {
         backgroundColor: '#f3f6f9',
+      },
+    },
+  ]
+  let BranchColumn = [
+    {
+      title: '',
+      field: 'icon',
+      render: (rowData) => (userRowId === rowData.tableData.id ? <FaCaretRight /> : ''),
+      cellStyle: {
+        width: '1%',
+        textAlign: 'center',
+      },
+    },
+    {
+      title: 'Bcode',
+      field: 'bcode',
+      // render: (rowData) => (
+      //   <span className="text-decoration-underline text-primary">{rowData.uid}</span>
+      // ),
+
+      cellStyle: {
+        width: '1%',
+      },
+    },
+    { title: 'Branch Code', field: 'branchcode' },
+    { title: 'Branch Name', field: 'brancH_NAME' },
+    {
+      title: 'isMain',
+      field: 'mainbranch',
+      render: (rowData) => (
+        <input
+          type="checkbox"
+          id="sel"
+          name="sel"
+          className="text-center"
+          checked={rowData.mainbranch}
+          readOnly
+        />
+      ),
+    },
+    {
+      title: 'Enabled',
+      field: 'enabled',
+      render: (rowData) => <div className={rowData.enabled ? 'Active-r' : 'not-active-r'}></div>,
+      cellStyle: {
+        width: '1%',
       },
     },
   ]
@@ -199,6 +263,32 @@ const CompanyUsers = () => {
       setError('')
     }, 8000)
   }
+  const GetBranches = async (clientcode) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetBranches?clientcode=${clientcode}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      setBranches(response.data)
+      setUserRowId('')
+    } catch (error) {
+      console.log(error)
+      setError(`${error?.code}: ${error?.message}`)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
+  }
   const GetCompanyUsers = async (companyid) => {
     setIsLoading(true)
     setError('')
@@ -216,6 +306,7 @@ const CompanyUsers = () => {
       )
       setData({ ...data, user: response.data })
       setIsLoading(false)
+      setUserRowId('')
     } catch (error) {
       console.log(error)
       setError(`${error?.code}: ${error?.message}`)
@@ -408,6 +499,82 @@ const CompanyUsers = () => {
     DeleteCompany(data)
     // console.log(data)
   }
+  const CreateBranch = async (userData) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await axios.post(
+        `http://102.37.102.247:5023/api/Clients/CreateBranch?cuscode=${userData?.psCusCode}`,
+        {
+          bcode: userData?.bcode,
+          branchcode: userData?.branchcode,
+          branchName: userData?.name,
+          enabled: userData?.enabled,
+          mainbranch: userData?.mainbranch,
+          acct: userData?.acct,
+          showallcustomer: userData?.showallcustomer,
+          showallcustomertrans: userData?.showallcustomertrans,
+          phoneNumber: userData?.phoneNumber,
+          email: userData?.email,
+          borderpartwhole: 'W',
+          lockpartwholeborder: true,
+          lockpartwholebtrans: true,
+          btranspartwhole: 'W',
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      setBranchFormData({
+        bcode: '',
+        branchcode: '',
+        name: '',
+        email: '',
+        phoneNumber: '',
+        enabled: true,
+        mainbranch: false,
+        acct: true,
+        showallcustomertrans: true,
+        showallcustomer: true,
+      })
+      setIsBranchModalVisible(false)
+      setIsLoading(false)
+      console.log(response.data)
+    } catch (error) {
+      console.log(error)
+      GetBranches(rowDetails.clientCode)
+      setError(error?.response?.data?.message)
+      //   setError(`${error?.response?.status}: ${error?.response?.data?.message}`)
+      setIsLoading(false)
+    }
+    return setTimeout(() => {
+      setError('')
+    }, 8000)
+  }
+  const handleBranchSubmit = (e) => {
+    e.preventDefault()
+    const data = {
+      psCusCode: cusData?.psCusCode,
+      branchcode: branchformData?.branchcode,
+      //   branchcode: `BR00${formData?.branchcode}`,
+      //   bcode: Number(formData?.bcode),
+      bcode: Number(branchformData?.branchcode),
+      name: branchformData?.name,
+      phoneNumber: branchformData?.phoneNumber,
+      email: branchformData?.email,
+      enabled: branchformData?.enabled,
+      mainbranch: branchformData?.mainbranch,
+      acct: branchformData?.acct,
+      showallcustomertrans: branchformData?.showallcustomertrans,
+      showallcustomer: branchformData?.showallcustomer,
+    }
+    CreateBranch(data)
+    console.log(data)
+  }
   useEffect(() => {
     GetCompany()
     Getdatabase()
@@ -594,7 +761,7 @@ const CompanyUsers = () => {
           <div className="card rounded-0 h-100">
             <div className="card-body">
               <MaterialTable
-                columns={column1}
+                columns={DbColumn}
                 tableRef={data.tableRef}
                 icons={tableIcons}
                 options={{
@@ -609,11 +776,17 @@ const CompanyUsers = () => {
                 isLoading={isLoading}
                 onRowClick={(e, selectedRow) => {
                   setCompanyRowId(selectedRow.tableData.id)
+                  setCusData({
+                    psCusCode: selectedRow?.cuscode,
+                    psCompanyName: selectedRow?.companyName,
+                  })
                   setRowDetails({
                     selectedRow: selectedRow,
                     companyDetailId: selectedRow.companyDetailId,
+                    clientCode: selectedRow.clientCode,
                   })
                   GetCompanyUsers(selectedRow.companyDetailId)
+                  GetBranches(selectedRow.clientCode)
                   console.log(selectedRow)
                 }}
                 components={{
@@ -663,63 +836,133 @@ const CompanyUsers = () => {
           </div>
         </div>
         <div className="col-md-7">
-          <div className="card rounded-0 h-100">
-            <div className="card-body">
-              <MaterialTable
-                columns={column2}
-                tableRef={data.tableRef}
-                icons={tableIcons}
-                options={{
-                  ...tableOptions,
-                  search: true,
-                  paging: data.user?.length <= 20 ? false : true,
-                  sorting: true,
-                  rowStyle: (rowData) => ({
-                    backgroundColor: userRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-                  }),
-                }}
-                onRowClick={(e, selectedRow) => {
-                  setUserRowId(selectedRow.tableData.id)
-                  console.log(selectedRow)
-                }}
-                components={{
-                  Toolbar: (props) => (
-                    <div className="d-flex flex-row justify-content-between py-0">
-                      <p
-                        className="align-self-end mb-2 flex-fill mb-2 fw-bold"
-                        style={{ fontSize: '10px' }}
-                      >
-                        DataBase Users
-                      </p>
+          <div className="row">
+            <div className="col-12">
+              <div className="card rounded-0 h-100">
+                <div className="card-body">
+                  <MaterialTable
+                    columns={UserColumn}
+                    tableRef={data.tableRef}
+                    icons={tableIcons}
+                    options={{
+                      ...tableOptions,
+                      search: true,
+                      paging: data.user?.length <= 20 ? false : true,
+                      sorting: true,
+                      rowStyle: (rowData) => ({
+                        backgroundColor: userRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+                      }),
+                    }}
+                    onRowClick={(e, selectedRow) => {
+                      setUserRowId(selectedRow.tableData.id)
+                      console.log(selectedRow)
+                    }}
+                    components={{
+                      Toolbar: (props) => (
+                        <div className="d-flex flex-row justify-content-between py-0">
+                          <p
+                            className="align-self-end mb-2 flex-fill mb-2 fw-bold"
+                            style={{ fontSize: '10px' }}
+                          >
+                            DataBase Users
+                          </p>
 
-                      <button
-                        type="button"
-                        style={{ width: '5rem' }}
-                        className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
-                        disabled={rowDetails.selectedRow?.length <= 0}
-                        onClick={() => {
-                          setIsDrawerOpen(true)
-                          setFormData({
-                            username: '',
-                            fullusername: '',
-                            cellnumber: '',
-                            cellname: '',
-                            cellcountry: '',
-                          })
-                        }}
-                      >
-                        {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
-                        New
-                      </button>
+                          <button
+                            type="button"
+                            style={{ width: '5rem' }}
+                            className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
+                            disabled={rowDetails.selectedRow?.length <= 0}
+                            onClick={() => {
+                              setIsDrawerOpen(true)
+                              setFormData({
+                                username: '',
+                                fullusername: '',
+                                cellnumber: '',
+                                cellname: '',
+                                cellcountry: '',
+                              })
+                            }}
+                          >
+                            {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
+                            New
+                          </button>
 
-                      <MTableToolbar className="px-0" {...props} />
-                    </div>
-                  ),
-                }}
-                isLoading={isLoading}
-                data={data.user}
-                title=""
-              />
+                          <MTableToolbar className="px-0" {...props} />
+                        </div>
+                      ),
+                    }}
+                    isLoading={isLoading}
+                    data={data.user}
+                    title=""
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="col-12 mt-2">
+              <div className="card rounded-0">
+                <div className="card-body">
+                  <MaterialTable
+                    columns={BranchColumn}
+                    tableRef={data.tableRef}
+                    icons={tableIcons}
+                    options={{
+                      ...tableOptions,
+                      search: true,
+                      paging: data.user?.length <= 20 ? false : true,
+                      sorting: true,
+                      rowStyle: (rowData) => ({
+                        backgroundColor: userRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+                      }),
+                    }}
+                    // onRowClick={(e, selectedRow) => {
+                    //   setUserRowId(selectedRow.tableData.id)
+                    //   console.log(selectedRow)
+                    // }}
+                    components={{
+                      Toolbar: (props) => (
+                        <div className="d-flex flex-row justify-content-between py-0">
+                          <p
+                            className="align-self-end mb-2 flex-fill mb-2 fw-bold"
+                            style={{ fontSize: '10px' }}
+                          >
+                            Branches
+                          </p>
+
+                          <button
+                            type="button"
+                            style={{ width: '5rem' }}
+                            className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
+                            disabled={rowDetails.selectedRow?.length <= 0}
+                            onClick={() => {
+                              setIsBranchModalVisible(true)
+                              setBranchFormData({
+                                bcode: '',
+                                branchcode: '',
+                                name: '',
+                                email: '',
+                                phoneNumber: '',
+                                enabled: true,
+                                mainbranch: false,
+                                acct: true,
+                                showallcustomertrans: true,
+                                showallcustomer: true,
+                              })
+                            }}
+                          >
+                            {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
+                            New
+                          </button>
+
+                          <MTableToolbar className="px-0" {...props} />
+                        </div>
+                      ),
+                    }}
+                    isLoading={isLoading}
+                    data={branches}
+                    title=""
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -841,6 +1084,331 @@ const CompanyUsers = () => {
                 onClick={() => {
                   setVisible(false)
                   setDBFormData({ companyName: '', clientCode: '' })
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </CModalFooter>
+        </form>
+      </CModal>
+      <CModal visible={isBranchModalVisible} alignment="center" backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Add Branches</CModalTitle>
+        </CModalHeader>
+        <form
+          className="row g-3 needs-validation was-validated"
+          noValidate=""
+          onSubmit={handleBranchSubmit}
+        >
+          <CModalBody>
+            <div className="row my-3">
+              <label htmlFor="queryCompanyName" className="col-md-3 col-form-label divider">
+                Customers
+              </label>
+              <div className="col-md">
+                <div className="row">
+                  <div className="col-md-3 pe-0">
+                    <input
+                      className="form-control form-control-sm rounded-0"
+                      id="queryCompanyName"
+                      name="queryCompanyName"
+                      list="datalistOptions"
+                      value={cusData.psCusCode}
+                      // onChange={handleCustomers}
+                      placeholder="search..."
+                      required
+                      readOnly
+                    />
+                    <datalist id="datalistOptions">
+                      <option value={''}></option>
+                      {/* {customers.map((customer, index) => (
+                        <option key={index} value={customer.psCusCode}>
+                          {customer.psCompanyName}
+                        </option>
+                      ))} */}
+                    </datalist>
+
+                    {/* <div className="invalid-feedback">Please select a valid state.</div> */}
+                  </div>
+                  <div className="col-md ps-0">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm rounded-0"
+                      id="queryCompanyName"
+                      name="queryCompanyName"
+                      value={cusData.psCompanyName}
+                      onChange={(e) => console.log(e.target.value)}
+                      readOnly
+                      required
+                    />
+                    <div className="invalid-feedback">Please select a valid Customer.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
+                Branch
+              </label>
+              <div className="col-md">
+                <div className="row">
+                  <div className="col-md-3 pe-0">
+                    <input
+                      type="number"
+                      className="form-control form-control-sm rounded-0"
+                      id="branchcode"
+                      name="branchcode"
+                      value={branchformData.branchcode}
+                      onChange={(e) =>
+                        setBranchFormData({ ...branchformData, branchcode: e.target.value })
+                      }
+                      min={1}
+                      //   pattern="/^BR00/"
+                      //   onChange={this.function.handleChange}
+                      // onKeyDown={this.handleEnter}
+                      required
+                    />
+                    {/* <div className="valid-feedback">
+                          String must start with <em>BR00</em>
+                        </div> */}
+                  </div>
+                  <div className="col-md ps-0">
+                    <input
+                      type="text"
+                      className="form-control form-control-sm rounded-0"
+                      id="name"
+                      name="name"
+                      value={branchformData.name}
+                      onChange={(e) =>
+                        setBranchFormData({ ...branchformData, name: e.target.value })
+                      }
+                      //   onChange={this.function.handleChange}
+                      // onKeyDown={this.handleEnter}
+                      required
+                    />
+                  </div>
+                </div>
+                {/* <div id="branchcode" className="form-text">
+                      The Branch code will be automatically set to i.e <b>BR0023</b>
+                    </div> */}
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
+                Email
+              </label>
+              <div className="col-md">
+                <input
+                  type="email"
+                  className="form-control form-control-sm rounded-0"
+                  id="email"
+                  name="email"
+                  value={branchformData.email}
+                  onChange={(e) => setBranchFormData({ ...branchformData, email: e.target.value })}
+                  //   onChange={this.function.handleChange}
+                  // onKeyDown={this.handleEnter}
+                />
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
+                Phone
+              </label>
+              <div className="col-md">
+                <input
+                  type="tel"
+                  className="form-control form-control-sm rounded-0"
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  value={branchformData.phoneNumber}
+                  pattern="[0-9]{10}"
+                  maxLength={10}
+                  onChange={(e) =>
+                    setBranchFormData({ ...branchformData, phoneNumber: e.target.value })
+                  }
+                  //   onChange={this.function.handleChange}
+                  // onKeyDown={this.handleEnter}
+                  required
+                />
+              </div>
+            </div>
+            <div className="row mb-2">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label"
+                style={{ fontSize: '10px' }}
+              >
+                {/* Name */}
+              </label>
+              <div className="col-md">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={branchformData.enabled}
+                  value={branchformData.enabled}
+                  name="enabled"
+                  id="enabled"
+                  onChange={(e) => {
+                    setBranchFormData({ ...branchformData, enabled: e.target.checked })
+                    console.log(e.target.checked)
+                  }}
+                />
+                <label className="form-check-label ms-2" htmlFor="enabled">
+                  Branch Enabled
+                </label>
+              </div>
+            </div>
+            {/* <div className="row mb-2">
+                  <label
+                    htmlFor="name"
+                    className="col-md-3 col-form-label"
+                    style={{ fontSize: '10px' }}
+                  ></label>
+                  <div className="col-md">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={formData.mainbranch}
+                      name="mainbranch"
+                      id="mainbranch"
+                      disabled
+                      //   onChange={this.function.handleChange}
+                      //   required
+                    />
+                    <label className="form-check-label ms-2" htmlFor="mainbranch">
+                      Is Main Branch
+                    </label>
+                  </div>
+                </div> */}
+            <div className="row mb-2">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label"
+                style={{ fontSize: '10px' }}
+              >
+                {/* Name */}
+              </label>
+              <div className="col-md">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={branchformData.acct}
+                  name="acct"
+                  id="acct"
+                  onChange={(e) => setBranchFormData({ ...branchformData, acct: e.target.checked })}
+                />
+                <label className="form-check-label ms-2" htmlFor="acct">
+                  Branch Accounts Enabled
+                </label>
+              </div>
+            </div>
+            <div className="row mb-2">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label"
+                style={{ fontSize: '10px' }}
+              >
+                {/* Name */}
+              </label>
+              <div className="col-md">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={branchformData.showallcustomertrans}
+                  name="showallcustomertrans"
+                  id="showallcustomertrans"
+                  onChange={(e) =>
+                    setBranchFormData({ ...branchformData, showallcustomertrans: e.target.checked })
+                  }
+                />
+                <label className="form-check-label ms-2" htmlFor="showallcustomertrans">
+                  Show All Customer Transactions
+                </label>
+              </div>
+            </div>
+            <div className="row mb-2">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label"
+                style={{ fontSize: '10px' }}
+              >
+                {/* Name */}
+              </label>
+              <div className="col-md">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  checked={branchformData.showallcustomer}
+                  name="showallcustomer"
+                  id="showallcustomer"
+                  // disabled
+                  onChange={(e) =>
+                    setBranchFormData({ ...branchformData, showallcustomer: e.target.checked })
+                  }
+                />
+                <label className="form-check-label ms-2" htmlFor="showallcustomer">
+                  Show All Customers Setup
+                </label>
+              </div>
+            </div>
+          </CModalBody>
+          <CModalFooter>
+            <div className="d-flex justify-content-end">
+              <button
+                type="submit"
+                className="btn update-btn btn-sm rounded-0 me-2"
+                style={{ width: '5rem' }}
+                // onClick={this.GenerateCnote}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm m-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </>
+                ) : (
+                  'Save'
+                )}
+              </button>
+
+              <button
+                type="button"
+                style={{ width: '5rem' }}
+                className="btn btn-sm reverse-btn rounded-0"
+                onClick={() => {
+                  setIsBranchModalVisible(false)
+                  // setCusData({
+                  //   psCusCode: '',
+                  //   psCompanyName: '',
+                  // })
+                  setBranchFormData({
+                    bcode: '',
+                    branchcode: '',
+                    name: '',
+                    email: '',
+                    phoneNumber: '',
+                    enabled: true,
+                    mainbranch: false,
+                    acct: true,
+                    showallcustomertrans: true,
+                    showallcustomer: true,
+                  })
                 }}
               >
                 Cancel
