@@ -562,7 +562,7 @@ const CompanyUsers = () => {
     e.preventDefault()
     const data = {
       psCusCode: cusData?.psCusCode,
-      branchcode: branchformData?.branchcode,
+      branchcode: `BR00${branchformData?.branchcode}`,
       //   branchcode: `BR00${formData?.branchcode}`,
       //   bcode: Number(formData?.bcode),
       bcode: Number(branchformData?.branchcode),
@@ -575,7 +575,7 @@ const CompanyUsers = () => {
       showallcustomertrans: branchformData?.showallcustomertrans,
       showallcustomer: branchformData?.showallcustomer,
     }
-    CreateBranch(data)
+    // CreateBranch(data)
     console.log(data)
   }
   useEffect(() => {
