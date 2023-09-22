@@ -57,50 +57,6 @@ function Login() {
     }, 8000)
   }
 
-  // const handleAuth = async (e) => {
-  //   e.preventDefault()
-  //   setData({
-  //     ...data,
-  //     isLoading: true,
-  //     error: '',
-  //   })
-  //   try {
-  //     const response = await axios.post('http://102.37.102.247:5023/api/Auth/Login', {
-  //       email: data.email,
-  //       password: data.password,
-  //     })
-  //     if (response.statusText === 'OK') {
-  //       setData({
-  //         ...data,
-  //         isLoading: false,
-  //       })
-  //       localStorage.setItem('accessToken', response.data.accessToken)
-  //       localStorage.setItem('ID', response.data.id)
-  //       localStorage.setItem('name', response.data.name)
-  //       navigate('/dashboard')
-  //       console.log(response)
-  //     } else {
-  //       setData({
-  //         ...data,
-  //         isLoading: false,
-  //       })
-  //     }
-  //   } catch (err) {
-  //     setData({
-  //       ...data,
-  //       error: err.response.data.message,
-  //       isLoading: false,
-  //     })
-  //     console.log(err)
-  //   }
-  //   return setTimeout(() => {
-  //     setData({
-  //       ...data,
-  //       error: '',
-  //     })
-  //   }, 8000)
-  // }
-
   useEffect(() => {
     // Update network status
     const handleStatusChange = () => {

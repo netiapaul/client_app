@@ -76,7 +76,7 @@ const Users = () => {
     setIsLoading(true)
     setError('')
     try {
-      const response = await axios.get('http://102.37.102.247:5023/api/Users/GetUsers', {
+      const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetUsers`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -99,7 +99,7 @@ const Users = () => {
     setIsLoading(true)
     setError('')
     try {
-      const response = await axios.get('http://102.37.102.247:5023/api/Users/GetRoles', {
+      const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetRoles`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -123,7 +123,7 @@ const Users = () => {
     setIsLoading(true)
     setError('')
     try {
-      const response = await fetch('http://102.37.102.247:5023/api/Users/CreateUser', {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Users/CreateUser`, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -178,9 +178,9 @@ const Users = () => {
     setError('')
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Users/UpdateUser?id=${Number(selectedRow.id)}&email=${
-          selectedRow.email
-        }`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Users/UpdateUser?id=${Number(
+          selectedRow.id,
+        )}&email=${selectedRow.email}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -236,9 +236,9 @@ const Users = () => {
     setError('')
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Users/DeleteUser?id=${Number(selectedRow.id)}&email=${
-          selectedRow.email
-        }`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Users/DeleteUser?id=${Number(
+          selectedRow.id,
+        )}&email=${selectedRow.email}`,
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {

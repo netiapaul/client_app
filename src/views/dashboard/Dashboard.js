@@ -78,14 +78,17 @@ const Dashboard = () => {
     setIsLoading(true)
     setError('')
     try {
-      const response = await axios.get('http://102.37.102.247:5023/api/Clients/GetClients', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
-          'Content-Type': 'application/json',
+      const response = await axios.get(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
         },
-      })
+      )
       setData({ ...data, clients: response.data })
       setIsLoading(false)
     } catch (error) {

@@ -74,7 +74,7 @@ const ActivityLogs = () => {
     setError('')
     try {
       const response = await axios.get(
-        `http://102.37.102.247:5023/api/Logs/GetLogs?companyName=${
+        `${process.env.REACT_APP_URL_CONFIG}/api/Logs/GetLogs?companyName=${
           queryParams.queryCompanyName
         }&sectionId=${Number(queryParams.querySectionId)}&userName=${queryParams.queryUserName}`,
         {
@@ -102,7 +102,7 @@ const ActivityLogs = () => {
     // setIsLoading(true)
     setError('')
     try {
-      const response = await axios.get(`http://102.37.102.247:5023/api/Users/GetUsers`, {
+      const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetUsers`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -126,14 +126,17 @@ const ActivityLogs = () => {
     // setIsLoading(true)
     setError('')
     try {
-      const response = await axios.get(`http://102.37.102.247:5023/api/Customers/GetCustomers`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
-          'Content-Type': 'application/json',
+      const response = await axios.get(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomers`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
         },
-      })
+      )
       setCustomers(response.data)
       // setIsLoading(false)
     } catch (error) {

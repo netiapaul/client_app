@@ -6,7 +6,6 @@ import moment from 'moment'
 import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
 import Chip from '@mui/material/Chip'
-const axios = require('axios')
 // "homepage": ".",
 const UpdateClient = () => {
   const { id } = useParams()
@@ -75,7 +74,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/GetClientDetails?id=${id}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClientDetails?id=${id}`,
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -122,7 +121,8 @@ const UpdateClient = () => {
             result.clientDetails.psActivateExpiryDate === '' ||
             result.clientDetails.psActivateExpiryDate === null
               ? ''
-              : new Date(result?.clientDetails?.psActivateExpiryDate),
+              : // : moment(result?.clientDetails?.psActivateExpiryDate).format('DD/MM/YYYY'),
+                new Date(result?.clientDetails?.psActivateExpiryDate),
           isActive: result?.clientDetails.psActivated === '1' ? true : false,
           queryStockTakeStartDate:
             result.clientDetails.psStockTakeStartDate === '' ||
@@ -164,15 +164,18 @@ const UpdateClient = () => {
   const getCustomers = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('http://102.37.102.247:5023/api/Customers/GetCustomers', {
-        headers: {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${token}`,
-          Accept: '*/*',
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomers`,
+        {
+          headers: {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
         },
-      })
+      )
       if (response.ok) {
         const result = await response.json()
         setCustomers(result)
@@ -191,15 +194,18 @@ const UpdateClient = () => {
   const GetSerialNumbers = async () => {
     setIsLoading({ isLoading: true })
     try {
-      const response = await fetch('http://102.37.102.247:5023/api/Customers/GetSerialNumbers', {
-        headers: {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${token}`,
-          Accept: '*/*',
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
+        {
+          headers: {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
         },
-      })
+      )
       if (response.ok) {
         const result = await response.json()
         setSerialNo(result)
@@ -218,7 +224,7 @@ const UpdateClient = () => {
   const GetAddOns = async () => {
     setIsLoading({ isLoading: true })
     try {
-      const response = await fetch('http://102.37.102.247:5023/api/Logs/GetAddOns', {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Logs/GetAddOns`, {
         headers: {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -246,7 +252,7 @@ const UpdateClient = () => {
     setIsLoading({ isLoading: true })
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Customers/GetCustomerMembers?cusCode=${query}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomerMembers?cusCode=${query}`,
         {
           headers: {
             method: 'GET', // *GET, POST, PUT, DELETE, etc.
@@ -304,7 +310,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateClientDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -349,7 +355,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateSerialDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateSerialDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -394,7 +400,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateUserCals?id=${id}&cpu=${
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateUserCals?id=${id}&cpu=${
           data.psPickCpu
         }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&userCals=${Number(
           editFormData.queryUserCount,
@@ -435,7 +441,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateBranchCals?id=${id}&cpu=${
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateBranchCals?id=${id}&cpu=${
           data.psPickCpu
         }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&branchCals=${Number(
           editFormData.queryBranchCount,
@@ -476,7 +482,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateStockTakeCals?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateStockTakeCals?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -521,7 +527,7 @@ const UpdateClient = () => {
     // console.log(editFormData.selectedAdons)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -568,7 +574,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/RemoveAddons?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/RemoveAddons?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -601,7 +607,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `http://102.37.102.247:5023/api/Clients/UpdateDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -924,6 +930,7 @@ const UpdateClient = () => {
                           type="text"
                           name="psActivateExpiryDate"
                           id="psActivateExpiryDate"
+                          // value={data.psActivateExpiryDate}
                           value={
                             !data.psActivateExpiryDate
                               ? ''
