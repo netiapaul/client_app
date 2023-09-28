@@ -28,6 +28,8 @@ const UpdateClient = () => {
     psActivateExpiryDate: '',
     psSerialNo: '',
     psStockTakeCals: '',
+    psBedCount: '',
+    psGL: false,
     psActivated: false,
     psStockTakeStartDate: '',
     stockTakeEndDate: '',
@@ -51,6 +53,8 @@ const UpdateClient = () => {
     querySerialNo: '',
     queryExpiryDate: '',
     queryDays: '',
+    psBedCount: '',
+    psGL: false,
     isActive: false,
     /*3*/
     queryUserCount: '',
@@ -97,6 +101,9 @@ const UpdateClient = () => {
           psSerialNo: result?.clientDetails.psSerialNo,
           psActivated: result?.clientDetails.psActivated === '1' ? true : false,
           psActivateExpiryDate: result?.clientDetails?.psActivateExpiryDate,
+          psBedCount: result?.clientDetails?.psBedCount,
+          psGL: result?.clientDetails?.psGL,
+          // psGL: Boolean(result?.clientDetails?.psGL),
           psUserCount: result?.clientDetails.psUserCount,
           psBranchCount: result?.clientDetails.psBranchCount,
           psStockTakeCals: result?.clientDetails.psStockTakeCals,
@@ -116,6 +123,8 @@ const UpdateClient = () => {
           queryAcctName: result?.clientDetails.psCompanyName,
           queryBranchCode: result?.clientDetails.branchCode,
           querySerialNo: result?.clientDetails.psSerialNo,
+          psBedCount: result?.clientDetails?.psBedCount,
+          psGL: result?.clientDetails?.psGL,
           queryBranchName: result?.clientDetails.psBranchName,
           queryExpiryDate:
             result.clientDetails.psActivateExpiryDate === '' ||
@@ -367,6 +376,8 @@ const UpdateClient = () => {
           body: JSON.stringify({
             serialNo: editFormData.querySerialNo,
             isActive: editFormData.isActive,
+            psBedCount: editFormData.psBedCount,
+            psGL: editFormData.psGL,
             cusCode: data.psCusCode,
             branchCode: data.branchCode,
             expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
@@ -906,7 +917,7 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
-                <div className="row mb-1">
+                <div className="row mb-3">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Expiry Date
                   </label>
@@ -954,6 +965,44 @@ const UpdateClient = () => {
                               className="form-control form-control-sm rounded-0"
                               readOnly
                               disabled
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="row mb-1">
+                  <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
+                    Bed Count
+                  </label>
+                  <div className="col-md ps-1">
+                    <div className="row">
+                      <div className="col-6">
+                        <input
+                          type="text"
+                          name="psBedCount"
+                          id="psBedCount"
+                          value={data.psBedCount}
+                          className="form-control form-control-sm rounded-0"
+                          disabled
+                          // readOnly
+                        />
+                      </div>
+                      <div className="col-6">
+                        <div className="row">
+                          <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
+                            GL
+                          </label>
+                          <div className="col ps-0">
+                            <input
+                              type="text"
+                              name="psGL"
+                              id="psGL"
+                              value={data.psGL}
+                              className="form-control form-control-sm rounded-0"
+                              disabled
+                              // readOnly
                             />
                           </div>
                         </div>
@@ -1065,6 +1114,8 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
+                {/* <hr className="mb-3 mt-1" /> */}
+
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
@@ -1553,7 +1604,7 @@ const UpdateClient = () => {
                 </div>
               </div>
             </div>
-            <div className="row mb-1">
+            <div className="row mb-3">
               <div className="col-md">
                 <div className="row">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
@@ -1605,6 +1656,44 @@ const UpdateClient = () => {
                       value={editFormData.queryDays}
                       className="form-control form-control-sm rounded-0"
                       onChange={handleDay}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="row mb-1">
+              <div className="col-md">
+                <div className="row">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Bed Count
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="text"
+                      name="psBedCount"
+                      id="psBedCount"
+                      value={editFormData.psBedCount}
+                      className="form-control form-control-sm rounded-0"
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, psBedCount: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="col-md">
+                <div className="row">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    GL
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="text"
+                      name="psGL"
+                      id="psGL"
+                      value={editFormData.psGL}
+                      className="form-control form-control-sm rounded-0"
+                      onChange={(e) => setEditFormData({ ...editFormData, psGL: e.target.value })}
                     />
                   </div>
                 </div>
