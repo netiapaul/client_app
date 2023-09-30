@@ -1677,6 +1677,7 @@ const UpdateClient = () => {
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, psBedCount: e.target.value })
                       }
+                      required
                     />
                   </div>
                 </div>
@@ -1694,6 +1695,7 @@ const UpdateClient = () => {
                       value={editFormData.psGL}
                       className="form-control form-control-sm rounded-0"
                       onChange={(e) => setEditFormData({ ...editFormData, psGL: e.target.value })}
+                      required
                     />
                   </div>
                 </div>
