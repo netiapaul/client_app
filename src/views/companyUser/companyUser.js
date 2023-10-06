@@ -4,7 +4,9 @@ import { tableIcons, tableOptions } from '../../utils/helpers'
 import Drawer from '@mui/material/Drawer'
 import { FaCaretRight } from 'react-icons/fa'
 import PhoneInput from 'react-phone-input-2'
+import moment from 'moment'
 import { CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter } from '@coreui/react'
+import DatePicker from 'react-datepicker'
 
 const axios = require('axios')
 
@@ -28,6 +30,8 @@ const CompanyUsers = () => {
     cellnumber: '',
     cellname: '',
     cellcountry: '',
+    expiryDate: new Date(),
+    trialAcct: false,
   })
   const [cusData, setCusData] = useState({
     psCusCode: '',
@@ -39,6 +43,9 @@ const CompanyUsers = () => {
     name: '',
     email: '',
     phoneNumber: '',
+    userCount: 0,
+    activeDate: new Date(),
+    expiryDate: new Date(),
     enabled: true,
     mainbranch: false,
     acct: true,
@@ -489,6 +496,8 @@ const CompanyUsers = () => {
       cellname: formData.cellname,
       cellnumber: formData.cellnumber,
       cellcountry: formData.cellcountry,
+      expiryDate: formData.expiryDate,
+      trialAcct: formData.trialAcct,
       companyid: rowDetails.companyDetailId,
     }
     AddCompanyUser(data)
@@ -525,6 +534,9 @@ const CompanyUsers = () => {
           lockpartwholeborder: true,
           lockpartwholebtrans: true,
           btranspartwhole: 'W',
+          activeDate: moment(branchformData.activeDate).format('DD/MM/YYYY'),
+          expiryDate: moment(branchformData.expiryDate).format('DD/MM/YYYY'),
+          userCount: branchformData.userCount,
         },
         {
           headers: {
@@ -546,20 +558,21 @@ const CompanyUsers = () => {
         showallcustomertrans: true,
         showallcustomer: true,
       })
+      GetBranches(rowDetails.clientCode)
       setBranchRowId('')
       setIsBranchModalVisible(false)
       setIsLoading(false)
       console.log(response.data)
     } catch (error) {
       console.log(error)
-      GetBranches(rowDetails.clientCode)
-      setError(error?.response?.data?.message)
+      // GetBranches(rowDetails.clientCode)
+      setError(error.response.data.messge || error.response.data.message)
       //   setError(`${error?.response?.status}: ${error?.response?.data?.message}`)
       setIsLoading(false)
     }
     return setTimeout(() => {
       setError('')
-    }, 8000)
+    }, 15000)
   }
   const handleBranchSubmit = (e) => {
     e.preventDefault()
@@ -578,8 +591,8 @@ const CompanyUsers = () => {
       showallcustomertrans: branchformData?.showallcustomertrans,
       showallcustomer: branchformData?.showallcustomer,
     }
-    // CreateBranch(data)
-    console.log(data)
+    CreateBranch(data)
+    // console.log(data)
   }
   useEffect(() => {
     GetCompany()
@@ -681,6 +694,26 @@ const CompanyUsers = () => {
                         />
                       </div>
                     </div>
+                    {/* <div className="row mb-3">
+                      <label htmlFor="email" className="col-md-4 col-form-label divider">
+                        Expiry Date
+                      </label>
+                      <div className="col-md">
+                        <DatePicker
+                          className="form-control form-control-sm rounded-0"
+                          selected={formData.expiryDate}
+                          dateFormat="dd/MM/yyyy"
+                          peekNextMonth
+                          showMonthDropdown
+                          showYearDropdown
+                          dropdownMode="select"
+                          onChange={(date) => {
+                            setFormData({ ...formData, expiryDate: date })
+                          }}
+                          required
+                        />
+                      </div>
+                    </div> */}
                     <div className="row mb-3">
                       <label htmlFor="email" className="col-md-4 col-form-label divider">
                         Password
@@ -703,6 +736,25 @@ const CompanyUsers = () => {
                         />
                       </div>
                     </div>
+                    {/* <div className="row mb-3">
+                      <label htmlFor="email" className="col-md-4 col-form-label divider">
+                        Trial Account
+                      </label>
+                      <div className="col-md">
+                        <div className="form-check">
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            checked={formData.trialAcct}
+                            name="trialAcct"
+                            id="trialAcct"
+                            onChange={(e) => {
+                              setFormData({ ...formData, trialAcct: e.target.checked })
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div> */}
                     <hr className="mb-3" />
                     <div className="d-flex justify-content-end">
                       <button
@@ -735,11 +787,14 @@ const CompanyUsers = () => {
                             cellnumber: '',
                             cellname: '',
                             cellcountry: '',
+                            expiryDate: '',
+                            trialAcct: false,
                           })
                           setRowDetails({
                             selectedRow: [],
-                            companyDetailId: 0,
+                            companyDetailId: '',
                           })
+                          setCompanyRowId('')
                         }}
                       >
                         close
@@ -1102,12 +1157,21 @@ const CompanyUsers = () => {
         <CModalHeader>
           <CModalTitle>Add Branches</CModalTitle>
         </CModalHeader>
-        <form
-          className="row g-3 needs-validation was-validated"
-          noValidate=""
-          onSubmit={handleBranchSubmit}
-        >
-          <CModalBody>
+        <CModalBody>
+          {error && (
+            <div
+              className="alert alert-danger d-flex align-items-center mx-0 mb-2 rounded-0 p-1"
+              role="alert"
+            >
+              <i className="fa fa-exclamation-triangle me-3" aria-hidden="true"></i>
+              <span>{error}</span>
+            </div>
+          )}
+          <form
+            className="row needs-validation was-validated"
+            noValidate=""
+            onSubmit={handleBranchSubmit}
+          >
             <div className="row my-3">
               <label htmlFor="queryCompanyName" className="col-md-3 col-form-label divider">
                 Customers
@@ -1222,6 +1286,78 @@ const CompanyUsers = () => {
                   onChange={(e) => setBranchFormData({ ...branchformData, email: e.target.value })}
                   //   onChange={this.function.handleChange}
                   // onKeyDown={this.handleEnter}
+                />
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
+                Active Date
+              </label>
+              <div className="col-md">
+                <DatePicker
+                  className="form-control form-control-sm rounded-0"
+                  selected={branchformData.activeDate}
+                  dateFormat="dd/MM/yyyy"
+                  peekNextMonth
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  onChange={(date) => {
+                    setBranchFormData({ ...branchformData, activeDate: date })
+                  }}
+                  required
+                />
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
+                Expiry Date
+              </label>
+              <div className="col-md">
+                <DatePicker
+                  className="form-control form-control-sm rounded-0"
+                  selected={branchformData.expiryDate}
+                  dateFormat="dd/MM/yyyy"
+                  peekNextMonth
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  onChange={(date) => {
+                    setBranchFormData({ ...branchformData, expiryDate: date })
+                  }}
+                  required
+                />
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
+                User Count
+              </label>
+              <div className="col-md">
+                <input
+                  type="number"
+                  className="form-control form-control-sm rounded-0"
+                  id="userCount"
+                  name="userCount"
+                  value={branchformData.userCount}
+                  onChange={(e) =>
+                    setBranchFormData({ ...branchformData, userCount: e.target.value })
+                  }
+                  //   onChange={this.function.handleChange}
+                  // onKeyDown={this.handleEnter}
+                  required
                 />
               </div>
             </div>
@@ -1370,8 +1506,7 @@ const CompanyUsers = () => {
                 </label>
               </div>
             </div>
-          </CModalBody>
-          <CModalFooter>
+            <hr className="mb-2" />
             <div className="d-flex justify-content-end">
               <button
                 type="submit"
@@ -1420,8 +1555,8 @@ const CompanyUsers = () => {
                 Cancel
               </button>
             </div>
-          </CModalFooter>
-        </form>
+          </form>
+        </CModalBody>
       </CModal>
       <CModal alignment="center" visible={deleteModal} backdrop="static">
         <CModalHeader>

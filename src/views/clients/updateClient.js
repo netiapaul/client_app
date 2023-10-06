@@ -17,6 +17,8 @@ const UpdateClient = () => {
   const [userCALSModal, setUserCALSModal] = useState(false)
   const [branchCALSModal, setBranchCALSModal] = useState(false)
   const [stockTakeCALSModal, setStockTakeCALSModal] = useState(false)
+  const [psBedCountModal, setPsBedCountModal] = useState(false)
+  const [psGLModal, setPsGLModal] = useState(false)
   const [addOnsModal, setAddOnsModal] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [data, setData] = useState({
@@ -103,7 +105,6 @@ const UpdateClient = () => {
           psActivateExpiryDate: result?.clientDetails?.psActivateExpiryDate,
           psBedCount: result?.clientDetails?.psBedCount,
           psGL: result?.clientDetails?.psGL,
-          // psGL: Boolean(result?.clientDetails?.psGL),
           psUserCount: result?.clientDetails.psUserCount,
           psBranchCount: result?.clientDetails.psBranchCount,
           psStockTakeCals: result?.clientDetails.psStockTakeCals,
@@ -376,8 +377,8 @@ const UpdateClient = () => {
           body: JSON.stringify({
             serialNo: editFormData.querySerialNo,
             isActive: editFormData.isActive,
-            psBedCount: editFormData.psBedCount,
-            psGL: editFormData.psGL,
+            // psBedCount: editFormData.psBedCount,
+            // psGL: editFormData.psGL,
             cusCode: data.psCusCode,
             branchCode: data.branchCode,
             expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
@@ -474,6 +475,86 @@ const UpdateClient = () => {
         setIsLoading(false)
         setEditFormData({
           queryBranchCount: '',
+        })
+        console.log(result)
+        GetClientDetails(id)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+  const UpdateBedCount = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateBedCount?id=${id}&cpu=${
+          data.psPickCpu
+        }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&BedCount=${Number(
+          editFormData.psBedCount,
+        )}`,
+        {
+          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setPsBedCountModal(false)
+        // setData({ ...data, editModal: false, editModalInterface: 0 })
+        setIsLoading(false)
+        setEditFormData({
+          psBedCount: '',
+        })
+        console.log(result)
+        GetClientDetails(id)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+  const UpdateGL = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateGL?id=${id}&cpu=${
+          data.psPickCpu
+        }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&psGL=${Number(editFormData.psGL)}`,
+        {
+          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setPsGLModal(false)
+        // setData({ ...data, editModal: false, editModalInterface: 0 })
+        setIsLoading(false)
+        setEditFormData({
+          psGL: '',
         })
         console.log(result)
         GetClientDetails(id)
@@ -917,7 +998,7 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
-                <div className="row mb-3">
+                <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Expiry Date
                   </label>
@@ -972,7 +1053,7 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
-                <div className="row mb-1">
+                {/* <div className="row mb-1">
                   <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
                     Bed Count
                   </label>
@@ -1009,7 +1090,7 @@ const UpdateClient = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div> */}
                 <div className="d-flex justify-content-end">
                   {data.psCusCode === '' || data.branchCode === '' ? (
                     ''
@@ -1082,6 +1163,95 @@ const UpdateClient = () => {
                                 role="button"
                                 style={{ fontSize: '10px', color: '#c58c4f' }}
                                 onClick={() => setBranchCALSModal(true)}
+                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
+                              >
+                                Change
+                              </p>
+                            </div>
+                          </div>
+                          {/* <div className="col">
+                            <div className="row">
+                              <label
+                                htmlFor="branchCode"
+                                className="col-md-5 col-form-label divider"
+                              >
+                                Stock Take CALS
+                              </label>
+                              <div className="col-md ps-1">
+                                <input
+                                  type="text"
+                                  name="psStockTakeCals"
+                                  id="psStockTakeCals"
+                                  value={data.psStockTakeCals}
+                                  className="form-control form-control-sm rounded-0"
+                                  disabled
+                                  readOnly
+                                />
+                              </div>
+                            </div>
+                          </div> */}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <hr className="mb-3 mt-1" />
+                <div className="row mb-1">
+                  <div className="col-md">
+                    <div className="row">
+                      <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                        Bed Count
+                      </label>
+                      <div className="col-md ps-1">
+                        <div className="row">
+                          <div className="col">
+                            <input
+                              type="text"
+                              name="psUserCount"
+                              id="psUserCount"
+                              value={data.psBedCount}
+                              className="form-control form-control-sm rounded-0"
+                              disabled
+                              readOnly
+                            />
+                            <div className="d-flex justify-content-end">
+                              <p
+                                className="my-1 fw-bold"
+                                role="button"
+                                style={{ fontSize: '10px', color: '#c58c4f' }}
+                                onClick={() => setPsBedCountModal(true)}
+                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
+                              >
+                                Change
+                              </p>
+                            </div>
+                          </div>
+                          <div className="col">
+                            <div className="row">
+                              <label
+                                htmlFor="branchCode"
+                                className="col-md-5 col-form-label divider"
+                              >
+                                GL
+                              </label>
+                              <div className="col-md ps-1">
+                                <input
+                                  type="text"
+                                  name="psGL"
+                                  id="psGL"
+                                  value={data.psGL}
+                                  className="form-control form-control-sm rounded-0"
+                                  disabled
+                                  readOnly
+                                />
+                              </div>
+                            </div>
+                            <div className="d-flex justify-content-end">
+                              <p
+                                className="my-1 fw-bold"
+                                role="button"
+                                style={{ fontSize: '10px', color: '#c58c4f' }}
+                                onClick={() => setPsGLModal(true)}
                                 // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
                               >
                                 Change
@@ -1356,25 +1526,25 @@ const UpdateClient = () => {
               </p>
               <hr className="my-1" />
               <ul className="list-group list-group-flush" style={{ fontSize: '10px' }}>
-                <li className="list-group-item p-1 d-flex flex-column">
+                <li className="list-group-item d-flex justify-content-between">
                   <span className="fw-bold ">CPU</span>
                   <span>{data.psPickCpu}</span>
                 </li>
-                <li className="list-group-item p-1 d-flex flex-column">
+                <li className="list-group-item d-flex justify-content-between">
                   <span className="fw-bold ">BIOS</span>
                   <span>{data.psPickBios}</span>
                 </li>
-                <li className="list-group-item p-1 d-flex flex-column">
+                <li className="list-group-item d-flex justify-content-between">
                   <span className="fw-bold ">Hard Disk</span>
                   <span>{data.psPickHdd}</span>
                 </li>
-                <li className="list-group-item p-1 d-flex flex-column">
+                <li className="list-group-item d-flex justify-content-between">
                   <span className="fw-bold">Company</span>
                   <span>
                     {data.psPickCompany} - {data.psPickBcode}
                   </span>
                 </li>
-                <li className="list-group-item p-1 d-flex flex-column">
+                <li className="list-group-item d-flex justify-content-between">
                   <span className="fw-bold">Last Service Date</span>
                   <span>
                     <Moment format="DD/MM/YYYY">{data.pickDate}</Moment>
@@ -1387,13 +1557,7 @@ const UpdateClient = () => {
       </div>
 
       {/* Client Modal */}
-      <CModal
-        alignment="center"
-        visible={clientModal}
-        backdrop="static"
-        size="lg"
-        onClose={() => setClientModal(false)}
-      >
+      <CModal alignment="center" visible={clientModal} backdrop="static">
         <CModalHeader>
           <CModalTitle>Update Client Details</CModalTitle>
         </CModalHeader>
@@ -1521,14 +1685,7 @@ const UpdateClient = () => {
         </CModalBody>
       </CModal>
       {/* Serial Modal */}
-      <CModal
-        alignment="center"
-        // visible={true}
-        visible={serialModal}
-        backdrop="static"
-        size="lg"
-        onClose={() => setSerialModal(false)}
-      >
+      <CModal alignment="center" visible={serialModal} backdrop="static">
         <CModalHeader>
           <CModalTitle>Update Serial No</CModalTitle>
         </CModalHeader>
@@ -1661,46 +1818,6 @@ const UpdateClient = () => {
                 </div>
               </div>
             </div>
-            <div className="row mb-1">
-              <div className="col-md">
-                <div className="row">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Bed Count
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psBedCount"
-                      id="psBedCount"
-                      value={editFormData.psBedCount}
-                      className="form-control form-control-sm rounded-0"
-                      onChange={(e) =>
-                        setEditFormData({ ...editFormData, psBedCount: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="col-md">
-                <div className="row">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    GL
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psGL"
-                      id="psGL"
-                      value={editFormData.psGL}
-                      className="form-control form-control-sm rounded-0"
-                      onChange={(e) => setEditFormData({ ...editFormData, psGL: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
@@ -1737,13 +1854,7 @@ const UpdateClient = () => {
         </CModalBody>
       </CModal>
       {/* User CALS Modal */}
-      <CModal
-        alignment="center"
-        visible={userCALSModal}
-        backdrop="static"
-        size="lg"
-        onClose={() => setUserCALSModal(false)}
-      >
+      <CModal alignment="center" visible={userCALSModal} backdrop="static">
         <CModalHeader>
           <CModalTitle>Update User CALS</CModalTitle>
         </CModalHeader>
@@ -1801,14 +1912,122 @@ const UpdateClient = () => {
           </form>
         </CModalBody>
       </CModal>
+      {/* BedCount Modal */}
+      <CModal alignment="center" visible={psBedCountModal} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Update Bed Count</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <form autoComplete="off" onSubmit={UpdateBedCount}>
+            <div className="row mb-1">
+              <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                Bed Count
+              </label>
+              <div className="col-md ps-1">
+                <input
+                  type="number"
+                  name="psBedCount"
+                  id="psBedCount"
+                  value={editFormData.psBedCount}
+                  className="form-control form-control-sm rounded-0"
+                  onChange={(e) => setEditFormData({ ...editFormData, psBedCount: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                style={{ width: '4rem' }}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm m-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </>
+                ) : (
+                  'Edit'
+                )}
+              </button>
+
+              <button
+                type="button"
+                style={{ width: '4rem' }}
+                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                onClick={() => {
+                  setPsBedCountModal(false)
+                  setError('')
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </CModalBody>
+      </CModal>
+      {/* GL Modal */}
+      <CModal alignment="center" visible={psGLModal} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Update GL</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <form autoComplete="off" onSubmit={UpdateGL}>
+            <div className="row mb-1">
+              <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                GL
+              </label>
+              <div className="col-md ps-1">
+                <input
+                  type="number"
+                  name="psGL"
+                  id="psGL"
+                  value={editFormData.psGL}
+                  className="form-control form-control-sm rounded-0"
+                  onChange={(e) => setEditFormData({ ...editFormData, psGL: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                style={{ width: '4rem' }}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm m-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </>
+                ) : (
+                  'Edit'
+                )}
+              </button>
+
+              <button
+                type="button"
+                style={{ width: '4rem' }}
+                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                onClick={() => {
+                  setPsGLModal(false)
+                  setError('')
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </CModalBody>
+      </CModal>
       {/* Branch CALS Modal */}
-      <CModal
-        alignment="center"
-        visible={branchCALSModal}
-        backdrop="static"
-        size="lg"
-        onClose={() => setBranchCALSModal(false)}
-      >
+      <CModal alignment="center" visible={branchCALSModal} backdrop="static">
         <CModalHeader>
           <CModalTitle>Update Branch CALS</CModalTitle>
         </CModalHeader>
@@ -1867,13 +2086,7 @@ const UpdateClient = () => {
         </CModalBody>
       </CModal>
       {/* Stock Take CALS */}
-      <CModal
-        alignment="center"
-        visible={stockTakeCALSModal}
-        backdrop="static"
-        size="lg"
-        onClose={() => setStockTakeCALSModal(false)}
-      >
+      <CModal alignment="center" visible={stockTakeCALSModal} backdrop="static">
         <CModalHeader>
           <CModalTitle>Update Stock Takes CALS</CModalTitle>
         </CModalHeader>
@@ -2006,13 +2219,7 @@ const UpdateClient = () => {
         </CModalBody>
       </CModal>
       {/* Client Modal */}
-      <CModal
-        alignment="center"
-        visible={addOnsModal}
-        backdrop="static"
-        size="lg"
-        onClose={() => setAddOnsModal(false)}
-      >
+      <CModal alignment="center" visible={addOnsModal} backdrop="static">
         <CModalHeader>
           <CModalTitle>Update Add Ons</CModalTitle>
         </CModalHeader>

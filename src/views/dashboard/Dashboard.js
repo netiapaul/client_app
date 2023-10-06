@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import MaterialTable, { MTableToolbar } from 'material-table'
+import MaterialTable from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import Moment from 'react-moment'
 import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 const axios = require('axios')
 
 const Dashboard = () => {
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [rowId, setRowId] = useState('')
+  const navigate = useNavigate()
   const [data, setData] = useState({
     tableRef: React.createRef(),
     column: [
@@ -109,9 +111,19 @@ const Dashboard = () => {
     <>
       <hr className="my-2" />
       <div className="container-fluid bg-light p-0">
-        <div className="d-flex justify-content-start">
+        <div className="d-flex justify-content-between">
           <div className="flex-fill d-flex align-items-center">
             <h6 className="m-0">Customer Clients</h6>
+          </div>
+          <div className="">
+            <button
+              type="button"
+              style={{ width: '5rem' }}
+              className="btn btn-sm add-btn me-1 rounded-0"
+              onClick={() => navigate('/client/create-client')}
+            >
+              Create
+            </button>
           </div>
         </div>
       </div>
