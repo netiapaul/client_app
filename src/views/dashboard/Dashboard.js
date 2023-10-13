@@ -8,6 +8,7 @@ const axios = require('axios')
 
 const Dashboard = () => {
   //  "material-table": "^2.0.3",
+  const [title, setTitle] = useState('false')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [rowId, setRowId] = useState('')
@@ -76,13 +77,14 @@ const Dashboard = () => {
     clients: [],
   })
 
-  const getClients = async () => {
+  const getClients = async (type) => {
     setIsLoading(true)
     setError('')
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
         {
+          params: { forcloundch: type },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -103,9 +105,13 @@ const Dashboard = () => {
     }, 8000)
   }
 
+  const queryClients = (data) => {
+    setTitle(data)
+  }
+
   useEffect(() => {
-    getClients()
-  }, [])
+    getClients(title)
+  }, [title])
 
   return (
     <>
@@ -113,13 +119,99 @@ const Dashboard = () => {
       <div className="container-fluid bg-light p-0">
         <div className="d-flex justify-content-between">
           <div className="flex-fill d-flex align-items-center">
-            <h6 className="m-0">Customer Clients</h6>
+            <h6 className="m-0">
+              Customer Clients:{' '}
+              {title === ''
+                ? 'All Clients'
+                : title === 'true'
+                ? 'Cloud Clients'
+                : 'Desktop Clients'}
+            </h6>
           </div>
-          <div className="">
+          <div className="d-flex flex-row">
+            <span className="d-flex flex-row gap-2">
+              <span className="form-check">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  name="clientType"
+                  id="desktop"
+                  value={title}
+                  checked={title === 'false'}
+                  onChange={() => setTitle('false')}
+                />
+                <label className="form-check-label" htmlFor="desktop">
+                  Desktop
+                </label>
+              </span>
+              <span className="form-check">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  name="clientType"
+                  id="cloud"
+                  value={title}
+                  checked={title === 'true'}
+                  // onChange={() => console.log('true')}
+                  onChange={() => setTitle('true')}
+                />
+                <label className="form-check-label" htmlFor="cloud">
+                  Cloud
+                </label>
+              </span>
+              <span className="form-check">
+                <input
+                  className="form-check-input"
+                  type="radio"
+                  name="clientType"
+                  id="both"
+                  value={title}
+                  checked={title === ''}
+                  onChange={() => setTitle('')}
+                />
+                <label className="form-check-label" htmlFor="both">
+                  Both
+                </label>
+              </span>
+            </span>
+            {/* <button
+              className="btn btn-sm filter-btn dropdown-toggle rounded-0"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              Client Type
+            </button>
+            <ul className="dropdown-menu">
+              <li
+                className="dropdown-item"
+                role="button"
+                onClick={() => queryClients('')}
+                style={{ fontSize: '12px' }}
+              >
+                Both
+              </li>
+              <li
+                className="dropdown-item"
+                role="button"
+                onClick={() => queryClients('true')}
+                style={{ fontSize: '12px' }}
+              >
+                Cloud
+              </li>
+              <li
+                className="dropdown-item"
+                role="button"
+                onClick={() => queryClients('false')}
+                style={{ fontSize: '12px' }}
+              >
+                Desktop
+              </li>
+            </ul> */}
             <button
               type="button"
               style={{ width: '5rem' }}
-              className="btn btn-sm add-btn me-1 rounded-0"
+              className="btn btn-sm add-btn ms-1 rounded-0"
               onClick={() => navigate('/client/create-client')}
             >
               Create

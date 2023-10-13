@@ -535,9 +535,7 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateGL?id=${id}&cpu=${
-          data.psPickCpu
-        }&bios=${data.psPickBios}&hdd=${data.psPickHdd}&psGL=${Number(editFormData.psGL)}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateGL?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&psGL=${editFormData.psGL}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -1982,13 +1980,19 @@ const UpdateClient = () => {
               </label>
               <div className="col-md ps-1">
                 <input
-                  type="number"
+                  type="text"
                   name="psGL"
                   id="psGL"
+                  list="GLdatalistOptions"
                   value={editFormData.psGL}
                   className="form-control form-control-sm rounded-0"
                   onChange={(e) => setEditFormData({ ...editFormData, psGL: e.target.value })}
                 />
+                <datalist id="GLdatalistOptions">
+                  <option value={''}></option>
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </datalist>
               </div>
             </div>
             <div className="d-flex justify-content-end mt-3">

@@ -20,6 +20,18 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Client Access Modules',
+    to: '/client/access-modules',
+    icon: <span className="material-icons nav-icon">manage_accounts</span>,
+    // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
+    // <span className="material-icons nav-icon">group</span>
+    // badge: {
+    //   color: 'info',
+    //   text: 'NEW',
+    // },
+  },
+  {
+    component: CNavItem,
     name: 'Activities',
     to: '/activities',
     icon: <span className="material-icons nav-icon">summarize</span>,

@@ -3,6 +3,7 @@ import React from 'react'
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 // const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const CreateClient = React.lazy(() => import('./views/clients/createClient'))
+const AccessModules = React.lazy(() => import('./views/clients/acessModules'))
 const UpdateClient = React.lazy(() => import('./views/clients/updateClient'))
 const ActivityLog = React.lazy(() => import('./views/activityLogs/activityLogs'))
 const Users = React.lazy(() => import('./views/users/users'))
@@ -61,6 +62,7 @@ const routes = [
   { path: '/dashboard', exact: true, name: 'Dashboard', element: Dashboard },
   { path: '/client/:id', name: 'Update Client', element: UpdateClient, exact: true },
   { path: '/client/create-client', name: 'Create Client', element: CreateClient, exact: true },
+  { path: '/client/access-modules', name: 'Access Modules', element: AccessModules, exact: true },
   { path: '/activities', name: 'Activities', element: ActivityLog, exact: true },
   { path: '/users', name: 'Users', element: Users, exact: true },
   { path: '/company-users', name: 'Company Users', element: CompanyUsers, exact: true },

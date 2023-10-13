@@ -19,6 +19,7 @@ const CompanyUsers = () => {
   const [isBranchModalVisible, setIsBranchModalVisible] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
   const [companyRowId, setCompanyRowId] = useState('')
+  const [serialNo, setSerialNo] = useState([])
   const [userRowId, setUserRowId] = useState('')
   const [BranchRowId, setBranchRowId] = useState('')
   const [dataBases, setDataBases] = useState([])
@@ -43,6 +44,7 @@ const CompanyUsers = () => {
     name: '',
     email: '',
     phoneNumber: '',
+    psSerialNo: '',
     userCount: 0,
     activeDate: new Date(),
     expiryDate: new Date(),
@@ -537,6 +539,7 @@ const CompanyUsers = () => {
           activeDate: moment(branchformData.activeDate).format('DD/MM/YYYY'),
           expiryDate: moment(branchformData.expiryDate).format('DD/MM/YYYY'),
           userCount: branchformData.userCount,
+          psSerialNo: branchformData.psSerialNo,
         },
         {
           headers: {
@@ -590,14 +593,52 @@ const CompanyUsers = () => {
       acct: branchformData?.acct,
       showallcustomertrans: branchformData?.showallcustomertrans,
       showallcustomer: branchformData?.showallcustomer,
+      psSerialNo: branchformData?.psSerialNo,
     }
-    CreateBranch(data)
     // console.log(data)
+    CreateBranch(data)
   }
+  const GetSerialNumbers = async () => {
+    setIsLoading({ isLoading: true })
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
+        {
+          headers: {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        // const result = [
+        //   { serialId: 1, brancH_NAME: 'BRANCH 1' },
+        //   { serialId: 2, brancH_NAME: 'BRANCH 1' },
+        // ]
+        setSerialNo(result)
+        setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId })
+        setError(result.message)
+        setIsLoading(false)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+
   useEffect(() => {
     GetCompany()
     Getdatabase()
     getClients()
+    GetSerialNumbers()
   }, [])
 
   return (
@@ -1295,6 +1336,51 @@ const CompanyUsers = () => {
                 className="col-md-3 col-form-label divider"
                 style={{ fontSize: '10px' }}
               >
+                Serial No
+              </label>
+              <div className="col-md">
+                <select
+                  className="form-select form-select-sm rounded-0"
+                  aria-label="Default select example"
+                  style={{
+                    appearance: 'none',
+                  }}
+                  id="psSerialNo"
+                  name="psSerialNo"
+                  value={branchformData.psSerialNo}
+                  // onChange={(e) =>
+                  //   setEditFormData({ ...editFormData, querySerialNo: e.target.value })
+                  // }
+                  disabled
+                >
+                  <option selected value={serialNo[0]?.serialId}>
+                    {serialNo[0]?.serialId}
+                  </option>
+                  {serialNo.slice(0, 10).map((serial, index) => (
+                    <option key={index} value={serial.serialId}>
+                      {serial.serialId}
+                    </option>
+                  ))}
+                </select>
+                {/* <input
+                  type="text"
+                  className="form-control form-control-sm rounded-0"
+                  id="psSerialNo"
+                  name="psSerialNo"
+                  value={branchformData.psSerialNo}
+                  onChange={(e) => setBranchFormData({ ...branchformData, email: e.target.value })}
+                  readOnly
+                  //   onChange={this.function.handleChange}
+                  // onKeyDown={this.handleEnter}
+                /> */}
+              </div>
+            </div>
+            <div className="row mb-3">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label divider"
+                style={{ fontSize: '10px' }}
+              >
                 Active Date
               </label>
               <div className="col-md">
@@ -1413,28 +1499,6 @@ const CompanyUsers = () => {
                 </label>
               </div>
             </div>
-            {/* <div className="row mb-2">
-                  <label
-                    htmlFor="name"
-                    className="col-md-3 col-form-label"
-                    style={{ fontSize: '10px' }}
-                  ></label>
-                  <div className="col-md">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      checked={formData.mainbranch}
-                      name="mainbranch"
-                      id="mainbranch"
-                      disabled
-                      //   onChange={this.function.handleChange}
-                      //   required
-                    />
-                    <label className="form-check-label ms-2" htmlFor="mainbranch">
-                      Is Main Branch
-                    </label>
-                  </div>
-                </div> */}
             <div className="row mb-2">
               <label
                 htmlFor="name"

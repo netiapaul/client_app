@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import DatePicker from 'react-datepicker'
 import { useNavigate } from 'react-router-dom'
 import moment from 'moment'
@@ -10,6 +10,7 @@ function CreateClient() {
   const [error, setError] = useState('')
   const [ErrorArray, setErrorArray] = useState([])
   const [customers, setCustomers] = useState([])
+  const [serialNo, setSerialNo] = useState([])
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     psCusCode: '',
@@ -133,34 +134,71 @@ function CreateClient() {
     }, 15000)
   }
 
-  const handleDay = (e) => {
-    const date = new Date()
-    let res = new Date(formData.psActivateExpiryDate) ?? new Date()
-    //   formData.psActivateExpiryDate === '' ||
-    //   formData.psActivateExpiryDate === null
-    //     ? new Date()
-    //     : new Date(formData.psActivateExpiryDate)
+  // const handleDay = (e) => {
+  //   const date = new Date()
+  //   let res = new Date(formData.psActivateExpiryDate) ?? new Date()
+  //   //   formData.psActivateExpiryDate === '' ||
+  //   //   formData.psActivateExpiryDate === null
+  //   //     ? new Date()
+  //   //     : new Date(formData.psActivateExpiryDate)
 
-    setFormData({
-      ...formData,
-      days: e.target.value,
-      psActivateExpiryDate: e.target.value
-        ? new Date(date.setDate(date.getDate() + Number(e.target.value)))
-        : new Date(),
-    })
-    console.log(res)
+  //   setFormData({
+  //     ...formData,
+  //     days: e.target.value,
+  //     psActivateExpiryDate: e.target.value
+  //       ? new Date(date.setDate(date.getDate() + Number(e.target.value)))
+  //       : new Date(),
+  //   })
+  //   console.log(res)
+  // }
+  // const handleDate = (date) => {
+  //   let diffDate = new Date().getTime() - date.getTime()
+  //   let conv = Math.abs(diffDate)
+  //   setFormData({
+  //     ...formData,
+  //     psActivateExpiryDate: date,
+  //     days: Math.round(conv / (1000 * 60 * 60 * 24)),
+  //   })
+  //   console.log(conv)
+  //   console.log(Math.round(conv / (1000 * 60 * 60 * 24)))
+  // }
+
+  const GetSerialNumbers = async () => {
+    setIsLoading({ isLoading: true })
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
+        {
+          headers: {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setSerialNo(result)
+        setFormData({ ...formData, psSerialNo: result[0]?.serialId })
+        setError(result.message)
+        setIsLoading(false)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
   }
-  const handleDate = (date) => {
-    let diffDate = new Date().getTime() - date.getTime()
-    let conv = Math.abs(diffDate)
-    setFormData({
-      ...formData,
-      psActivateExpiryDate: date,
-      days: Math.round(conv / (1000 * 60 * 60 * 24)),
-    })
-    console.log(conv)
-    console.log(Math.round(conv / (1000 * 60 * 60 * 24)))
-  }
+
+  useEffect(() => {
+    GetSerialNumbers()
+  }, [])
+
   return (
     <>
       <hr className="my-2" />
@@ -295,15 +333,39 @@ function CreateClient() {
                 <div className="col-md">
                   <div className="row">
                     <div className="col-6">
-                      <input
+                      <select
+                        className="form-select form-select-sm rounded-0"
+                        aria-label="Default select example"
+                        style={{
+                          appearance: 'none',
+                        }}
+                        id="psSerialNo"
+                        name="psSerialNo"
+                        value={formData.psSerialNo}
+                        // onChange={(e) =>
+                        //   setEditFormData({ ...editFormData, querySerialNo: e.target.value })
+                        // }
+                        disabled
+                      >
+                        <option selected value={serialNo[0]?.serialId}>
+                          {serialNo[0]?.serialId}
+                        </option>
+                        {serialNo.slice(0, 10).map((serial, index) => (
+                          <option key={index} value={serial.serialId}>
+                            {serial.serialId}
+                          </option>
+                        ))}
+                      </select>
+                      {/* <input
                         type="text"
                         name="psSerialNo"
                         id="psSerialNo"
                         value={formData.psSerialNo}
                         className="form-control form-control-sm rounded-0"
                         onChange={(e) => setFormData({ ...formData, psSerialNo: e.target.value })}
+                        readOnly
                         required
-                      />
+                      /> */}
                     </div>
                     <div className="col-6">
                       <div className="row">
@@ -572,7 +634,7 @@ function CreateClient() {
         </div>
         <div className="col-md-4">
           <div className="card h-100 card-body rounded-0">
-            <p className="fw-bold mb-0 text-center" style={{ fontSize: '11px' }}>
+            {/* <p className="fw-bold mb-0 text-center" style={{ fontSize: '11px' }}>
               Client Details Summary
             </p>
             <ul className="list-group list-group-flush" style={{ fontSize: '10px' }}>
@@ -598,7 +660,7 @@ function CreateClient() {
                 <span className="fw-bold">Last Service Date</span>
                 <span>{new Date().toLocaleString()}</span>
               </li>
-            </ul>
+            </ul> */}
           </div>
         </div>
       </div>
