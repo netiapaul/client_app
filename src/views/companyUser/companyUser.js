@@ -24,6 +24,7 @@ const CompanyUsers = () => {
   const [BranchRowId, setBranchRowId] = useState('')
   const [dataBases, setDataBases] = useState([])
   const [clients, setClients] = useState([])
+  const [ErrorArray, setErrorArray] = useState([])
   const [branches, setBranches] = useState([])
   const [formData, setFormData] = useState({
     username: '',
@@ -539,7 +540,7 @@ const CompanyUsers = () => {
           activeDate: moment(branchformData.activeDate).format('DD/MM/YYYY'),
           expiryDate: moment(branchformData.expiryDate).format('DD/MM/YYYY'),
           userCount: branchformData.userCount,
-          psSerialNo: branchformData.psSerialNo,
+          psSerialNo: userData.psSerialNo,
         },
         {
           headers: {
@@ -570,6 +571,12 @@ const CompanyUsers = () => {
       console.log(error)
       // GetBranches(rowDetails.clientCode)
       setError(error.response.data.messge || error.response.data.message)
+      setError(error.response.data.messge || error.response.data.message)
+      setErrorArray(
+        Object.keys(error.response.data.errors).map(
+          (key, value) => error.response.data.errors[key],
+        ),
+      )
       //   setError(`${error?.response?.status}: ${error?.response?.data?.message}`)
       setIsLoading(false)
     }
@@ -595,7 +602,7 @@ const CompanyUsers = () => {
       showallcustomer: branchformData?.showallcustomer,
       psSerialNo: branchformData?.psSerialNo,
     }
-    // console.log(data)
+    console.log(data)
     CreateBranch(data)
   }
   const GetSerialNumbers = async () => {
@@ -620,7 +627,7 @@ const CompanyUsers = () => {
         //   { serialId: 2, brancH_NAME: 'BRANCH 1' },
         // ]
         setSerialNo(result)
-        setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId })
+        setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId || '' })
         setError(result.message)
         setIsLoading(false)
       } else {
@@ -1075,6 +1082,15 @@ const CompanyUsers = () => {
         </CModalHeader>
         <form autoComplete="off" onSubmit={CreateCompany}>
           <CModalBody>
+            {ErrorArray.length > 0 && (
+              <div className="alert alert-danger mb-1 p-2" role="alert">
+                <ul className="m-0">
+                  {ErrorArray.map((err, index) => (
+                    <li key={index}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div className="row mb-3">
               <label htmlFor="companyName" className="col-md-4 col-form-label divider">
                 Company Name
@@ -1206,6 +1222,15 @@ const CompanyUsers = () => {
             >
               <i className="fa fa-exclamation-triangle me-3" aria-hidden="true"></i>
               <span>{error}</span>
+            </div>
+          )}
+          {ErrorArray.length > 0 && (
+            <div className="alert alert-danger mb-1 p-2" role="alert">
+              <ul className="m-0">
+                {ErrorArray.map((err, index) => (
+                  <li key={index}>{err}</li>
+                ))}
+              </ul>
             </div>
           )}
           <form

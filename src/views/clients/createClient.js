@@ -42,7 +42,7 @@ function CreateClient() {
       psCompanyName: formData.psCompanyName.trim(),
       branchCode: formData.branchCode,
       psBranchName: formData.psBranchName.trim(),
-      psSerialNo: formData.psSerialNo.trim(),
+      psSerialNo: formData.psSerialNo,
       psActivated: formData.psActivated,
       psBedCount: formData.psBedCount,
       psGL: formData.psGL,
@@ -181,7 +181,7 @@ function CreateClient() {
       if (response.ok) {
         const result = await response.json()
         setSerialNo(result)
-        setFormData({ ...formData, psSerialNo: result[0]?.serialId })
+        setFormData({ ...formData, psSerialNo: result[0]?.serialId || '' })
         setError(result.message)
         setIsLoading(false)
       } else {
