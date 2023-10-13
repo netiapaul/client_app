@@ -180,8 +180,9 @@ function CreateClient() {
       )
       if (response.ok) {
         const result = await response.json()
-        setSerialNo(result)
-        setFormData({ ...formData, psSerialNo: result[0]?.serialId || '' })
+        // setSerialNo(result)
+        // setFormData({ ...formData, psSerialNo: result[0]?.serialId || '' })
+        setFormData({ ...formData, psSerialNo: result?.serialId })
         setError(result.message)
         setIsLoading(false)
       } else {
@@ -333,7 +334,7 @@ function CreateClient() {
                 <div className="col-md">
                   <div className="row">
                     <div className="col-6">
-                      <select
+                      {/* <select
                         className="form-select form-select-sm rounded-0"
                         aria-label="Default select example"
                         style={{
@@ -347,25 +348,23 @@ function CreateClient() {
                         // }
                         disabled
                       >
-                        <option selected value={serialNo[0]?.serialId}>
-                          {serialNo[0]?.serialId}
-                        </option>
+                        <option value={''}></option>
                         {serialNo.slice(0, 10).map((serial, index) => (
                           <option key={index} value={serial.serialId}>
                             {serial.serialId}
                           </option>
                         ))}
-                      </select>
-                      {/* <input
+                      </select> */}
+                      <input
                         type="text"
                         name="psSerialNo"
                         id="psSerialNo"
                         value={formData.psSerialNo}
                         className="form-control form-control-sm rounded-0"
                         onChange={(e) => setFormData({ ...formData, psSerialNo: e.target.value })}
-                        readOnly
+                        disabled
                         required
-                      /> */}
+                      />
                     </div>
                     <div className="col-6">
                       <div className="row">

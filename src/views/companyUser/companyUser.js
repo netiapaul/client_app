@@ -626,8 +626,10 @@ const CompanyUsers = () => {
         //   { serialId: 1, brancH_NAME: 'BRANCH 1' },
         //   { serialId: 2, brancH_NAME: 'BRANCH 1' },
         // ]
-        setSerialNo(result)
-        setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId || '' })
+        // setSerialNo(result)
+        // setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId || '' })
+        setBranchFormData({ ...branchformData, psSerialNo: result?.serialId })
+        // alert(result?.serialId)
         setError(result.message)
         setIsLoading(false)
       } else {
@@ -1364,7 +1366,7 @@ const CompanyUsers = () => {
                 Serial No
               </label>
               <div className="col-md">
-                <select
+                {/* <select
                   className="form-select form-select-sm rounded-0"
                   aria-label="Default select example"
                   style={{
@@ -1378,26 +1380,26 @@ const CompanyUsers = () => {
                   // }
                   disabled
                 >
-                  <option selected value={serialNo[0]?.serialId}>
-                    {serialNo[0]?.serialId}
-                  </option>
+                  <option value={''}></option>
                   {serialNo.slice(0, 10).map((serial, index) => (
                     <option key={index} value={serial.serialId}>
                       {serial.serialId}
                     </option>
                   ))}
-                </select>
-                {/* <input
+                </select> */}
+                <input
                   type="text"
                   className="form-control form-control-sm rounded-0"
                   id="psSerialNo"
                   name="psSerialNo"
                   value={branchformData.psSerialNo}
-                  onChange={(e) => setBranchFormData({ ...branchformData, email: e.target.value })}
-                  readOnly
+                  onChange={(e) =>
+                    setBranchFormData({ ...branchformData, psSerialNo: e.target.value })
+                  }
+                  disabled
                   //   onChange={this.function.handleChange}
                   // onKeyDown={this.handleEnter}
-                /> */}
+                />
               </div>
             </div>
             <div className="row mb-3">
