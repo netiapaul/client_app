@@ -1696,7 +1696,18 @@ const UpdateClient = () => {
                     Serial No
                   </label>
                   <div className="col-md ps-1">
-                    <select
+                    <input
+                      type="text"
+                      className="form-control form-control-sm rounded-0"
+                      name="querySerialNo"
+                      id="querySerialNo"
+                      value={editFormData.querySerialNo}
+                      readOnly
+                      onChange={(e) =>
+                        setEditFormData({ ...editFormData, querySerialNo: e.target.value })
+                      }
+                    />
+                    {/* <select
                       className="form-select form-select-sm rounded-0"
                       aria-label="Default select example"
                       style={{
@@ -1721,7 +1732,7 @@ const UpdateClient = () => {
                           {serial.serialId}
                         </option>
                       ))}
-                    </select>
+                    </select> */}
                   </div>
                 </div>
               </div>
