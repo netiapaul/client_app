@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react'
 import DatePicker from 'react-datepicker'
 import { useNavigate } from 'react-router-dom'
+import { CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from '@coreui/react'
+import MaterialTable from 'material-table'
+import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
 
 const axios = require('axios')
 
 function CreateClient() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isClientModal, setIsClientModal] = useState(false)
   const [error, setError] = useState('')
   const [ErrorArray, setErrorArray] = useState([])
   const [customers, setCustomers] = useState([])
   const [serialNo, setSerialNo] = useState([])
+  const [cloudModules, setCloudModules] = useState([])
+  const [modulesSelected, setModulesSelected] = useState([])
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     psCusCode: '',
@@ -58,6 +64,7 @@ function CreateClient() {
       psPickHdd: formData.psPickHdd,
       psPickCompany: formData.psPickCompany,
       psPickBcode: formData.psPickBcode,
+      modulesSelected: modulesSelected,
     }
     console.log(data)
     CreateClient(data)
@@ -90,6 +97,7 @@ function CreateClient() {
           psPickHdd: userData.psPickHdd,
           psPickCompany: userData.psPickCompany,
           psPickBcode: userData.psPickBcode,
+          cloudModules: userData.modulesSelected,
         },
         {
           headers: {
@@ -99,6 +107,7 @@ function CreateClient() {
           },
         },
       )
+      navigate('/dashboard')
       setFormData({
         psCusCode: '',
         psCompanyName: '',
@@ -118,7 +127,6 @@ function CreateClient() {
       setErrorArray([])
       setIsLoading(false)
       console.log(response.data)
-      navigate('/dashboard')
     } catch (error) {
       console.log(error)
       setIsLoading(false)
@@ -164,7 +172,7 @@ function CreateClient() {
   // }
 
   const GetSerialNumbers = async () => {
-    setIsLoading({ isLoading: true })
+    setIsLoading(true)
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
@@ -172,7 +180,6 @@ function CreateClient() {
           headers: {
             method: 'GET', // *GET, POST, PUT, DELETE, etc.
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${token}`,
             Accept: '*/*',
             'Content-Type': 'application/json',
           },
@@ -180,8 +187,6 @@ function CreateClient() {
       )
       if (response.ok) {
         const result = await response.json()
-        // setSerialNo(result)
-        // setFormData({ ...formData, psSerialNo: result[0]?.serialId || '' })
         setFormData({ ...formData, psSerialNo: result?.serialId })
         setError(result.message)
         setIsLoading(false)
@@ -195,9 +200,41 @@ function CreateClient() {
       console.log(error)
     }
   }
+  const CloudModules = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
+        headers: {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setCloudModules(result)
+        setError(result.message)
+        setIsLoading(false)
+        console.log(result)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+  const onSelectionChange = (rows) => {
+    setModulesSelected(rows.map((item) => item?.moduleCode))
+    console.log(rows)
+  }
 
   useEffect(() => {
     GetSerialNumbers()
+    CloudModules()
   }, [])
 
   return (
@@ -599,7 +636,14 @@ function CreateClient() {
                   </div>
                 </div>
               </div>
-
+              <hr className="my-3" />
+              <button
+                type="button"
+                className="btn btn-sm filter-btn rounded-0"
+                onClick={() => setIsClientModal(true)}
+              >
+                Client Modules
+              </button>
               <hr className="my-3" />
               <div className="d-flex justify-content-end">
                 <button
@@ -663,6 +707,82 @@ function CreateClient() {
           </div>
         </div>
       </div>
+      {/* Module Modals */}
+      <CModal visible={isClientModal} alignment="center" backdrop="static" scrollable>
+        <CModalHeader>
+          <CModalTitle>Client Modules</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <MaterialTable
+            columns={[
+              {
+                title: 'Code',
+                field: 'moduleCode',
+                cellStyle: {
+                  width: '10%',
+                },
+              },
+              {
+                title: 'Module',
+                field: 'moduleName',
+                cellStyle: {
+                  width: 120,
+                },
+              },
+              {
+                title: 'Sub Module',
+                field: 'subModuleName',
+                cellStyle: {
+                  minWidth: 200,
+                },
+              },
+            ]}
+            icons={tableIcons}
+            onSelectionChange={(rows) => onSelectionChange(rows)}
+            options={{
+              ...tableOptions,
+              search: true,
+              paging: false,
+              sorting: true,
+              maxBodyHeight: 200,
+              overflowY: 'auto',
+              selection: true,
+              showSelectAllCheckbox: true,
+              // rowStyle: (rowData) => ({
+              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+              // }),
+            }}
+            isLoading={isLoading}
+            data={cloudModules}
+            title=""
+          />
+        </CModalBody>
+        <CModalFooter>
+          <div className="d-flex justify-content-end">
+            <button
+              type="submit"
+              className="btn add-btn btn-sm shadow rounded-0 me-1"
+              style={{ width: '4rem' }}
+              onClick={() => setIsClientModal(false)}
+            >
+              Select
+            </button>
+
+            <button
+              type="button"
+              style={{ width: '4rem' }}
+              className="btn btn-sm cancel-btn float-end shadow rounded-0"
+              onClick={() => {
+                setIsClientModal(false)
+                setModulesSelected([])
+                CloudModules()
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </CModalFooter>
+      </CModal>
     </>
   )
 }

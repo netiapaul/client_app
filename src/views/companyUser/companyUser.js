@@ -13,12 +13,16 @@ const axios = require('axios')
 const CompanyUsers = () => {
   //  "material-table": "^2.0.3",
   const [error, setError] = useState('')
+  const [isClientModal, setIsClientModal] = useState(false)
+  const [cloudModules, setCloudModules] = useState([])
+  const [modulesSelected, setModulesSelected] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [visible, setVisible] = useState(false)
   const [isBranchModalVisible, setIsBranchModalVisible] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
   const [companyRowId, setCompanyRowId] = useState('')
+  const [serial, setSerial] = useState('')
   const [serialNo, setSerialNo] = useState([])
   const [userRowId, setUserRowId] = useState('')
   const [BranchRowId, setBranchRowId] = useState('')
@@ -519,6 +523,7 @@ const CompanyUsers = () => {
   const CreateBranch = async (userData) => {
     setIsLoading(true)
     setError('')
+    setErrorArray([])
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/CreateBranch?cuscode=${userData?.psCusCode}`,
@@ -541,6 +546,7 @@ const CompanyUsers = () => {
           expiryDate: moment(branchformData.expiryDate).format('DD/MM/YYYY'),
           userCount: branchformData.userCount,
           psSerialNo: userData.psSerialNo,
+          cloudModules: userData.modulesSelected,
         },
         {
           headers: {
@@ -571,12 +577,11 @@ const CompanyUsers = () => {
       console.log(error)
       // GetBranches(rowDetails.clientCode)
       setError(error.response.data.messge || error.response.data.message)
-      setError(error.response.data.messge || error.response.data.message)
-      setErrorArray(
-        Object.keys(error.response.data.errors).map(
-          (key, value) => error.response.data.errors[key],
-        ),
-      )
+      // setErrorArray(
+      //   Object?.keys(error.response.data?.errors)?.map(
+      //     (key, value) => error.response.data.errors[key],
+      //   ) ?? [],
+      // )
       //   setError(`${error?.response?.status}: ${error?.response?.data?.message}`)
       setIsLoading(false)
     }
@@ -600,7 +605,9 @@ const CompanyUsers = () => {
       acct: branchformData?.acct,
       showallcustomertrans: branchformData?.showallcustomertrans,
       showallcustomer: branchformData?.showallcustomer,
-      psSerialNo: branchformData?.psSerialNo,
+      // psSerialNo: branchformData?.psSerialNo,
+      psSerialNo: serial,
+      modulesSelected: modulesSelected,
     }
     console.log(data)
     CreateBranch(data)
@@ -628,6 +635,7 @@ const CompanyUsers = () => {
         // ]
         // setSerialNo(result)
         // setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId || '' })
+        setSerial(result?.serialId)
         setBranchFormData({ ...branchformData, psSerialNo: result?.serialId })
         // alert(result?.serialId)
         setError(result.message)
@@ -642,12 +650,45 @@ const CompanyUsers = () => {
       console.log(error)
     }
   }
+  const CloudModules = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
+        headers: {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setCloudModules(result)
+        setError(result.message)
+        setIsLoading(false)
+        console.log(result)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+
+  const onSelectionChange = (rows) => {
+    setModulesSelected(rows.map((item) => item?.moduleCode))
+    console.log(rows)
+  }
 
   useEffect(() => {
+    GetSerialNumbers()
     GetCompany()
     Getdatabase()
     getClients()
-    GetSerialNumbers()
+    CloudModules()
   }, [])
 
   return (
@@ -1212,7 +1253,7 @@ const CompanyUsers = () => {
           </CModalFooter>
         </form>
       </CModal>
-      <CModal visible={isBranchModalVisible} alignment="center" backdrop="static">
+      <CModal visible={isBranchModalVisible} alignment="center" backdrop="static" scrollable>
         <CModalHeader>
           <CModalTitle>Add Branches</CModalTitle>
         </CModalHeader>
@@ -1392,11 +1433,13 @@ const CompanyUsers = () => {
                   className="form-control form-control-sm rounded-0"
                   id="psSerialNo"
                   name="psSerialNo"
-                  value={branchformData.psSerialNo}
+                  // value={branchformData.psSerialNo}
+                  value={serial}
                   onChange={(e) =>
                     setBranchFormData({ ...branchformData, psSerialNo: e.target.value })
                   }
                   disabled
+                  required
                   //   onChange={this.function.handleChange}
                   // onKeyDown={this.handleEnter}
                 />
@@ -1597,6 +1640,27 @@ const CompanyUsers = () => {
                 </label>
               </div>
             </div>
+            <div className="row mb-2">
+              <label
+                htmlFor="name"
+                className="col-md-3 col-form-label"
+                style={{ fontSize: '10px' }}
+              >
+                {/* Name */}
+              </label>
+              <div className="col-md">
+                <button
+                  type="button"
+                  className="btn btn-sm filter-btn rounded-0"
+                  onClick={() => {
+                    setIsClientModal(true)
+                    setIsBranchModalVisible(false)
+                  }}
+                >
+                  Client Modules
+                </button>
+              </div>
+            </div>
             <hr className="mb-2" />
             <div className="d-flex justify-content-end">
               <button
@@ -1682,6 +1746,86 @@ const CompanyUsers = () => {
                   selectedRow: [],
                   companyDetailId: 0,
                 })
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </CModalFooter>
+      </CModal>
+      {/* Module Modals */}
+      <CModal visible={isClientModal} alignment="center" backdrop="static" scrollable>
+        <CModalHeader>
+          <CModalTitle>Client Modules</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <MaterialTable
+            columns={[
+              {
+                title: 'Code',
+                field: 'moduleCode',
+                cellStyle: {
+                  width: '10%',
+                },
+              },
+              {
+                title: 'Module',
+                field: 'moduleName',
+                cellStyle: {
+                  width: 120,
+                },
+              },
+              {
+                title: 'Sub Module',
+                field: 'subModuleName',
+                cellStyle: {
+                  minWidth: 200,
+                },
+              },
+            ]}
+            icons={tableIcons}
+            onSelectionChange={(rows) => onSelectionChange(rows)}
+            options={{
+              ...tableOptions,
+              search: true,
+              paging: false,
+              sorting: true,
+              maxBodyHeight: 200,
+              overflowY: 'auto',
+              selection: true,
+              showSelectAllCheckbox: true,
+              // rowStyle: (rowData) => ({
+              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+              // }),
+            }}
+            isLoading={isLoading}
+            data={cloudModules}
+            title=""
+          />
+        </CModalBody>
+        <CModalFooter>
+          <div className="d-flex justify-content-end">
+            <button
+              type="submit"
+              className="btn add-btn btn-sm shadow rounded-0 me-1"
+              style={{ width: '4rem' }}
+              onClick={() => {
+                setIsClientModal(false)
+                setIsBranchModalVisible(true)
+              }}
+            >
+              Select
+            </button>
+
+            <button
+              type="button"
+              style={{ width: '4rem' }}
+              className="btn btn-sm cancel-btn float-end shadow rounded-0"
+              onClick={() => {
+                setIsClientModal(false)
+                setIsBranchModalVisible(true)
+                setModulesSelected([])
+                CloudModules()
               }}
             >
               Cancel

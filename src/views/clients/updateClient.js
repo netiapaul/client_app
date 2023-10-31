@@ -1696,7 +1696,7 @@ const UpdateClient = () => {
                     Serial No
                   </label>
                   <div className="col-md ps-1">
-                    <input
+                    {/* <input
                       type="text"
                       className="form-control form-control-sm rounded-0"
                       name="querySerialNo"
@@ -1706,8 +1706,8 @@ const UpdateClient = () => {
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, querySerialNo: e.target.value })
                       }
-                    />
-                    {/* <select
+                    /> */}
+                    <select
                       className="form-select form-select-sm rounded-0"
                       aria-label="Default select example"
                       style={{
@@ -1727,12 +1727,12 @@ const UpdateClient = () => {
                       }
                     >
                       <option value={data.psSerialNo}>{data.psSerialNo}</option>
-                      {serialNo.slice(0, 10).map((serial, index) => (
+                      {[serialNo].map((serial, index) => (
                         <option key={index} value={serial.serialId}>
                           {serial.serialId}
                         </option>
                       ))}
-                    </select> */}
+                    </select>
                   </div>
                 </div>
               </div>
