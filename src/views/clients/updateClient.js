@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
-import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
+import { CModal, CModalBody, CModalHeader, CModalTitle, CModalFooter } from '@coreui/react'
+import MaterialTable from 'material-table'
+import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
 import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
@@ -13,6 +15,7 @@ const UpdateClient = () => {
   const [bcode, SetBcode] = useState('')
   const [error, setError] = useState('')
   const [clientModal, setClientModal] = useState(false)
+  const [isClientModal, setIsClientModal] = useState(false)
   const [serialModal, setSerialModal] = useState(false)
   const [userCALSModal, setUserCALSModal] = useState(false)
   const [branchCALSModal, setBranchCALSModal] = useState(false)
@@ -20,6 +23,8 @@ const UpdateClient = () => {
   const [psBedCountModal, setPsBedCountModal] = useState(false)
   const [psGLModal, setPsGLModal] = useState(false)
   const [addOnsModal, setAddOnsModal] = useState(false)
+  const [cloudModules, setCloudModules] = useState([])
+  const [modulesSelected, setModulesSelected] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [data, setData] = useState({
     error: '',
@@ -36,6 +41,7 @@ const UpdateClient = () => {
     psStockTakeStartDate: '',
     stockTakeEndDate: '',
     addons: [],
+    moduleAccess: [],
     psBranchCount: '',
     psUserCount: '',
     psPickCpu: '',
@@ -78,6 +84,7 @@ const UpdateClient = () => {
 
   const GetClientDetails = async (id) => {
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClientDetails?id=${id}`,
@@ -111,6 +118,7 @@ const UpdateClient = () => {
           psStockTakeStartDate: result?.clientDetails.psStockTakeStartDate,
           stockTakeEndDate: result?.clientDetails.stockTakeEndDate,
           addons: result?.clientAddOn,
+          moduleAccess: result?.moduleAccess,
           psPickCpu: result?.clientDetails.psPickCPU,
           psPickBios: result?.clientDetails.psPickBios,
           psPickHdd: result?.clientDetails.psPickHDD,
@@ -173,6 +181,7 @@ const UpdateClient = () => {
   }
   const getCustomers = async () => {
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomers`,
@@ -202,7 +211,8 @@ const UpdateClient = () => {
     }
   }
   const GetSerialNumbers = async () => {
-    setIsLoading({ isLoading: true })
+    setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
@@ -232,7 +242,7 @@ const UpdateClient = () => {
     }
   }
   const GetAddOns = async () => {
-    setIsLoading({ isLoading: true })
+    setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Logs/GetAddOns`, {
         headers: {
@@ -259,7 +269,7 @@ const UpdateClient = () => {
     }
   }
   const getCustomerMembers = async (query) => {
-    setIsLoading({ isLoading: true })
+    setIsLoading(true)
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomerMembers?cusCode=${query}`,
@@ -318,6 +328,7 @@ const UpdateClient = () => {
   const UpdateClientDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
@@ -363,6 +374,7 @@ const UpdateClient = () => {
   const UpdateSerialsDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateSerialDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
@@ -410,6 +422,7 @@ const UpdateClient = () => {
   const UpdateUserCals = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateUserCals?id=${id}&cpu=${
@@ -451,6 +464,7 @@ const UpdateClient = () => {
   const UpdateBranchCals = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateBranchCals?id=${id}&cpu=${
@@ -492,6 +506,7 @@ const UpdateClient = () => {
   const UpdateBedCount = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateBedCount?id=${id}&cpu=${
@@ -533,6 +548,7 @@ const UpdateClient = () => {
   const UpdateGL = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateGL?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&psGL=${editFormData.psGL}`,
@@ -570,6 +586,7 @@ const UpdateClient = () => {
   const UpdateStockTakeCals = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateStockTakeCals?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
@@ -614,6 +631,7 @@ const UpdateClient = () => {
   const UpdateAddsOn = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setError('')
     // console.log(editFormData.selectedAdons)
     try {
       const response = await fetch(
@@ -662,6 +680,7 @@ const UpdateClient = () => {
   }
   const DeleteAddsOn = async (addonId) => {
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/RemoveAddons?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
@@ -695,6 +714,7 @@ const UpdateClient = () => {
   }
   const UpdateDetails = async () => {
     setIsLoading(true)
+    setError('')
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
@@ -717,6 +737,39 @@ const UpdateClient = () => {
       } else {
         const result = await response.json()
         setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+  const UpdateClientModules = async (userData) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientModules?id=${id}&modulecode=${userData.modulecode}&status=${userData.status}`,
+        {
+          method: 'POST', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: '*/*',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setIsClientModal(false)
+        setIsLoading(false)
+        console.log(result)
+        // navigate('/dashboard')
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
         console.log(result)
       }
     } catch (error) {
@@ -787,11 +840,54 @@ const UpdateClient = () => {
     // console.log(data)
   }
 
+  const CloudModules = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
+        headers: {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Accept: '*/*',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setCloudModules(result)
+        setError(result.message)
+        setIsLoading(false)
+        console.log(result)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
+
+  const onSelectionChange = (rows) => {
+    setModulesSelected(rows.map((item) => item?.moduleCode))
+    console.log(rows)
+  }
+
+  const handleAccess = (rowData) => {
+    const data = {
+      modulecode: rowData.moduleCode,
+      status: rowData.access === true ? false : true,
+    }
+    console.log(data)
+    UpdateClientModules(data)
+  }
+
   useEffect(() => {
     GetClientDetails(id)
     getCustomers()
     GetSerialNumbers()
     GetAddOns()
+    CloudModules()
   }, [])
 
   return (
@@ -1511,6 +1607,72 @@ const UpdateClient = () => {
                     Change
                   </p>
                 </div>
+
+                <hr className="mb-3 mt-1" />
+                <div className="row mb-1">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Client Modules
+                  </label>
+                  <div className="col-md ps-1">
+                    <ul className="list-group list-group-flush">
+                      {data.moduleAccess.map((module, index) => (
+                        // <Chip
+                        //   size="small"
+                        //   className="chip col"
+                        //   key={index}
+                        //   label={addOn.addonName}
+                        // />
+                        <li className="list-group-item py-1" key={index}>
+                          <input
+                            className="form-check-input me-1"
+                            type="checkbox"
+                            checked
+                            // value=""
+                            id={module.subModuleName}
+                            readOnly
+                            onChange={(e) => console.log(e)}
+                          />
+                          <label
+                            className="form-check-label stretched-link fw-bold"
+                            htmlFor={module.subModuleName}
+                          >
+                            {module.subModuleName}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                    {/* <div className="d-flex">
+                      {data.addons.map((addOn, index) => (
+                        <Chip
+                          size="small"
+                          className="chip col"
+                          key={index}
+                          label={addOn.addonName}
+                        />
+                      ))}
+                    </div> */}
+                  </div>
+                </div>
+                <div className="d-flex justify-content-end">
+                  <p
+                    className="my-1 fw-bold"
+                    role="button"
+                    style={{ fontSize: '10px', color: '#c58c4f' }}
+                    onClick={() => setIsClientModal(true)}
+                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
+                  >
+                    Change
+                  </p>
+                </div>
+                {/* <button
+                  type="button"
+                  className="btn btn-sm filter-btn rounded-0"
+                  onClick={() => setIsClientModal(true)}
+                >
+                  Client Modules
+                </button> */}
+
+                <hr className="my-3" />
                 {/* <hr className="mb-3 mt-1" /> */}
               </form>
             </div>
@@ -2318,6 +2480,107 @@ const UpdateClient = () => {
             </div>
           </form>
         </CModalBody>
+      </CModal>
+      {/* Module Modals */}
+      <CModal visible={isClientModal} alignment="center" backdrop="static" scrollable>
+        <CModalHeader>
+          <CModalTitle>Client Modules</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {error && (
+            <div className="alert alert-danger align-items-center rounded-0" role="alert">
+              <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+              <span> {error} </span>
+            </div>
+          )}
+          <MaterialTable
+            columns={[
+              {
+                title: 'Code',
+                field: 'moduleCode',
+                cellStyle: {
+                  width: '10%',
+                },
+              },
+              {
+                title: 'Module',
+                field: 'moduleName',
+                cellStyle: {
+                  width: 120,
+                },
+              },
+              {
+                title: 'Sub Module',
+                field: 'subModuleName',
+                cellStyle: {
+                  minWidth: 200,
+                },
+              },
+              {
+                title: 'Access',
+                field: 'access',
+                render: (rowData) => (
+                  <input
+                    type="checkbox"
+                    id="access"
+                    name="access"
+                    className="text-center"
+                    checked={rowData.access}
+                    onChange={() => handleAccess(rowData)}
+                    // readOnly
+                  />
+                ),
+                cellStyle: {
+                  textAlign: 'center',
+                  width: '1%',
+                },
+              },
+            ]}
+            icons={tableIcons}
+            onSelectionChange={(rows) => onSelectionChange(rows)}
+            options={{
+              ...tableOptions,
+              search: true,
+              paging: false,
+              sorting: true,
+              maxBodyHeight: 200,
+              overflowY: 'auto',
+              selection: false,
+              showSelectAllCheckbox: false,
+              // rowStyle: (rowData) => ({
+              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+              // }),
+            }}
+            isLoading={isLoading}
+            data={cloudModules}
+            title=""
+          />
+        </CModalBody>
+        <CModalFooter>
+          <div className="d-flex justify-content-end">
+            {/* <button
+              type="submit"
+              className="btn add-btn btn-sm shadow rounded-0 me-1"
+              style={{ width: '4rem' }}
+              onClick={() => setIsClientModal(false)}
+            >
+              Select
+            </button> */}
+
+            <button
+              type="button"
+              style={{ width: '4rem' }}
+              className="btn btn-sm cancel-btn float-end shadow rounded-0"
+              onClick={() => {
+                setIsClientModal(false)
+                setError('')
+                setModulesSelected([])
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </CModalFooter>
       </CModal>
     </>
   )
