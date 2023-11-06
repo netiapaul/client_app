@@ -1157,7 +1157,7 @@ const CompanyUsers = () => {
                   <option value={''}></option>
                   {clients.map((item, key) => (
                     <option value={item.psCusCode} key={key}>
-                      {item.psCompanyName}
+                      {item.psCusCode} - {item.psCompanyName}
                     </option>
                   ))}
                 </select>
