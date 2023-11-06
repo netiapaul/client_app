@@ -1614,20 +1614,57 @@ const UpdateClient = () => {
                     Client Modules
                   </label>
                   <div className="col-md ps-1">
-                    <ul className="list-group list-group-flush">
+                    <span className="d-flex flex-row gap-2 text-center">
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="desktop"
+                          // value={title}
+                          // checked={title === 'false'}
+                          // onChange={() => setTitle('false')}
+                        />
+                        <label className="form-check-label" htmlFor="desktop">
+                          Light
+                        </label>
+                      </span>
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="cloud"
+                          // value={title}
+                          // checked={title === 'true'}
+                          // onChange={() => setTitle('true')}
+                        />
+                        <label className="form-check-label" htmlFor="cloud">
+                          Standard
+                        </label>
+                      </span>
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="both"
+                          // value={title}
+                          // checked={title === ''}
+                          // onChange={() => setTitle('')}
+                        />
+                        <label className="form-check-label" htmlFor="both">
+                          Professional
+                        </label>
+                      </span>
+                    </span>
+                    {/* <ul className="list-group list-group-flush">
                       {data.moduleAccess.map((module, index) => (
-                        // <Chip
-                        //   size="small"
-                        //   className="chip col"
-                        //   key={index}
-                        //   label={addOn.addonName}
-                        // />
                         <li className="list-group-item py-1" key={index}>
                           <input
                             className="form-check-input me-1"
                             type="checkbox"
                             checked
-                            // value=""
                             id={module.subModuleName}
                             readOnly
                             onChange={(e) => console.log(e)}
@@ -1640,20 +1677,10 @@ const UpdateClient = () => {
                           </label>
                         </li>
                       ))}
-                    </ul>
-                    {/* <div className="d-flex">
-                      {data.addons.map((addOn, index) => (
-                        <Chip
-                          size="small"
-                          className="chip col"
-                          key={index}
-                          label={addOn.addonName}
-                        />
-                      ))}
-                    </div> */}
+                    </ul> */}
                   </div>
                 </div>
-                <div className="d-flex justify-content-end">
+                {/* <div className="d-flex justify-content-end">
                   <p
                     className="my-1 fw-bold"
                     role="button"
@@ -1663,7 +1690,7 @@ const UpdateClient = () => {
                   >
                     Change
                   </p>
-                </div>
+                </div> */}
                 {/* <button
                   type="button"
                   className="btn btn-sm filter-btn rounded-0"
