@@ -81,7 +81,7 @@ const ActivityLogs = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -106,7 +106,7 @@ const ActivityLogs = () => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       })
@@ -132,7 +132,7 @@ const ActivityLogs = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },

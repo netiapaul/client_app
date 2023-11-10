@@ -14,7 +14,8 @@ function CreateClient() {
   const [error, setError] = useState('')
   const [ErrorArray, setErrorArray] = useState([])
   const [customers, setCustomers] = useState([])
-  const [serialNo, setSerialNo] = useState([])
+  // const [serialNo, setSerialNo] = useState([])
+  const [packages, setPackages] = useState([])
   const [cloudModules, setCloudModules] = useState([])
   const [modulesSelected, setModulesSelected] = useState([])
   const navigate = useNavigate()
@@ -39,6 +40,7 @@ function CreateClient() {
     psPickBios: '',
     psPickHdd: '',
     psPickCompany: '',
+    packageCode: '',
     psPickBcode: 1,
   })
   const handleSubmit = (e) => {
@@ -65,6 +67,7 @@ function CreateClient() {
       psPickCompany: formData.psPickCompany,
       psPickBcode: formData.psPickBcode,
       modulesSelected: modulesSelected,
+      packageCode: formData.packageCode,
     }
     console.log(data)
     CreateClient(data)
@@ -98,11 +101,12 @@ function CreateClient() {
           psPickCompany: userData.psPickCompany,
           psPickBcode: userData.psPickBcode,
           cloudModules: userData.modulesSelected,
+          packageCode: userData.packageCode,
         },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -141,7 +145,6 @@ function CreateClient() {
       setError('')
     }, 15000)
   }
-
   // const handleDay = (e) => {
   //   const date = new Date()
   //   let res = new Date(formData.psActivateExpiryDate) ?? new Date()
@@ -170,17 +173,16 @@ function CreateClient() {
   //   console.log(conv)
   //   console.log(Math.round(conv / (1000 * 60 * 60 * 24)))
   // }
-
   const GetSerialNumbers = async () => {
     setIsLoading(true)
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
         {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -200,14 +202,40 @@ function CreateClient() {
       console.log(error)
     }
   }
+  const GetPackages = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          // Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setPackages(result)
+        setIsLoading(false)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    }
+  }
   const CloudModules = async () => {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       })
@@ -235,6 +263,7 @@ function CreateClient() {
   useEffect(() => {
     GetSerialNumbers()
     CloudModules()
+    GetPackages()
   }, [])
 
   return (
@@ -251,8 +280,7 @@ function CreateClient() {
       </div>
       <hr className="my-2" />
       {error && (
-        <div className="alert alert-danger align-items-center rounded-0" role="alert">
-          <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+        <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
           <span> {error} </span>
         </div>
       )}
@@ -277,7 +305,10 @@ function CreateClient() {
 
               <div className="d-flex">
                 <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
-                  Status: <span className="text-success">Active</span>
+                  Status:{' '}
+                  <span className={formData.psActivated ? 'text-success' : 'text-danger'}>
+                    {formData.psActivated ? 'Active' : 'Not Active'}
+                  </span>
                 </p>
               </div>
             </div>
@@ -636,14 +667,78 @@ function CreateClient() {
                   </div>
                 </div>
               </div>
-              <hr className="my-3" />
-              <button
-                type="button"
-                className="btn btn-sm filter-btn rounded-0"
-                onClick={() => setIsClientModal(true)}
-              >
-                Client Modules
-              </button>
+              <hr className="mb-3 mt-1" />
+              <div className="row mb-1">
+                <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                  Client Modules
+                </label>
+                <div className="col-md">
+                  <span className="d-flex flex-row gap-5 text-center">
+                    {packages
+                      ?.filter((item) => item !== null)
+                      .map((module, index) => (
+                        <span className="form-check" key={index}>
+                          <input
+                            className="form-check-input"
+                            type="radio"
+                            name="clientType"
+                            id="desktop"
+                            value={module.packageNum}
+                            // onChange={(e) => console.log(e.target.value)}
+                            onChange={(e) =>
+                              setFormData({ ...formData, packageCode: e.target.value })
+                            }
+                          />
+                          <label className="form-check-label" htmlFor="desktop">
+                            {module.description}
+                          </label>
+                        </span>
+                      ))}
+                    {/* <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="desktop"
+                          // value={title}
+                          // checked={title === 'false'}
+                          // onChange={() => setTitle('false')}
+                        />
+                        <label className="form-check-label" htmlFor="desktop">
+                          Light
+                        </label>
+                      </span>
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="cloud"
+                          // value={title}
+                          // checked={title === 'true'}
+                          // onChange={() => setTitle('true')}
+                        />
+                        <label className="form-check-label" htmlFor="cloud">
+                          Standard
+                        </label>
+                      </span>
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="both"
+                          // value={title}
+                          // checked={title === ''}
+                          // onChange={() => setTitle('')}
+                        />
+                        <label className="form-check-label" htmlFor="both">
+                          Professional
+                        </label>
+                      </span> */}
+                  </span>
+                </div>
+              </div>
               <hr className="my-3" />
               <div className="d-flex justify-content-end">
                 <button
@@ -761,7 +856,7 @@ function CreateClient() {
           <div className="d-flex justify-content-end">
             <button
               type="submit"
-              className="btn add-btn btn-sm shadow rounded-0 me-1"
+              className="btn add-btn btn-sm rounded-0 me-1"
               style={{ width: '4rem' }}
               onClick={() => setIsClientModal(false)}
             >
@@ -771,7 +866,7 @@ function CreateClient() {
             <button
               type="button"
               style={{ width: '4rem' }}
-              className="btn btn-sm cancel-btn float-end shadow rounded-0"
+              className="btn btn-sm cancel-btn float-end rounded-0"
               onClick={() => {
                 setIsClientModal(false)
                 setModulesSelected([])

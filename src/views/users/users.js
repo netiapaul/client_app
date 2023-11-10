@@ -80,7 +80,7 @@ const Users = () => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       })
@@ -103,7 +103,7 @@ const Users = () => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       })
@@ -128,7 +128,7 @@ const Users = () => {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -186,7 +186,7 @@ const Users = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -244,7 +244,7 @@ const Users = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },

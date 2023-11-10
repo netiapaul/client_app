@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
-import { CModal, CModalBody, CModalHeader, CModalTitle, CModalFooter } from '@coreui/react'
-import MaterialTable from 'material-table'
-import { tableIcons, tableOptions } from '../../utils/helpers'
+import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
+// import MaterialTable from 'material-table'
+// import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
 import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
@@ -23,8 +23,9 @@ const UpdateClient = () => {
   const [psBedCountModal, setPsBedCountModal] = useState(false)
   const [psGLModal, setPsGLModal] = useState(false)
   const [addOnsModal, setAddOnsModal] = useState(false)
-  const [cloudModules, setCloudModules] = useState([])
-  const [modulesSelected, setModulesSelected] = useState([])
+  // const [cloudModules, setCloudModules] = useState([])
+  // const [modulesSelected, setModulesSelected] = useState([])
+  const [packages, setPackages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [data, setData] = useState({
     error: '',
@@ -50,6 +51,8 @@ const UpdateClient = () => {
     psPickBcode: '',
     psPickHdd: '',
     pickDate: '',
+    packageCode: '',
+    packageName: '',
   })
   const [editFormData, setEditFormData] = useState({
     /*** Change Details ***/
@@ -76,6 +79,7 @@ const UpdateClient = () => {
     queryAddOns: [],
     AddOnsArray: [],
     selectedAdons: '',
+    packageCode: '',
   })
   const [customers, setCustomers] = useState([])
   const [serialNo, setSerialNo] = useState([])
@@ -93,7 +97,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -125,6 +129,8 @@ const UpdateClient = () => {
           psPickCompany: result?.clientDetails.psPickCompany,
           psPickBcode: result?.clientDetails.psPickBcode,
           pickDate: result?.clientDetails.pickDate,
+          packageCode: result?.clientDetails.packageCode,
+          packageName: result?.clientDetails.packageName,
         })
         setEditFormData({
           ...editFormData,
@@ -159,24 +165,25 @@ const UpdateClient = () => {
           // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
           //   data.push(item.addonId)
           // }),
-          AddOnsArray: result?.clientAddOn.map((item) => item),
-          selectedAdons: result?.clientAddOn.map((item) => item.addonId),
+          AddOnsArray: result?.clientAddOn?.filter((item) => item !== null).map((item) => item),
+          selectedAdons: result?.clientAddOn
+            ?.filter((item) => item !== null)
+            .map((item) => item.addonId),
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
-        console.log(result?.clientAddOn.map((item) => item.addonId))
-        console.log('psActivateExpiryDate', result?.clientDetails.psActivateExpiryDate)
-        console.log('psStockTakeStartDate', result?.clientDetails.psStockTakeStartDate)
-        console.log('stockTakeEndDate', result?.clientDetails.stockTakeEndDate)
         // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
       } else {
         const result = await response.json()
         setIsLoading(false)
+        setError(result.message)
         console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const getCustomers = async () => {
@@ -186,11 +193,11 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomers`,
         {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -208,6 +215,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const GetSerialNumbers = async () => {
@@ -217,11 +226,11 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
         {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -239,17 +248,19 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const GetAddOns = async () => {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Logs/GetAddOns`, {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           // Authorization: `Bearer ${token}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       })
@@ -266,6 +277,36 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
+    }
+  }
+  const GetPackages = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          // Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+      if (response.ok) {
+        const result = await response.json()
+        setPackages(result)
+        setIsLoading(false)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const getCustomerMembers = async (query) => {
@@ -274,11 +315,11 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomerMembers?cusCode=${query}`,
         {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -296,8 +337,11 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
+  //
   const handleAccounthange = (e) => {
     setEditFormData({
       ...editFormData,
@@ -324,7 +368,6 @@ const UpdateClient = () => {
         ?.bcode,
     )
   }
-
   const UpdateClientDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -337,7 +380,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -369,6 +412,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateSerialsDetails = async (e) => {
@@ -383,7 +428,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -417,6 +462,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateUserCals = async (e) => {
@@ -435,7 +482,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -459,6 +506,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateBranchCals = async (e) => {
@@ -477,7 +526,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -501,6 +550,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateBedCount = async (e) => {
@@ -519,7 +570,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -543,6 +594,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateGL = async (e) => {
@@ -557,7 +610,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -581,6 +634,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateStockTakeCals = async (e) => {
@@ -595,7 +650,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -626,13 +681,14 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateAddsOn = async (e) => {
     e.preventDefault()
     setIsLoading(true)
     setError('')
-    // console.log(editFormData.selectedAdons)
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
@@ -640,7 +696,7 @@ const UpdateClient = () => {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -673,10 +729,48 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
-    return setTimeout(() => {
-      setError('')
-    }, 8000)
+  }
+  const UpdatePackage = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdatePackage?id=${id}&packagecode=${editFormData.packageCode}`,
+        {
+          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setIsLoading(false)
+        setIsClientModal(false)
+        setEditFormData({
+          ...editFormData,
+          packageCode: '',
+        })
+        console.log(result)
+        GetClientDetails(id)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
+    }
   }
   const DeleteAddsOn = async (addonId) => {
     setIsLoading(true)
@@ -689,7 +783,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -710,6 +804,8 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateDetails = async () => {
@@ -723,7 +819,7 @@ const UpdateClient = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -742,41 +838,43 @@ const UpdateClient = () => {
     } catch (error) {
       setIsLoading(false)
       console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
     }
   }
-  const UpdateClientModules = async (userData) => {
-    setIsLoading(true)
-    setError('')
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientModules?id=${id}&modulecode=${userData.modulecode}&status=${userData.status}`,
-        {
-          method: 'POST', // *GET, POST, PUT, DELETE, etc.
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
-            'Content-Type': 'application/json',
-          },
-        },
-      )
-      if (response.ok) {
-        const result = await response.json()
-        setIsClientModal(false)
-        setIsLoading(false)
-        console.log(result)
-        // navigate('/dashboard')
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
-        console.log(result)
-      }
-    } catch (error) {
-      setIsLoading(false)
-      console.log(error)
-    }
-  }
+  // const UpdateClientModules = async (userData) => {
+  //   setIsLoading(true)
+  //   setError('')
+  //   try {
+  //     const response = await fetch(
+  //       `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientModules?id=${id}&modulecode=${userData.modulecode}&status=${userData.status}`,
+  //       {
+  //         method: 'POST', // *GET, POST, PUT, DELETE, etc.
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //           // Authorization: `Bearer ${token}`,
+  //           Accept: 'application/json',
+  //           'Content-Type': 'application/json',
+  //         },
+  //       },
+  //     )
+  //     if (response.ok) {
+  //       const result = await response.json()
+  //       setIsClientModal(false)
+  //       setIsLoading(false)
+  //       console.log(result)
+  //       // navigate('/dashboard')
+  //     } else {
+  //       const result = await response.json()
+  //       setIsLoading(false)
+  //       setError(result.message)
+  //       console.log(result)
+  //     }
+  //   } catch (error) {
+  //     setIsLoading(false)
+  //     console.log(error)
+  //   }
+  // }
 
   const handleDay = (e) => {
     const date = new Date()
@@ -840,54 +938,55 @@ const UpdateClient = () => {
     // console.log(data)
   }
 
-  const CloudModules = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
-        headers: {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
-          'Content-Type': 'application/json',
-        },
-      })
-      if (response.ok) {
-        const result = await response.json()
-        setCloudModules(result)
-        setError(result.message)
-        setIsLoading(false)
-        console.log(result)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        console.log(result)
-      }
-    } catch (error) {
-      setIsLoading(false)
-      console.log(error)
-    }
-  }
+  // const CloudModules = async () => {
+  //   setIsLoading(true)
+  //   try {
+  //     const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
+  //       method: 'GET', // *GET, POST, PUT, DELETE, etc.
+  //       headers: {
+  //         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //         Accept: 'application/json',
+  //         'Content-Type': 'application/json',
+  //       },
+  //     })
+  //     if (response.ok) {
+  //       const result = await response.json()
+  //       setCloudModules(result)
+  //       setError(result.message)
+  //       setIsLoading(false)
+  //       console.log(result)
+  //     } else {
+  //       const result = await response.json()
+  //       setIsLoading(false)
+  //       console.log(result)
+  //     }
+  //   } catch (error) {
+  //     setIsLoading(false)
+  //     console.log(error)
+  //   }
+  // }
 
-  const onSelectionChange = (rows) => {
-    setModulesSelected(rows.map((item) => item?.moduleCode))
-    console.log(rows)
-  }
+  // const onSelectionChange = (rows) => {
+  //   setModulesSelected(rows.map((item) => item?.moduleCode))
+  //   console.log(rows)
+  // }
 
-  const handleAccess = (rowData) => {
-    const data = {
-      modulecode: rowData.moduleCode,
-      status: rowData.access === true ? false : true,
-    }
-    console.log(data)
-    UpdateClientModules(data)
-  }
+  // const handleAccess = (rowData) => {
+  //   const data = {
+  //     modulecode: rowData.moduleCode,
+  //     status: rowData.access === true ? false : true,
+  //   }
+  //   console.log(data)
+  //   UpdateClientModules(data)
+  // }
 
   useEffect(() => {
-    GetClientDetails(id)
     getCustomers()
     GetSerialNumbers()
     GetAddOns()
-    CloudModules()
+    GetPackages()
+    GetClientDetails(id)
+    // CloudModules()
   }, [])
 
   return (
@@ -934,14 +1033,12 @@ const UpdateClient = () => {
       </div>
       <hr className="my-2" />
       {data.error && (
-        <div className="alert alert-danger align-items-center rounded-0" role="alert">
-          <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+        <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
           <span> {data.error} </span>
         </div>
       )}
       {error && (
-        <div className="alert alert-danger align-items-center rounded-0" role="alert">
-          <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+        <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
           <span> {error} </span>
         </div>
       )}
@@ -1147,44 +1244,6 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
-                {/* <div className="row mb-1">
-                  <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
-                    Bed Count
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row">
-                      <div className="col-6">
-                        <input
-                          type="text"
-                          name="psBedCount"
-                          id="psBedCount"
-                          value={data.psBedCount}
-                          className="form-control form-control-sm rounded-0"
-                          disabled
-                          // readOnly
-                        />
-                      </div>
-                      <div className="col-6">
-                        <div className="row">
-                          <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
-                            GL
-                          </label>
-                          <div className="col ps-0">
-                            <input
-                              type="text"
-                              name="psGL"
-                              id="psGL"
-                              value={data.psGL}
-                              className="form-control form-control-sm rounded-0"
-                              disabled
-                              // readOnly
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div> */}
                 <div className="d-flex justify-content-end">
                   {data.psCusCode === '' || data.branchCode === '' ? (
                     ''
@@ -1378,8 +1437,6 @@ const UpdateClient = () => {
                     </div>
                   </div>
                 </div>
-                {/* <hr className="mb-3 mt-1" /> */}
-
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
@@ -1478,79 +1535,6 @@ const UpdateClient = () => {
                     Change
                   </p>
                 </div>
-                {/* <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    User CALS
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psUserCount"
-                      id="psUserCount"
-                      value={data.psUserCount}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    />
-                  </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setUserCALSModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="mb-3 mt-1" />
-                 <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Branch CALS
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psBranchCount"
-                      id="psBranchCount"
-                      value={data.psBranchCount}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    />
-                  </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setBranchCALSModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-3">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Stock Take CALS
-                  </label>
-                  <div className="col-md ps-1">
-                    <input
-                      type="text"
-                      name="psStockTakeCals"
-                      id="psStockTakeCals"
-                      value={data.psStockTakeCals}
-                      className="form-control form-control-sm rounded-0"
-                      disabled
-                      readOnly
-                    />
-                  </div>
-                </div> */}
-
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
@@ -1558,31 +1542,33 @@ const UpdateClient = () => {
                   </label>
                   <div className="col-md ps-1">
                     <ul className="list-group list-group-flush">
-                      {data.addons.map((addOn, index) => (
-                        // <Chip
-                        //   size="small"
-                        //   className="chip col"
-                        //   key={index}
-                        //   label={addOn.addonName}
-                        // />
-                        <li className="list-group-item py-1" key={index}>
-                          <input
-                            className="form-check-input me-1"
-                            type="checkbox"
-                            checked
-                            // value=""
-                            id={addOn.addonName}
-                            readOnly
-                            onChange={(e) => console.log(e)}
-                          />
-                          <label
-                            className="form-check-label stretched-link fw-bold"
-                            htmlFor={addOn.addonName}
-                          >
-                            {addOn.addonName}
-                          </label>
-                        </li>
-                      ))}
+                      {data.addons
+                        ?.filter((item) => item !== null)
+                        .map((addOn, index) => (
+                          // <Chip
+                          //   size="small"
+                          //   className="chip col"
+                          //   key={index}
+                          //   label={addOn.addonName}
+                          // />
+                          <li className="list-group-item py-1" key={index}>
+                            <input
+                              className="form-check-input me-1"
+                              type="checkbox"
+                              checked
+                              // value=""
+                              id={addOn.addonName}
+                              readOnly
+                              onChange={(e) => console.log(e)}
+                            />
+                            <label
+                              className="form-check-label stretched-link fw-bold"
+                              htmlFor={addOn.addonName}
+                            >
+                              {addOn.addonName}
+                            </label>
+                          </li>
+                        ))}
                     </ul>
                     {/* <div className="d-flex">
                       {data.addons.map((addOn, index) => (
@@ -1607,15 +1593,35 @@ const UpdateClient = () => {
                     Change
                   </p>
                 </div>
-
                 <hr className="mb-3 mt-1" />
                 <div className="row mb-1">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                     Client Modules
                   </label>
-                  <div className="col-md ps-1">
-                    <span className="d-flex flex-row gap-2 text-center">
-                      <span className="form-check">
+                  <div className="col-md">
+                    <span className="d-flex flex-row gap-5 text-center">
+                      {packages
+                        ?.filter((item) => item !== null)
+                        .map((module, index) => (
+                          <span className="form-check" key={index}>
+                            <input
+                              className="form-check-input"
+                              type="radio"
+                              name="clientType"
+                              id="desktop"
+                              value={module.packageNum}
+                              // packageCode
+                              // packageName
+                              checked={module.packageNum === data.packageCode}
+                              onChange={(e) => console.log(e.target.value)}
+                              disabled
+                            />
+                            <label className="form-check-label" htmlFor="desktop">
+                              {module.description}
+                            </label>
+                          </span>
+                        ))}
+                      {/* <span className="form-check">
                         <input
                           className="form-check-input"
                           type="radio"
@@ -1656,31 +1662,11 @@ const UpdateClient = () => {
                         <label className="form-check-label" htmlFor="both">
                           Professional
                         </label>
-                      </span>
+                      </span> */}
                     </span>
-                    {/* <ul className="list-group list-group-flush">
-                      {data.moduleAccess.map((module, index) => (
-                        <li className="list-group-item py-1" key={index}>
-                          <input
-                            className="form-check-input me-1"
-                            type="checkbox"
-                            checked
-                            id={module.subModuleName}
-                            readOnly
-                            onChange={(e) => console.log(e)}
-                          />
-                          <label
-                            className="form-check-label stretched-link fw-bold"
-                            htmlFor={module.subModuleName}
-                          >
-                            {module.subModuleName}
-                          </label>
-                        </li>
-                      ))}
-                    </ul> */}
                   </div>
                 </div>
-                {/* <div className="d-flex justify-content-end">
+                <div className="d-flex justify-content-end">
                   <p
                     className="my-1 fw-bold"
                     role="button"
@@ -1690,7 +1676,7 @@ const UpdateClient = () => {
                   >
                     Change
                   </p>
-                </div> */}
+                </div>
                 {/* <button
                   type="button"
                   className="btn btn-sm filter-btn rounded-0"
@@ -1842,7 +1828,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={isLoading}
               >
@@ -1862,7 +1848,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => setClientModal(false)}
               >
                 Cancel
@@ -2019,7 +2005,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={isLoading}
               >
@@ -2039,7 +2025,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setSerialModal(false)
                   setError('')
@@ -2078,7 +2064,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={isLoading}
               >
@@ -2098,7 +2084,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setUserCALSModal(false)
                   setError('')
@@ -2135,7 +2121,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={isLoading}
               >
@@ -2155,7 +2141,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setPsBedCountModal(false)
                   setError('')
@@ -2198,7 +2184,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={isLoading}
               >
@@ -2218,7 +2204,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setPsGLModal(false)
                   setError('')
@@ -2257,7 +2243,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={data.editModalInterface === 0}
               >
@@ -2277,7 +2263,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setBranchCALSModal(false)
                   setError('')
@@ -2390,7 +2376,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={data.editModalInterface === 0}
               >
@@ -2410,7 +2396,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setStockTakeCALSModal(false)
                   setError('')
@@ -2430,21 +2416,22 @@ const UpdateClient = () => {
         <CModalBody>
           <form autoComplete="off" onSubmit={UpdateAddsOn}>
             {error && (
-              <div className="alert alert-danger align-items-center rounded-0" role="alert">
-                <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+              <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
                 <span> {error} </span>
               </div>
             )}
             <div className="hstack gap-2 mb-3 ">
-              {data.addons.map((addOn, index) => (
-                <Chip
-                  className="chip ms-auto"
-                  size="small"
-                  key={index}
-                  label={addOn.addonName}
-                  onDelete={() => DeleteAddsOn(addOn.addonId)}
-                />
-              ))}
+              {data.addons
+                ?.filter((item) => item !== null)
+                .map((addOn, index) => (
+                  <Chip
+                    className="chip ms-auto"
+                    size="small"
+                    key={index}
+                    label={addOn.addonName}
+                    onDelete={() => DeleteAddsOn(addOn.addonId)}
+                  />
+                ))}
             </div>
             <div className="row mb-1">
               <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
@@ -2470,7 +2457,7 @@ const UpdateClient = () => {
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
-                className="btn add-btn btn-sm shadow rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
                 disabled={!editFormData.AddOnsArray}
               >
@@ -2490,7 +2477,7 @@ const UpdateClient = () => {
               <button
                 type="button"
                 style={{ width: '4rem' }}
-                className="btn btn-sm cancel-btn float-end shadow rounded-0"
+                className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setAddOnsModal(false)
                   setError('')
@@ -2515,99 +2502,73 @@ const UpdateClient = () => {
         </CModalHeader>
         <CModalBody>
           {error && (
-            <div className="alert alert-danger align-items-center rounded-0" role="alert">
-              <i className="fa fa-exclamation-triangle fa-fade me-3" aria-hidden="true"></i>
+            <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
               <span> {error} </span>
             </div>
           )}
-          <MaterialTable
-            columns={[
-              {
-                title: 'Code',
-                field: 'moduleCode',
-                cellStyle: {
-                  width: '10%',
-                },
-              },
-              {
-                title: 'Module',
-                field: 'moduleName',
-                cellStyle: {
-                  width: 120,
-                },
-              },
-              {
-                title: 'Sub Module',
-                field: 'subModuleName',
-                cellStyle: {
-                  minWidth: 200,
-                },
-              },
-              {
-                title: 'Access',
-                field: 'access',
-                render: (rowData) => (
-                  <input
-                    type="checkbox"
-                    id="access"
-                    name="access"
-                    className="text-center"
-                    checked={rowData.access}
-                    onChange={() => handleAccess(rowData)}
-                    // readOnly
-                  />
-                ),
-                cellStyle: {
-                  textAlign: 'center',
-                  width: '1%',
-                },
-              },
-            ]}
-            icons={tableIcons}
-            onSelectionChange={(rows) => onSelectionChange(rows)}
-            options={{
-              ...tableOptions,
-              search: true,
-              paging: false,
-              sorting: true,
-              maxBodyHeight: 200,
-              overflowY: 'auto',
-              selection: false,
-              showSelectAllCheckbox: false,
-              // rowStyle: (rowData) => ({
-              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-              // }),
-            }}
-            isLoading={isLoading}
-            data={cloudModules}
-            title=""
-          />
-        </CModalBody>
-        <CModalFooter>
-          <div className="d-flex justify-content-end">
-            {/* <button
-              type="submit"
-              className="btn add-btn btn-sm shadow rounded-0 me-1"
-              style={{ width: '4rem' }}
-              onClick={() => setIsClientModal(false)}
-            >
-              Select
-            </button> */}
+          <form autoComplete="off" onSubmit={UpdatePackage}>
+            <div className="row mb-1">
+              <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                Client Modules
+              </label>
+              <div className="col-md">
+                <span className="d-flex flex-row gap-5 text-center">
+                  {packages
+                    ?.filter((item) => item !== null)
+                    .map((module, index) => (
+                      <span className="form-check" key={index}>
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="desktop"
+                          value={module.packageNum}
+                          // onChange={(e) => console.log(e.target.value)}editFormData
+                          onChange={(e) =>
+                            setEditFormData({ ...editFormData, packageCode: e.target.value })
+                          }
+                        />
+                        <label className="form-check-label" htmlFor="desktop">
+                          {module.description}
+                        </label>
+                      </span>
+                    ))}
+                </span>
+              </div>
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn add-btn btn-sm rounded-0 me-1"
+                style={{ width: '4rem' }}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm m-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </>
+                ) : (
+                  'Edit'
+                )}
+              </button>
 
-            <button
-              type="button"
-              style={{ width: '4rem' }}
-              className="btn btn-sm cancel-btn float-end shadow rounded-0"
-              onClick={() => {
-                setIsClientModal(false)
-                setError('')
-                setModulesSelected([])
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </CModalFooter>
+              <button
+                type="button"
+                style={{ width: '4rem' }}
+                className="btn btn-sm cancel-btn float-end rounded-0"
+                onClick={() => {
+                  setIsClientModal(false)
+                  setError('')
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </CModalBody>
       </CModal>
     </>
   )

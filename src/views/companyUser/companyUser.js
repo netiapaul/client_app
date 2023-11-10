@@ -230,7 +230,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -257,7 +257,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -288,7 +288,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -314,7 +314,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -352,7 +352,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -393,7 +393,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -430,7 +430,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -463,7 +463,7 @@ const CompanyUsers = () => {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -551,7 +551,7 @@ const CompanyUsers = () => {
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -618,11 +618,11 @@ const CompanyUsers = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
         {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${token}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -654,10 +654,10 @@ const CompanyUsers = () => {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
+        method: 'GET', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          Accept: '*/*',
+          Accept: 'application/json',
           'Content-Type': 'application/json',
         },
       })
@@ -1807,7 +1807,7 @@ const CompanyUsers = () => {
           <div className="d-flex justify-content-end">
             <button
               type="submit"
-              className="btn add-btn btn-sm shadow rounded-0 me-1"
+              className="btn add-btn btn-sm rounded-0 me-1"
               style={{ width: '4rem' }}
               onClick={() => {
                 setIsClientModal(false)
@@ -1820,7 +1820,7 @@ const CompanyUsers = () => {
             <button
               type="button"
               style={{ width: '4rem' }}
-              className="btn btn-sm cancel-btn float-end shadow rounded-0"
+              className="btn btn-sm cancel-btn float-end rounded-0"
               onClick={() => {
                 setIsClientModal(false)
                 setIsBranchModalVisible(true)

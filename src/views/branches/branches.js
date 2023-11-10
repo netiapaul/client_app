@@ -39,7 +39,7 @@ const Dashboard = () => {
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
@@ -82,7 +82,7 @@ const Dashboard = () => {
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
+            Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },

@@ -81,18 +81,15 @@ const Dashboard = () => {
     setIsLoading(true)
     setError('')
     try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
-        {
-          params: { forcloundch: type },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: '*/*',
-            'Content-Type': 'application/json',
-          },
+      const response = await axios.get(`http://102.37.102.247:5023/api/Clients/GetClients`, {
+        params: { forcloundch: type },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
-      )
+      })
       setData({ ...data, clients: response.data })
       setIsLoading(false)
     } catch (error) {
@@ -129,7 +126,7 @@ const Dashboard = () => {
             </h6>
           </div>
           <div className="d-flex flex-row">
-            <span className="d-flex flex-row gap-2">
+            <span className="d-flex flex-row gap-3">
               <span className="form-check">
                 <input
                   className="form-check-input"
@@ -140,7 +137,7 @@ const Dashboard = () => {
                   checked={title === 'false'}
                   onChange={() => setTitle('false')}
                 />
-                <label className="form-check-label" htmlFor="desktop">
+                <label className="form-check-label fw-semibold" htmlFor="desktop">
                   Desktop
                 </label>
               </span>
@@ -155,7 +152,7 @@ const Dashboard = () => {
                   // onChange={() => console.log('true')}
                   onChange={() => setTitle('true')}
                 />
-                <label className="form-check-label" htmlFor="cloud">
+                <label className="form-check-label fw-semibold" htmlFor="cloud">
                   Cloud
                 </label>
               </span>
@@ -169,7 +166,7 @@ const Dashboard = () => {
                   checked={title === ''}
                   onChange={() => setTitle('')}
                 />
-                <label className="form-check-label" htmlFor="both">
+                <label className="form-check-label fw-semibold" htmlFor="both">
                   Both
                 </label>
               </span>
@@ -211,7 +208,7 @@ const Dashboard = () => {
             <button
               type="button"
               style={{ width: '5rem' }}
-              className="btn btn-sm add-btn ms-1 rounded-0"
+              className="btn btn-sm add-btn ms-3 rounded-0"
               onClick={() => navigate('/client/create-client')}
             >
               Create
