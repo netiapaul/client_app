@@ -45,6 +45,13 @@ const Dashboard = () => {
       },
       { title: 'Acct', field: 'psCusCode' },
       { title: 'AcctName', field: 'psCompanyName' },
+      {
+        title: 'Bcode',
+        field: 'psPickBcode',
+        cellStyle: {
+          width: '1%',
+        },
+      },
       { title: 'Branch', field: 'psBranchName' },
       { title: 'Serial No', field: 'psSerialNo' },
       {
