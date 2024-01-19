@@ -8,7 +8,7 @@ const axios = require('axios')
 
 const Dashboard = () => {
   //  "material-table": "^2.0.3",
-  const [title, setTitle] = useState('false')
+  const [title, setTitle] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [rowId, setRowId] = useState('')
