@@ -909,7 +909,7 @@ const CompanyUsers = () => {
         </div>
       )}
       <div className="row">
-        <div className="col-md">
+        <div className="col-md-6">
           <div className="card rounded-0 h-100">
             <div className="card-body">
               <MaterialTable
@@ -987,7 +987,7 @@ const CompanyUsers = () => {
             </div>
           </div>
         </div>
-        <div className="col-md-7">
+        <div className="col-md-6">
           <div className="row">
             <div className="col-12">
               <div className="card rounded-0 h-100">
