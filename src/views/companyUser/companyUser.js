@@ -888,7 +888,7 @@ const CompanyUsers = () => {
                           setCompanyRowId('')
                         }}
                       >
-                        close
+                        Close
                       </button>
                     </div>
                   </form>
