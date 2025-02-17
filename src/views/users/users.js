@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
-import Moment from 'react-moment'
+// import Moment from 'react-moment'
 // import { Link } from 'react-router-dom'
 import Drawer from '@mui/material/Drawer'
 import swal from 'sweetalert'
@@ -11,7 +11,7 @@ const Users = () => {
   //  "material-table": "^2.0.3",
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [error, setError] = useState('')
-  const [controllerError, setControllerError] = useState([])
+  // const [controllerError, setControllerError] = useState([])
   const [roles, setRoles] = useState([])
   const [formData, setFormData] = useState({
     fullNames: '',
@@ -543,7 +543,7 @@ const Users = () => {
         </div>
       )}
 
-      {controllerError.length > 0 && (
+      {/* {controllerError.length > 0 && (
         <div className="alert alert-danger mb-1" role="alert">
           <ul className="m-0">
             {controllerError.map((err, index) => (
@@ -551,7 +551,7 @@ const Users = () => {
             ))}
           </ul>
         </div>
-      )}
+      )} */}
       <div className="card rounded-0">
         <div className="card-body pt-0">
           {isLoading ? (

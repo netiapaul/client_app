@@ -43,7 +43,7 @@ function Login() {
       .catch((error) => {
         setData({
           ...data,
-          error: error.response.data.message,
+          error: error.response?.data?.message || error?.message,
         })
         console.log(error)
         // toast.error('could not fetch customers')

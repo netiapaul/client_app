@@ -317,7 +317,7 @@ function AcessModules() {
         </div>
       )}
       <div className="row">
-        {/* <div className="col-md-5">
+        <div className="col-md">
           <div className="card rounded-0 h-100">
             <div className="card-body">
               <MaterialTable
@@ -396,9 +396,8 @@ function AcessModules() {
               />
             </div>
           </div>
-        </div> */}
-
-        <div className="col-md-3">
+        </div>
+        <div className="col-md">
           <div className="card rounded-0 h-100">
             <div className="card-body">
               <MaterialTable
@@ -457,32 +456,32 @@ function AcessModules() {
                   setSelectedPackages(selectedRow)
                   console.log(selectedRow)
                 }}
-                // components={{
-                //   Toolbar: (props) => (
-                //     <div className="d-flex flex-row justify-content-end mb-2">
-                //       <button
-                //         type="button"
-                //         style={{ width: '4rem' }}
-                //         className="btn btn-sm add-btn ms-3 rounded-0"
-                //         onClick={() => {
-                //           setIsCreatePackageModal(true)
-                //           setError('')
-                //         }}
-                //       >
-                //         Create
-                //       </button>
-                //       <button
-                //         type="button"
-                //         style={{ width: '4rem' }}
-                //         className="btn btn-sm delete-btn ms-3 rounded-0"
-                //         disabled={selectedPackages.length <= 0}
-                //         onClick={() => DeletePackages()}
-                //       >
-                //         Delete
-                //       </button>
-                //     </div>
-                //   ),
-                // }}
+                components={{
+                  Toolbar: (props) => (
+                    <div className="d-flex flex-row justify-content-end mb-2">
+                      <button
+                        type="button"
+                        style={{ width: '4rem' }}
+                        className="btn btn-sm add-btn ms-3 rounded-0"
+                        onClick={() => {
+                          setIsCreatePackageModal(true)
+                          setError('')
+                        }}
+                      >
+                        Create
+                      </button>
+                      <button
+                        type="button"
+                        style={{ width: '4rem' }}
+                        className="btn btn-sm delete-btn ms-3 rounded-0"
+                        disabled={selectedPackages.length <= 0}
+                        onClick={() => DeletePackages()}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ),
+                }}
                 isLoading={isLoading}
                 data={packages}
                 title=""
@@ -532,35 +531,35 @@ function AcessModules() {
                   // selection: true,
                   // showSelectAllCheckbox: true,
                 }}
-                // components={{
-                //   Toolbar: (props) => (
-                //     <div
-                //       className="d-flex flex-row justify-content-between"
-                //       style={{ paddingTop: '1px' }}
-                //     >
-                //       <div className="align-self-end mb-1 d-flex flex-row">
-                //         <h6
-                //           className="align-self-end d-flex flex-row m-0 fw-bold"
-                //           style={{ fontSize: '12px' }}
-                //         >
-                //           Assigned Modules
-                //         </h6>
-                //       </div>
-                //       <div className="align-self-end mb-2">
-                //         <button
-                //           type="button"
-                //           // style={{ width: '4rem' }}
-                //           className="btn btn-sm delete-btn rounded-0"
-                //           disabled={modulesToRemove.length <= 0}
-                //           onClick={RemoveModules}
-                //         >
-                //           Un-Assign
-                //         </button>
-                //       </div>
-                //       <MTableToolbar {...props} />
-                //     </div>
-                //   ),
-                // }}
+                components={{
+                  Toolbar: (props) => (
+                    <div
+                      className="d-flex flex-row justify-content-between"
+                      style={{ paddingTop: '1px' }}
+                    >
+                      <div className="align-self-end mb-1 d-flex flex-row">
+                        <h6
+                          className="align-self-end d-flex flex-row m-0 fw-bold"
+                          style={{ fontSize: '12px' }}
+                        >
+                          Assigned Modules
+                        </h6>
+                      </div>
+                      <div className="align-self-end mb-2">
+                        <button
+                          type="button"
+                          // style={{ width: '4rem' }}
+                          className="btn btn-sm delete-btn rounded-0"
+                          disabled={modulesToRemove.length <= 0}
+                          onClick={RemoveModules}
+                        >
+                          Un-Assign
+                        </button>
+                      </div>
+                      <MTableToolbar {...props} />
+                    </div>
+                  ),
+                }}
                 isLoading={isLoading}
                 data={packageDetails?.assignedModulesList}
                 title="Assigned Modules"
@@ -610,35 +609,35 @@ function AcessModules() {
                   overflowY: 'auto',
                   // showSelectAllCheckbox: true,
                 }}
-                // components={{
-                //   Toolbar: (props) => (
-                //     <div
-                //       className="d-flex flex-row justify-content-between"
-                //       style={{ paddingTop: '1px' }}
-                //     >
-                //       <div className="align-self-end mb-1 d-flex flex-row">
-                //         <h6
-                //           className="align-self-end d-flex flex-row m-0 fw-bold"
-                //           style={{ fontSize: '12px' }}
-                //         >
-                //           Un-Assigned Modules
-                //         </h6>
-                //       </div>
-                //       <div className="align-self-end mb-2">
-                //         <button
-                //           type="button"
-                //           // style={{ width: '4rem' }}
-                //           className="btn btn-sm add-btn rounded-0"
-                //           disabled={modulesToAssign.length <= 0}
-                //           onClick={AddModules}
-                //         >
-                //           Assign
-                //         </button>
-                //       </div>
-                //       <MTableToolbar {...props} />
-                //     </div>
-                //   ),
-                // }}
+                components={{
+                  Toolbar: (props) => (
+                    <div
+                      className="d-flex flex-row justify-content-between"
+                      style={{ paddingTop: '1px' }}
+                    >
+                      <div className="align-self-end mb-1 d-flex flex-row">
+                        <h6
+                          className="align-self-end d-flex flex-row m-0 fw-bold"
+                          style={{ fontSize: '12px' }}
+                        >
+                          Un-Assigned Modules
+                        </h6>
+                      </div>
+                      <div className="align-self-end mb-2">
+                        <button
+                          type="button"
+                          // style={{ width: '4rem' }}
+                          className="btn btn-sm add-btn rounded-0"
+                          disabled={modulesToAssign.length <= 0}
+                          onClick={AddModules}
+                        >
+                          Assign
+                        </button>
+                      </div>
+                      <MTableToolbar {...props} />
+                    </div>
+                  ),
+                }}
                 isLoading={isLoading}
                 data={packageDetails?.unAssignedModulesList}
                 title="Un-Assigned Modules"

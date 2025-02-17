@@ -112,9 +112,9 @@ const Dashboard = () => {
     }, 8000)
   }
 
-  const queryClients = (data) => {
-    setTitle(data)
-  }
+  // const queryClients = (data) => {
+  //   setTitle(data)
+  // }
 
   useEffect(() => {
     getClients(title)
