@@ -11,7 +11,7 @@ const Dashboard = () => {
   const [title, setTitle] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [rowId, setRowId] = useState('')
+  // const [rowId, setRowId] = useState('')
   const navigate = useNavigate()
   const [data, setData] = useState({
     tableRef: React.createRef(),
@@ -19,12 +19,12 @@ const Dashboard = () => {
       {
         title: '',
         field: 'icon',
-        render: (rowData) =>
-          rowId === rowData.tableData.id ? (
-            <i className="fa fa-caret-right" aria-hidden="true"></i>
-          ) : (
-            ''
-          ),
+        // render: (rowData) =>
+        //   rowId === rowData.tableData.id ? (
+        //     <i className="fa fa-caret-right" aria-hidden="true"></i>
+        //   ) : (
+        //     ''
+        //   ),
         cellStyle: {
           width: '1%',
           textAlign: 'center',
@@ -80,6 +80,7 @@ const Dashboard = () => {
         render: (rowData) => <span>{rowData.psPickCPU + '/' + rowData.psPickBios}</span>,
       },
       { title: 'Company', field: 'psPickCompany' },
+      { title: 'Package', field: 'packageName' },
     ],
     clients: [],
   })
@@ -245,7 +246,7 @@ const Dashboard = () => {
             options={{
               ...tableOptions,
               search: true,
-              paging: data.clients.length <= 20 ? false : true,
+              paging: data.clients.length <= 30 ? false : true,
               sorting: true,
               // rowStyle: (rowData) => ({
               //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',

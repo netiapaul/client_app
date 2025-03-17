@@ -4,7 +4,7 @@ import CIcon from '@coreui/icons-react'
 // import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 import { CNavItem } from '@coreui/react'
 import { cilBuilding } from '@coreui/icons'
-import { cilAlignCenter } from '@coreui/icons'
+// import { cilAlignCenter } from '@coreui/icons'
 
 const _nav = [
   {

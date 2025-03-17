@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
-const axios = require('axios')
+// const axios = require('axios')
 
 function AcessModules() {
   const [error, setError] = useState('')
@@ -10,7 +10,7 @@ function AcessModules() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCreatePackageModal, setIsCreatePackageModal] = useState(false)
   const [packages, setPackages] = useState([])
-  const [clients, setClients] = useState([])
+  // const [clients, setClients] = useState([])
   const [packageID, setPackageID] = useState('')
   const [packagecode, setPackageCode] = useState('')
   const [selectedPackages, setSelectedPackages] = useState([])
@@ -262,36 +262,36 @@ function AcessModules() {
     }
   }
 
-  const getClients = async () => {
-    setIsLoading(true)
-    setError('')
-    try {
-      const response = await axios.get(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
-        {
-          params: { forcloundch: 'true' },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        },
-      )
-      setClients(response.data)
-      setIsLoading(false)
-    } catch (error) {
-      console.log(error)
-      setError(`${error?.code}: ${error?.message}`)
-      setIsLoading(false)
-    }
-    return setTimeout(() => {
-      setError('')
-    }, 8000)
-  }
+  // const getClients = async () => {
+  //   setIsLoading(true)
+  //   setError('')
+  //   try {
+  //     const response = await axios.get(
+  //       `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
+  //       {
+  //         params: { forcloundch: 'true' },
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //           Accept: 'application/json',
+  //           'Content-Type': 'application/json',
+  //         },
+  //       },
+  //     )
+  //     setClients(response.data)
+  //     setIsLoading(false)
+  //   } catch (error) {
+  //     console.log(error)
+  //     setError(`${error?.code}: ${error?.message}`)
+  //     setIsLoading(false)
+  //   }
+  //   return setTimeout(() => {
+  //     setError('')
+  //   }, 8000)
+  // }
 
   useEffect(() => {
-    getClients()
+    // getClients()
     GetPackages()
     setPackageDetails([])
     setModulesToAssign([])
@@ -317,7 +317,7 @@ function AcessModules() {
         </div>
       )}
       <div className="row">
-        <div className="col-md">
+        {/* <div className="col-md">
           <div className="card rounded-0 h-100">
             <div className="card-body">
               <MaterialTable
@@ -396,7 +396,7 @@ function AcessModules() {
               />
             </div>
           </div>
-        </div>
+        </div> */}
         <div className="col-md">
           <div className="card rounded-0 h-100">
             <div className="card-body">
@@ -458,11 +458,11 @@ function AcessModules() {
                 }}
                 components={{
                   Toolbar: (props) => (
-                    <div className="d-flex flex-row justify-content-end mb-2">
+                    <div className="d-flex flex-row justify-content-end mb-2 gap-1">
                       <button
                         type="button"
-                        style={{ width: '4rem' }}
-                        className="btn btn-sm add-btn ms-3 rounded-0"
+                        style={{ width: '5rem' }}
+                        className="btn btn-sm add-btn rounded-0"
                         onClick={() => {
                           setIsCreatePackageModal(true)
                           setError('')
@@ -472,8 +472,8 @@ function AcessModules() {
                       </button>
                       <button
                         type="button"
-                        style={{ width: '4rem' }}
-                        className="btn btn-sm delete-btn ms-3 rounded-0"
+                        style={{ width: '5rem' }}
+                        className="btn btn-sm delete-btn rounded-0"
                         disabled={selectedPackages.length <= 0}
                         onClick={() => DeletePackages()}
                       >
@@ -516,10 +516,10 @@ function AcessModules() {
                     },
                   },
                 ]}
-                // onSelectionChange={(rows) => {
-                //   setModulesToRemove(rows.map((item) => item?.moduleCode))
-                //   console.log(rows)
-                // }}
+                onSelectionChange={(rows) => {
+                  setModulesToRemove(rows.map((item) => item?.moduleCode))
+                  console.log(rows)
+                }}
                 icons={tableIcons}
                 options={{
                   ...tableOptions,
@@ -528,8 +528,8 @@ function AcessModules() {
                   sorting: true,
                   maxBodyHeight: 300,
                   overflowY: 'auto',
-                  // selection: true,
-                  // showSelectAllCheckbox: true,
+                  selection: true,
+                  showSelectAllCheckbox: true,
                 }}
                 components={{
                   Toolbar: (props) => (
@@ -548,7 +548,7 @@ function AcessModules() {
                       <div className="align-self-end mb-2">
                         <button
                           type="button"
-                          // style={{ width: '4rem' }}
+                          style={{ width: '5rem' }}
                           className="btn btn-sm delete-btn rounded-0"
                           disabled={modulesToRemove.length <= 0}
                           onClick={RemoveModules}
@@ -562,7 +562,8 @@ function AcessModules() {
                 }}
                 isLoading={isLoading}
                 data={packageDetails?.assignedModulesList}
-                title="Assigned Modules"
+                title=""
+                // title="Assigned Modules"
               />
             </div>
           </div>
@@ -595,19 +596,19 @@ function AcessModules() {
                   },
                 ]}
                 icons={tableIcons}
-                // onSelectionChange={(rows) => {
-                //   setModulesToAssign(rows.map((item) => item?.moduleCode))
-                //   console.log(rows)
-                // }}
+                onSelectionChange={(rows) => {
+                  setModulesToAssign(rows.map((item) => item?.moduleCode))
+                  console.log(rows)
+                }}
                 options={{
                   ...tableOptions,
                   search: true,
                   paging: false,
                   sorting: true,
-                  // selection: true,
+                  selection: true,
                   maxBodyHeight: 300,
                   overflowY: 'auto',
-                  // showSelectAllCheckbox: true,
+                  showSelectAllCheckbox: true,
                 }}
                 components={{
                   Toolbar: (props) => (
@@ -626,7 +627,7 @@ function AcessModules() {
                       <div className="align-self-end mb-2">
                         <button
                           type="button"
-                          // style={{ width: '4rem' }}
+                          style={{ width: '5rem' }}
                           className="btn btn-sm add-btn rounded-0"
                           disabled={modulesToAssign.length <= 0}
                           onClick={AddModules}
@@ -640,7 +641,8 @@ function AcessModules() {
                 }}
                 isLoading={isLoading}
                 data={packageDetails?.unAssignedModulesList}
-                title="Un-Assigned Modules"
+                // title="Un-Assigned Modules"
+                title=""
               />
             </div>
           </div>
