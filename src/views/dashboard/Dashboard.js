@@ -53,6 +53,7 @@ const Dashboard = () => {
         },
       },
       { title: 'Branch', field: 'psBranchName' },
+      { title: 'UserCount', field: 'psUserCount' },
       { title: 'Serial No', field: 'psSerialNo' },
       {
         title: 'Active',
