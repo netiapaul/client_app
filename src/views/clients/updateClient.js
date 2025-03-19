@@ -14,6 +14,7 @@ const UpdateClient = () => {
   const navigate = useNavigate()
   const [bcode, SetBcode] = useState('')
   const [error, setError] = useState('')
+  const [totalUsers, setTotalUSers] = useState(0)
   const [clientModal, setClientModal] = useState(false)
   const [isClientModal, setIsClientModal] = useState(false)
   const [serialModal, setSerialModal] = useState(false)
@@ -53,6 +54,7 @@ const UpdateClient = () => {
     pickDate: '',
     packageCode: '',
     packageName: '',
+    totalUsers: 0,
   })
   const [editFormData, setEditFormData] = useState({
     /*** Change Details ***/
@@ -67,6 +69,7 @@ const UpdateClient = () => {
     psBedCount: '',
     psGL: false,
     isActive: false,
+    applyToAllBranches: false,
     /*3*/
     queryUserCount: '',
     /*4*/
@@ -86,7 +89,7 @@ const UpdateClient = () => {
   const [customerMembers, setCustomerMembers] = useState([])
   const [addOns, setAddOns] = useState([])
 
-  const GetClientDetails = async (id) => {
+  const GetClientDetails = async () => {
     setIsLoading(true)
     setError('')
     try {
@@ -172,7 +175,39 @@ const UpdateClient = () => {
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
-        // SetBcode(result.filter((res) => res.branchCode === data.branchCode)[0]?.bcode)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
+    }
+  }
+  const GetAllUsersInCompany = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetAllUsersInCompany?ClientID=${id}`,
+        {
+          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setIsLoading(false)
+        setTotalUSers(result ?? 0)
       } else {
         const result = await response.json()
         setIsLoading(false)
@@ -439,6 +474,7 @@ const UpdateClient = () => {
             cusCode: data.psCusCode,
             branchCode: data.branchCode,
             expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
+            applyToAllBranches: editFormData.applyToAllBranches,
           }),
         },
       )
@@ -985,8 +1021,9 @@ const UpdateClient = () => {
     GetSerialNumbers()
     GetAddOns()
     GetPackages()
-    GetClientDetails(id)
     // CloudModules()
+    GetClientDetails()
+    GetAllUsersInCompany()
   }, [])
 
   return (
@@ -996,9 +1033,12 @@ const UpdateClient = () => {
         <div className="d-flex justify-content-between">
           <div className="flex-fill d-flex align-items-center">
             <div className="d-flex d-flex align-items-center">
-              <h6 className="m-0">Client ID:{''}</h6>
+              <h6 className="m-0">
+                Client:{' '}
+                <span className="company_text_color fw-semibold">{data?.psCompanyName}</span>
+              </h6>
               {/* <div className="vr fw-bold mx-2"></div> */}
-              <h6 className="m-0">{id}</h6>
+              {/* <h6 className="m-0">{id}</h6> */}
             </div>
           </div>
           <div className="">
@@ -1077,7 +1117,7 @@ const UpdateClient = () => {
                           name="psCusCode"
                           id="psCusCode"
                           value={data.psCusCode}
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           disabled
                           readOnly
                         />
@@ -1088,7 +1128,7 @@ const UpdateClient = () => {
                           name="psCompanyName"
                           id="psCompanyName"
                           value={data.psCompanyName}
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           disabled
                           readOnly
                         />
@@ -1108,7 +1148,7 @@ const UpdateClient = () => {
                           name="branchCode"
                           id="branchCode"
                           value={data.branchCode}
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           disabled
                           readOnly
                         />
@@ -1119,7 +1159,7 @@ const UpdateClient = () => {
                           name="psBranchName"
                           id="psBranchName"
                           value={data.psBranchName}
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           readOnly
                           disabled
                         />
@@ -1151,7 +1191,7 @@ const UpdateClient = () => {
                           name="psSerialNo"
                           id="psSerialNo"
                           value={data.psSerialNo}
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           disabled
                           // readOnly
                         />
@@ -1219,7 +1259,7 @@ const UpdateClient = () => {
                               ? ''
                               : moment(data.psActivateExpiryDate).format('DD/MM/YYYY')
                           }
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           readOnly
                           disabled
                         />
@@ -1234,7 +1274,7 @@ const UpdateClient = () => {
                               type="text"
                               name=""
                               id=""
-                              className="form-control form-control-sm rounded-0"
+                              className="form-control form-control-sm rounded-0 fw-medium"
                               readOnly
                               disabled
                             />
@@ -1274,7 +1314,7 @@ const UpdateClient = () => {
                               name="psUserCount"
                               id="psUserCount"
                               value={data.psUserCount}
-                              className="form-control form-control-sm rounded-0"
+                              className="form-control form-control-sm rounded-0 fw-medium"
                               disabled
                               readOnly
                             />
@@ -1304,7 +1344,7 @@ const UpdateClient = () => {
                                   name="psBranchCount"
                                   id="psBranchCount"
                                   value={data.psBranchCount}
-                                  className="form-control form-control-sm rounded-0"
+                                  className="form-control form-control-sm rounded-0 fw-medium"
                                   disabled
                                   readOnly
                                 />
@@ -1363,7 +1403,7 @@ const UpdateClient = () => {
                               name="psUserCount"
                               id="psUserCount"
                               value={data.psBedCount}
-                              className="form-control form-control-sm rounded-0"
+                              className="form-control form-control-sm rounded-0 fw-medium"
                               disabled
                               readOnly
                             />
@@ -1393,7 +1433,7 @@ const UpdateClient = () => {
                                   name="psGL"
                                   id="psGL"
                                   value={data.psGL}
-                                  className="form-control form-control-sm rounded-0"
+                                  className="form-control form-control-sm rounded-0 fw-medium"
                                   disabled
                                   readOnly
                                 />
@@ -1450,7 +1490,7 @@ const UpdateClient = () => {
                           name="psStockTakeCals"
                           id="psStockTakeCals"
                           value={data.psStockTakeCals}
-                          className="form-control form-control-sm rounded-0"
+                          className="form-control form-control-sm rounded-0 fw-medium"
                           disabled
                           readOnly
                         />
@@ -1470,7 +1510,7 @@ const UpdateClient = () => {
                                   ? ''
                                   : moment(data.psStockTakeStartDate).format('DD/MM/YYYY')
                               }
-                              className="form-control form-control-sm rounded-0"
+                              className="form-control form-control-sm rounded-0 fw-medium"
                               disabled
                               readOnly
                             />
@@ -1503,7 +1543,7 @@ const UpdateClient = () => {
                                   ? ''
                                   : moment(data.stockTakeEndDate).format('DD/MM/YYYY')
                               }
-                              className="form-control form-control-sm rounded-0"
+                              className="form-control form-control-sm rounded-0 fw-medium"
                               disabled
                               readOnly
                             />
@@ -1722,6 +1762,11 @@ const UpdateClient = () => {
                   <span>
                     <Moment format="DD/MM/YYYY">{data.pickDate}</Moment>
                   </span>
+                </li>
+                {/* <hr className="my-1" /> */}
+                <li className="list-group-item d-flex justify-content-between">
+                  <span className="fw-bold">All Users</span>
+                  <span className="fw-bold">{totalUsers}</span>
                 </li>
               </ul>
             </div>
@@ -1949,7 +1994,7 @@ const UpdateClient = () => {
               <div className="col-md">
                 <div className="row">
                   <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Expiry Date
+                    Expiry
                   </label>
                   <div className="col-md ps-1">
                     {/* <input
@@ -2002,7 +2047,40 @@ const UpdateClient = () => {
                 </div>
               </div>
             </div>
-            <div className="d-flex justify-content-end mt-3">
+            <div className="row">
+              <div className="col-md"></div>
+              <div className="col-md">
+                <div className="row">
+                  <label htmlFor="nonregistered" className="col-md-3 col-form-label">
+                    {/* Item Name */}
+                  </label>
+                  <div className="col-md ps-1">
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={editFormData.applyToAllBranches}
+                        name="blocked"
+                        id="blocked"
+                        onChange={(e) =>
+                          // setEditFormData({ ...editFormData, applyToAllBranches: e.target.checked })
+                          setEditFormData((prevState) => ({
+                            ...prevState,
+                            applyToAllBranches: e.target.checked,
+                          }))
+                        }
+                      />
+                      {/* form-check-label */}
+                      <label className="form-check-label" htmlFor="blocked">
+                        Apply to all Branches
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <hr />
+            <div className="d-flex justify-content-end">
               <button
                 type="submit"
                 className="btn add-btn btn-sm rounded-0 me-1"

@@ -23,7 +23,7 @@ const CompanyUsers = () => {
   const [deleteModal, setDeleteModal] = useState(false)
   const [companyRowId, setCompanyRowId] = useState('')
   const [serial, setSerial] = useState('')
-  const [serialNo, setSerialNo] = useState([])
+  // const [serialNo, setSerialNo] = useState([])
   const [userRowId, setUserRowId] = useState('')
   const [BranchRowId, setBranchRowId] = useState('')
   const [dataBases, setDataBases] = useState([])
@@ -95,7 +95,13 @@ const CompanyUsers = () => {
         width: '1%',
       },
     },
-    { title: 'Company Name', field: 'companyName' },
+    {
+      title: 'Company Name',
+      field: 'companyName',
+      cellStyle: {
+        minWidth: 150,
+      },
+    },
     { title: 'Database', field: 'clientCode' },
     // {
     //   title: 'Active',
@@ -220,12 +226,12 @@ const CompanyUsers = () => {
     // console.log(value)
     // console.log(country)
   }
-  const Getdatabase = async () => {
+  const Getdatabase = async (cus_code) => {
     setIsLoading(true)
     setError('')
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_URL_CONFIG}/api/SetUpUser/Getdatabase`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/SetUpUser/Getdatabase?cus_code=${cus_code}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -460,6 +466,9 @@ const CompanyUsers = () => {
       const response = await axios.get(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
         {
+          params: {
+            forcloundch: true,
+          },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -468,7 +477,14 @@ const CompanyUsers = () => {
           },
         },
       )
-      setClients(response.data)
+      const array = response.data ?? []
+      setClients(
+        array.filter(
+          (item, index, self) =>
+            index === self.findIndex((obj) => obj.psCusCode === item.psCusCode),
+        ),
+      )
+      // setClients(response.data)
       setIsLoading(false)
     } catch (error) {
       console.log(error)
@@ -621,7 +637,6 @@ const CompanyUsers = () => {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -629,19 +644,12 @@ const CompanyUsers = () => {
       )
       if (response.ok) {
         const result = await response.json()
-        // const result = [
-        //   { serialId: 1, brancH_NAME: 'BRANCH 1' },
-        //   { serialId: 2, brancH_NAME: 'BRANCH 1' },
-        // ]
-        // setSerialNo(result)
-        // setBranchFormData({ ...branchformData, psSerialNo: result[0]?.serialId || '' })
         setSerial(result?.serialId)
         setBranchFormData({ ...branchformData, psSerialNo: result?.serialId })
-        // alert(result?.serialId)
-        setError(result.message)
         setIsLoading(false)
       } else {
         const result = await response.json()
+        setError(result.message)
         setIsLoading(false)
         console.log(result)
       }
@@ -663,6 +671,8 @@ const CompanyUsers = () => {
       })
       if (response.ok) {
         const result = await response.json()
+        setIsClientModal(true)
+        setIsBranchModalVisible(false)
         setCloudModules(result)
         setError(result.message)
         setIsLoading(false)
@@ -682,13 +692,27 @@ const CompanyUsers = () => {
     setModulesSelected(rows.map((item) => item?.moduleCode))
     console.log(rows)
   }
+  const handleClientModules = () => {
+    CloudModules()
+  }
+
+  const handleCompany = (e) => {
+    setDBFormData({
+      ...DBFormData,
+      companyName: clients.filter((client) => client.psCusCode === e.target.value)[0]
+        ?.psCompanyName,
+      cuscode: e.target.value,
+    })
+
+    Getdatabase(e.target.value)
+  }
 
   useEffect(() => {
     GetSerialNumbers()
     GetCompany()
-    Getdatabase()
+    Getdatabase('')
     getClients()
-    CloudModules()
+    // CloudModules()
   }, [])
 
   return (
@@ -881,11 +905,11 @@ const CompanyUsers = () => {
                             expiryDate: '',
                             trialAcct: false,
                           })
-                          setRowDetails({
-                            selectedRow: [],
-                            companyDetailId: '',
-                          })
-                          setCompanyRowId('')
+                          // setRowDetails({
+                          //   selectedRow: [],
+                          //   companyDetailId: '',
+                          // })
+                          // setCompanyRowId('')
                         }}
                       >
                         Close
@@ -921,6 +945,8 @@ const CompanyUsers = () => {
                   search: true,
                   paging: data.user?.length <= 20 ? false : true,
                   sorting: true,
+                  maxBodyHeight: 500,
+                  overflowY: 'auto',
                   rowStyle: (rowData) => ({
                     backgroundColor: companyRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
                   }),
@@ -943,41 +969,45 @@ const CompanyUsers = () => {
                 }}
                 components={{
                   Toolbar: (props) => (
-                    <div className="d-flex flex-row justify-content-between py-0">
-                      <p
-                        className="align-self-end mb-2 flex-fill mb-2 fw-bold"
-                        style={{ fontSize: '10px' }}
-                      >
-                        Company DataBase
-                      </p>
-
-                      <button
-                        type="button"
-                        style={{ width: '5rem' }}
-                        className="btn btn-sm new-btn rounded-0 align-self-end mb-2 "
-                        onClick={() => {
-                          setVisible(true)
-                          setUserRowId('')
-                          setCompanyRowId('')
-                          setRowDetails({
-                            selectedRow: [],
-                            companyDetailId: '',
-                          })
-                        }}
-                      >
-                        New
-                      </button>
-                      <button
-                        type="button"
-                        style={{ width: '5rem' }}
-                        className="btn btn-sm delete-btn rounded-0 align-self-end mb-2  ms-2"
-                        disabled={rowDetails.selectedRow?.length <= 0}
-                        onClick={() => setDeleteModal(true)}
-                      >
-                        Delete
-                      </button>
+                    <div className="d-flex flex-row justify-content-between mb-2">
+                      <div className="align-self-end mb-1 d-flex flex-row">
+                        <h6
+                          className="align-self-end d-flex flex-row m-0 fw-bold"
+                          style={{ fontSize: '12px' }}
+                        >
+                          Company DataBase
+                        </h6>
+                      </div>
 
                       <MTableToolbar className="px-0" {...props} />
+
+                      <div className="d-flex gap-1">
+                        <button
+                          type="button"
+                          style={{ width: '5rem' }}
+                          className="btn btn-sm new-btn rounded-0 align-self-end mb-2"
+                          onClick={() => {
+                            setVisible(true)
+                            setUserRowId('')
+                            setCompanyRowId('')
+                            setRowDetails({
+                              selectedRow: [],
+                              companyDetailId: '',
+                            })
+                          }}
+                        >
+                          New
+                        </button>
+                        <button
+                          type="button"
+                          style={{ width: '5rem' }}
+                          className="btn btn-sm delete-btn rounded-0 align-self-end mb-2"
+                          disabled={rowDetails.selectedRow?.length <= 0}
+                          onClick={() => setDeleteModal(true)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ),
                 }}
@@ -1011,14 +1041,17 @@ const CompanyUsers = () => {
                     }}
                     components={{
                       Toolbar: (props) => (
-                        <div className="d-flex flex-row justify-content-between py-0">
-                          <p
-                            className="align-self-end mb-2 flex-fill mb-2 fw-bold"
-                            style={{ fontSize: '10px' }}
-                          >
-                            DataBase Users
-                          </p>
+                        <div className="d-flex flex-row justify-content-between mb-2">
+                          <div className="align-self-end mb-1 d-flex flex-row">
+                            <h6
+                              className="align-self-end d-flex flex-row m-0 fw-bold"
+                              style={{ fontSize: '12px' }}
+                            >
+                              DataBase Users
+                            </h6>
+                          </div>
 
+                          <MTableToolbar className="px-0" {...props} />
                           <button
                             type="button"
                             style={{ width: '5rem' }}
@@ -1038,8 +1071,6 @@ const CompanyUsers = () => {
                             {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
                             New
                           </button>
-
-                          <MTableToolbar className="px-0" {...props} />
                         </div>
                       ),
                     }}
@@ -1072,14 +1103,17 @@ const CompanyUsers = () => {
                     }}
                     components={{
                       Toolbar: (props) => (
-                        <div className="d-flex flex-row justify-content-between py-0">
-                          <p
-                            className="align-self-end mb-2 flex-fill mb-2 fw-bold"
-                            style={{ fontSize: '10px' }}
-                          >
-                            Branches
-                          </p>
+                        <div className="d-flex flex-row justify-content-between mb-2">
+                          <div className="align-self-end mb-1 d-flex flex-row">
+                            <h6
+                              className="align-self-end d-flex flex-row m-0 fw-bold"
+                              style={{ fontSize: '12px' }}
+                            >
+                              Branches
+                            </h6>
+                          </div>
 
+                          <MTableToolbar className="px-0" {...props} />
                           <button
                             type="button"
                             style={{ width: '5rem' }}
@@ -1104,8 +1138,6 @@ const CompanyUsers = () => {
                             {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
                             New
                           </button>
-
-                          <MTableToolbar className="px-0" {...props} />
                         </div>
                       ),
                     }}
@@ -1143,15 +1175,16 @@ const CompanyUsers = () => {
                   className="form-select form-select-sm rounded-0"
                   id="companyName"
                   value={DBFormData.cuscode}
-                  onChange={(e) => {
-                    setDBFormData({
-                      ...DBFormData,
-                      companyName: clients.filter(
-                        (client) => client.psCusCode === e.target.value,
-                      )[0]?.psCompanyName,
-                      cuscode: e.target.value,
-                    })
-                  }}
+                  // onChange={(e) => {
+                  //   setDBFormData({
+                  //     ...DBFormData,
+                  //     companyName: clients.filter(
+                  //       (client) => client.psCusCode === e.target.value,
+                  //     )[0]?.psCompanyName,
+                  //     cuscode: e.target.value,
+                  //   })
+                  // }}
+                  onChange={handleCompany}
                   required
                 >
                   <option value={''}></option>
@@ -1652,10 +1685,11 @@ const CompanyUsers = () => {
                 <button
                   type="button"
                   className="btn btn-sm filter-btn rounded-0"
-                  onClick={() => {
-                    setIsClientModal(true)
-                    setIsBranchModalVisible(false)
-                  }}
+                  // onClick={() => {
+                  //   setIsClientModal(true)
+                  //   setIsBranchModalVisible(false)
+                  // }}
+                  onClick={handleClientModules}
                 >
                   Client Modules
                 </button>
@@ -1754,7 +1788,7 @@ const CompanyUsers = () => {
         </CModalFooter>
       </CModal>
       {/* Module Modals */}
-      <CModal visible={isClientModal} alignment="center" backdrop="static" scrollable>
+      <CModal visible={isClientModal} alignment="center" backdrop="static" scrollable size="lg">
         <CModalHeader>
           <CModalTitle>Client Modules</CModalTitle>
         </CModalHeader>
@@ -1765,14 +1799,14 @@ const CompanyUsers = () => {
                 title: 'Code',
                 field: 'moduleCode',
                 cellStyle: {
-                  width: '10%',
+                  width: '1%',
                 },
               },
               {
                 title: 'Module',
                 field: 'moduleName',
                 cellStyle: {
-                  width: 120,
+                  width: 150,
                 },
               },
               {
@@ -1790,7 +1824,7 @@ const CompanyUsers = () => {
               search: true,
               paging: false,
               sorting: true,
-              maxBodyHeight: 200,
+              maxBodyHeight: 400,
               overflowY: 'auto',
               selection: true,
               showSelectAllCheckbox: true,
@@ -1825,7 +1859,7 @@ const CompanyUsers = () => {
                 setIsClientModal(false)
                 setIsBranchModalVisible(true)
                 setModulesSelected([])
-                CloudModules()
+                // CloudModules()
               }}
             >
               Cancel

@@ -397,7 +397,7 @@ function AcessModules() {
             </div>
           </div>
         </div> */}
-        <div className="col-md">
+        <div className="col-md-3">
           <div className="card rounded-0 h-100">
             <div className="card-body">
               <MaterialTable
@@ -545,6 +545,7 @@ function AcessModules() {
                           Assigned Modules
                         </h6>
                       </div>
+                      <MTableToolbar {...props} />
                       <div className="align-self-end mb-2">
                         <button
                           type="button"
@@ -556,7 +557,6 @@ function AcessModules() {
                           Un-Assign
                         </button>
                       </div>
-                      <MTableToolbar {...props} />
                     </div>
                   ),
                 }}
@@ -624,6 +624,7 @@ function AcessModules() {
                           Un-Assigned Modules
                         </h6>
                       </div>
+                      <MTableToolbar {...props} />
                       <div className="align-self-end mb-2">
                         <button
                           type="button"
@@ -635,7 +636,6 @@ function AcessModules() {
                           Assign
                         </button>
                       </div>
-                      <MTableToolbar {...props} />
                     </div>
                   ),
                 }}
