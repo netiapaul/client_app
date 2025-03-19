@@ -1,7 +1,14 @@
 import React from 'react'
 import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index'
+import { Navigate } from 'react-router-dom'
 
 const DefaultLayout = () => {
+  if (
+    !localStorage.getItem('accessToken') ||
+    !localStorage.getItem('ID') ||
+    !localStorage.getItem('name')
+  )
+    return <Navigate to={'/'} replace={true} />
   return (
     <div>
       <AppSidebar />
