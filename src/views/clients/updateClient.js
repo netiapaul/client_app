@@ -502,6 +502,56 @@ const UpdateClient = () => {
       setTimeout(() => setError(''), 10000)
     }
   }
+  const UpdateTemporaryDate = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateTemporaryDate?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        {
+          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            // Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            serialNo: editFormData.querySerialNo,
+            isActive: editFormData.isActive,
+            // psBedCount: editFormData.psBedCount,
+            // psGL: editFormData.psGL,
+            cusCode: data.psCusCode,
+            branchCode: data.branchCode,
+            expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
+            applyToAllBranches: editFormData.applyToAllBranches,
+          }),
+        },
+      )
+      if (response.ok) {
+        const result = await response.json()
+        setSerialModal(false)
+        // setData({ ...data, editModal: false, editModalInterface: 0 })
+        setIsLoading(false)
+        setEditFormData({
+          ...editFormData,
+          queryDays: '',
+        })
+        console.log(result)
+        GetClientDetails(id)
+      } else {
+        const result = await response.json()
+        setIsLoading(false)
+        setError(result.message)
+        console.log(result)
+      }
+    } catch (error) {
+      setIsLoading(false)
+      console.log(error)
+    } finally {
+      setTimeout(() => setError(''), 10000)
+    }
+  }
   const UpdateUserCals = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -2080,10 +2130,29 @@ const UpdateClient = () => {
               </div>
             </div>
             <hr />
-            <div className="d-flex justify-content-end">
+            <div className="d-flex justify-content-end gap-2">
+              <button
+                type="button"
+                className="btn filter-btn btn-sm rounded-0"
+                disabled={isLoading}
+                onClick={UpdateTemporaryDate}
+              >
+                {isLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm m-auto"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </>
+                ) : (
+                  'Temporary Date'
+                )}
+              </button>
+
               <button
                 type="submit"
-                className="btn add-btn btn-sm rounded-0 me-1"
+                className="btn add-btn btn-sm rounded-0"
                 style={{ width: '4rem' }}
                 disabled={isLoading}
               >

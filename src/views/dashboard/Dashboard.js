@@ -1,100 +1,45 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import MaterialTable from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import Moment from 'react-moment'
 import { Link } from 'react-router-dom'
-import { useNavigate } from 'react-router-dom'
+// import { useNavigate } from 'react-router-dom'
+import Drawer from '@mui/material/Drawer'
+import DatePicker from 'react-datepicker'
+
 const axios = require('axios')
 
 const Dashboard = () => {
   //  "material-table": "^2.0.3",
-  const [title, setTitle] = useState('')
+  // const [title, setTitle] = useState('')
+
+  let tableRef = React.createRef()
   const [error, setError] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  // const [rowId, setRowId] = useState('')
-  const navigate = useNavigate()
-  const [data, setData] = useState({
-    tableRef: React.createRef(),
-    column: [
-      {
-        title: '',
-        field: 'icon',
-        // render: (rowData) =>
-        //   rowId === rowData.tableData.id ? (
-        //     <i className="fa fa-caret-right" aria-hidden="true"></i>
-        //   ) : (
-        //     ''
-        //   ),
-        cellStyle: {
-          width: '1%',
-          textAlign: 'center',
-        },
-      },
-      {
-        title: 'ID',
-        field: 'id',
-        render: (rowData) => (
-          <Link className="text-decoration-underline" to={`/client/${rowData.id}`}>
-            {rowData.id}
-          </Link>
-        ),
-
-        cellStyle: {
-          width: '1%',
-        },
-      },
-      { title: 'Acct', field: 'psCusCode' },
-      { title: 'AcctName', field: 'psCompanyName' },
-      {
-        title: 'Bcode',
-        field: 'psPickBcode',
-        cellStyle: {
-          width: '1%',
-        },
-      },
-      { title: 'Branch', field: 'psBranchName' },
-      { title: 'BranchUsers', field: 'psUserCount' },
-      { title: 'CompanyUsers', field: 'companyUsers' },
-      { title: 'Serial No', field: 'psSerialNo' },
-      {
-        title: 'Active',
-        field: 'psActivated',
-        render: (rowData) => (
-          <div className={rowData.psActivated === '1' ? 'Active-r' : 'not-active-r'}></div>
-        ),
-        cellStyle: {
-          width: '1%',
-        },
-      },
-      {
-        title: 'Expiry',
-        field: 'psActivateExpiryDate',
-        render: (rowData) =>
-          !rowData?.psActivateExpiryDate ? (
-            ''
-          ) : (
-            <Moment format="DD/MM/YYYY">{rowData?.psActivateExpiryDate}</Moment>
-          ),
-      },
-      {
-        title: 'CPU/BIOS',
-        field: 'psPickBios',
-        render: (rowData) => <span>{rowData.psPickCPU + '/' + rowData.psPickBios}</span>,
-      },
-      { title: 'Company', field: 'psPickCompany' },
-      { title: 'Package', field: 'packageName' },
-    ],
-    clients: [],
+  const [filter, setFilter] = useState({
+    startDate: new Date(),
+    endDate: new Date(),
+    forcloundch: '',
+    expirystatus: 0,
   })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isDrawerOpened, setIsDrawerOpened] = useState(false)
+  // const [rowId, setRowId] = useState('')
+  // const navigate = useNavigate()
+  const [data, setData] = useState([])
 
-  const getClients = async (type) => {
+  async function getClients() {
     setIsLoading(true)
     setError('')
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
         {
-          params: { forcloundch: type },
+          params: {
+            startDate: new Intl.DateTimeFormat('en-GB').format(new Date(filter?.startDate)),
+            endDate: new Intl.DateTimeFormat('en-GB').format(new Date(filter?.endDate)),
+            forcloundch: filter?.forcloundch,
+            expirystatus: filter?.expirystatus,
+          },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
@@ -103,25 +48,37 @@ const Dashboard = () => {
           },
         },
       )
-      setData({ ...data, clients: response.data })
+      setData(response.data)
       setIsLoading(false)
+      setIsDrawerOpened(false)
     } catch (error) {
       console.log(error)
       setError(`${error?.code}: ${error?.message}`)
       setIsLoading(false)
+      setIsDrawerOpened(false)
     }
     return setTimeout(() => {
       setError('')
     }, 8000)
   }
 
-  // const queryClients = (data) => {
-  //   setTitle(data)
-  // }
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFilter((prevState) => {
+      return {
+        ...prevState,
+        [name]: value,
+      }
+    })
+  }
+
+  const handleSelectedQueries = () => {
+    getClients()
+  }
 
   useEffect(() => {
-    getClients(title)
-  }, [title])
+    getClients()
+  }, [])
 
   return (
     <>
@@ -131,15 +88,144 @@ const Dashboard = () => {
           <div className="flex-fill d-flex align-items-center">
             <h6 className="m-0">
               Customer Clients:{' '}
-              {title === ''
+              {filter.forcloundch === ''
                 ? 'All Clients'
-                : title === 'true'
+                : filter.forcloundch === 'true'
                 ? 'Cloud Clients'
                 : 'Desktop Clients'}
             </h6>
           </div>
           <div className="d-flex flex-row">
-            <span className="d-flex flex-row gap-3">
+            <React.Fragment>
+              <button
+                type="button"
+                className="btn btn-sm filter-btn"
+                onClick={() => setIsDrawerOpened(true)}
+              >
+                <i className="fa fa-filter" style={{ marginRight: 5 }}></i> Filters
+              </button>
+              <Drawer
+                anchor={'right'}
+                open={isDrawerOpened}
+                PaperProps={{ style: { width: '30rem' } }}
+              >
+                <h6 className="offcanvas-title my-2 px-2" id="filtersLabel">
+                  Filter Options
+                </h6>
+                <hr className="my-1" />
+                <div className="container">
+                  <div className="row my-2">
+                    <label className="col-form-label col-3 divider">Date</label>
+                    <div className="col">
+                      <div className="row">
+                        <div className="col-md-6 ">
+                          <div className="row">
+                            <label
+                              htmlFor="startDate"
+                              className="form-label col-3 align-self-center mb-0"
+                            >
+                              From:
+                            </label>
+                            <div className="col">
+                              <DatePicker
+                                selected={filter?.startDate}
+                                placeholderText="DD/MM/YYYY"
+                                className="form-control form-control-sm rounded-0"
+                                id="startDate"
+                                name="startDate"
+                                dateFormat="dd/MM/yyyy"
+                                onChange={(date) => {
+                                  setFilter({ ...filter, startDate: date })
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="col-md-6">
+                          <div className="row">
+                            <label
+                              htmlFor="endDate"
+                              className="form-label col-3 align-self-center mb-0"
+                            >
+                              To:
+                            </label>
+                            <div className="col">
+                              <DatePicker
+                                selected={filter?.endDate}
+                                placeholderText="DD/MM/YYYY"
+                                className="form-control form-control-sm rounded-0"
+                                id="endDate"
+                                name="endDate"
+                                dateFormat="dd/MM/yyyy"
+                                onChange={(date) => {
+                                  setFilter({ ...filter, endDate: date })
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="row my-2">
+                    <label htmlFor="forcloundch" className="col-md-3 col-form-label divider">
+                      Client Type
+                    </label>
+                    <div className="col-md">
+                      <select
+                        className="form-select form-select-sm rounded-0"
+                        aria-label="Default select example"
+                        id="forcloundch"
+                        name="forcloundch"
+                        value={filter?.forcloundch}
+                        onChange={handleChange}
+                        // onChange={this.function.handleChange}
+                      >
+                        <option value={''}>Both</option>
+                        <option value={'true'}>Cloud</option>
+                        <option value={'false'}>Desktop</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="row my-2">
+                    <label htmlFor="expirystatus" className="col-md-3 col-form-label divider">
+                      Expiry Status
+                    </label>
+                    <div className="col-md">
+                      <select
+                        className="form-select form-select-sm rounded-0"
+                        aria-label="Default select example"
+                        id="expirystatus"
+                        name="expirystatus"
+                        value={filter?.expirystatus}
+                        onChange={handleChange}
+                        // onChange={this.function.handleChange}
+                      >
+                        <option value={'0'}>All</option>
+                        <option value={'1'}>Expired</option>
+                        <option value={'2'}>Active</option>
+                      </select>
+                    </div>
+                  </div>
+                  <hr />
+                  <div className="d-flex justify-content-end gap-2">
+                    <button
+                      className="btn add-btn top-btn rounded-0"
+                      onClick={handleSelectedQueries}
+                    >
+                      Select
+                    </button>
+                    <button
+                      className="btn delete-btn top-btn rounded-0"
+                      onClick={() => setIsDrawerOpened(false)}
+                    >
+                      close
+                    </button>
+                  </div>
+                </div>
+              </Drawer>
+            </React.Fragment>
+            {/* <span className="d-flex flex-row gap-3">
               <span className="form-check">
                 <input
                   className="form-check-input"
@@ -183,7 +269,7 @@ const Dashboard = () => {
                   Both
                 </label>
               </span>
-            </span>
+            </span> */}
             {/* <button
               className="btn btn-sm filter-btn dropdown-toggle rounded-0"
               type="button"
@@ -218,14 +304,14 @@ const Dashboard = () => {
                 Desktop
               </li>
             </ul> */}
-            <button
+            {/* <button
               type="button"
               style={{ width: '5rem' }}
               className="btn btn-sm add-btn ms-3 rounded-0"
               onClick={() => navigate('/client/create-client')}
             >
               Create
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -242,20 +328,88 @@ const Dashboard = () => {
       <div className="card rounded-0">
         <div className="card-body">
           <MaterialTable
-            columns={data.column}
-            tableRef={data.tableRef}
+            columns={[
+              {
+                title: '',
+                field: 'icon',
+                // render: (rowData) =>
+                //   rowId === rowData.tableData.id ? (
+                //     <i className="fa fa-caret-right" aria-hidden="true"></i>
+                //   ) : (
+                //     ''
+                //   ),
+                cellStyle: {
+                  width: '1%',
+                  textAlign: 'center',
+                },
+              },
+              {
+                title: 'ID',
+                field: 'id',
+                render: (rowData) => (
+                  <Link className="text-decoration-underline" to={`/client/${rowData.id}`}>
+                    {rowData.id}
+                  </Link>
+                ),
+
+                cellStyle: {
+                  width: '1%',
+                },
+              },
+              { title: 'Acct', field: 'psCusCode' },
+              { title: 'AcctName', field: 'psCompanyName' },
+              {
+                title: 'Bcode',
+                field: 'psPickBcode',
+                cellStyle: {
+                  width: '1%',
+                },
+              },
+              { title: 'Branch', field: 'psBranchName' },
+              { title: 'BranchUsers', field: 'psUserCount' },
+              { title: 'CompanyUsers', field: 'companyUsers' },
+              { title: 'Serial No', field: 'psSerialNo' },
+              {
+                title: 'Active',
+                field: 'psActivated',
+                render: (rowData) => (
+                  <div className={rowData.psActivated === '1' ? 'Active-r' : 'not-active-r'}></div>
+                ),
+                cellStyle: {
+                  width: '1%',
+                },
+              },
+              {
+                title: 'Expiry',
+                field: 'psActivateExpiryDate',
+                render: (rowData) =>
+                  !rowData?.psActivateExpiryDate ? (
+                    ''
+                  ) : (
+                    <Moment format="DD/MM/YYYY">{rowData?.psActivateExpiryDate}</Moment>
+                  ),
+              },
+              {
+                title: 'CPU/BIOS',
+                field: 'psPickBios',
+                render: (rowData) => <span>{rowData.psPickCPU + '/' + rowData.psPickBios}</span>,
+              },
+              { title: 'Company', field: 'psPickCompany' },
+              { title: 'Package', field: 'packageName' },
+            ]}
+            tableRef={tableRef}
             icons={tableIcons}
             options={{
               ...tableOptions,
               search: true,
-              paging: data.clients.length <= 30 ? false : true,
+              paging: data.length <= 30 ? false : true,
               sorting: true,
               // rowStyle: (rowData) => ({
               //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
               // }),
             }}
             isLoading={isLoading}
-            data={data.clients}
+            data={data}
             title=""
           />
         </div>
