@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import MaterialTable from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import Moment from 'react-moment'
 import { Link } from 'react-router-dom'
-// import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import Drawer from '@mui/material/Drawer'
 import DatePicker from 'react-datepicker'
 
@@ -24,7 +24,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpened, setIsDrawerOpened] = useState(false)
   // const [rowId, setRowId] = useState('')
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
   const [data, setData] = useState([])
 
   async function getClients() {
