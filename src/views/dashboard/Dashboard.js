@@ -304,14 +304,14 @@ const Dashboard = () => {
                 Desktop
               </li>
             </ul> */}
-            {/* <button
+            <button
               type="button"
               style={{ width: '5rem' }}
               className="btn btn-sm add-btn ms-3 rounded-0"
               onClick={() => navigate('/client/create-client')}
             >
               Create
-            </button> */}
+            </button>
           </div>
         </div>
       </div>
