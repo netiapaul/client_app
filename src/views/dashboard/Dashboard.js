@@ -12,12 +12,13 @@ const axios = require('axios')
 const Dashboard = () => {
   //  "material-table": "^2.0.3",
   // const [title, setTitle] = useState('')
-
+  const today = new Date()
+  const futureDate = new Date(today)
   let tableRef = React.createRef()
   const [error, setError] = useState('')
   const [filter, setFilter] = useState({
     startDate: new Date(),
-    endDate: new Date(),
+    endDate: new Date(futureDate.setDate(today.getDate() + 3650)),
     forcloundch: '',
     expirystatus: 0,
   })
@@ -357,7 +358,13 @@ const Dashboard = () => {
                 },
               },
               { title: 'Acct', field: 'psCusCode' },
-              { title: 'AcctName', field: 'psCompanyName' },
+              {
+                title: 'AcctName',
+                field: 'psCompanyName',
+                cellStyle: {
+                  minWidth: 200,
+                },
+              },
               {
                 title: 'Bcode',
                 field: 'psPickBcode',
@@ -365,10 +372,22 @@ const Dashboard = () => {
                   width: '1%',
                 },
               },
-              { title: 'Branch', field: 'psBranchName' },
+              {
+                title: 'Branch',
+                field: 'psBranchName',
+                cellStyle: {
+                  minWidth: 150,
+                },
+              },
               { title: 'BranchUsers', field: 'psUserCount' },
               { title: 'CompanyUsers', field: 'companyUsers' },
-              { title: 'Serial No', field: 'psSerialNo' },
+              {
+                title: 'Serial No',
+                field: 'psSerialNo',
+                cellStyle: {
+                  minWidth: 150,
+                },
+              },
               {
                 title: 'Active',
                 field: 'psActivated',
@@ -388,13 +407,35 @@ const Dashboard = () => {
                   ) : (
                     <Moment format="DD/MM/YYYY">{rowData?.psActivateExpiryDate}</Moment>
                   ),
+                cellStyle: {
+                  width: '1%',
+                },
+              },
+              {
+                title: 'TemporaryExpiry',
+                field: 'psTemporaryActivateExpiryDate',
+                render: (rowData) =>
+                  !rowData?.psTemporaryActivateExpiryDate ? (
+                    ''
+                  ) : (
+                    <Moment format="DD/MM/YYYY">{rowData?.psTemporaryActivateExpiryDate}</Moment>
+                  ),
+                cellStyle: {
+                  width: '1%',
+                },
               },
               {
                 title: 'CPU/BIOS',
                 field: 'psPickBios',
                 render: (rowData) => <span>{rowData.psPickCPU + '/' + rowData.psPickBios}</span>,
               },
-              { title: 'Company', field: 'psPickCompany' },
+              {
+                title: 'Company',
+                field: 'psPickCompany',
+                cellStyle: {
+                  minWidth: 200,
+                },
+              },
               { title: 'Package', field: 'packageName' },
             ]}
             tableRef={tableRef}
