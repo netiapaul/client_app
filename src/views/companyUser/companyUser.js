@@ -12,6 +12,14 @@ const axios = require('axios')
 
 const CompanyUsers = () => {
   //  "material-table": "^2.0.3",
+  const today = new Date()
+  const futureDate = new Date(today)
+  const [filter, setFilter] = useState({
+    startDate: new Date(),
+    endDate: new Date(futureDate.setDate(today.getDate() + 3650)),
+    forcloundch: '',
+    expirystatus: 0,
+  })
   const [error, setError] = useState('')
   const [isClientModal, setIsClientModal] = useState(false)
   const [cloudModules, setCloudModules] = useState([])
@@ -468,6 +476,9 @@ const CompanyUsers = () => {
         {
           params: {
             forcloundch: true,
+            startDate: new Intl.DateTimeFormat('en-GB').format(new Date(filter?.startDate)),
+            endDate: new Intl.DateTimeFormat('en-GB').format(new Date(filter?.endDate)),
+            expirystatus: filter?.expirystatus,
           },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,

@@ -9,6 +9,14 @@ const axios = require('axios')
 
 const Dashboard = () => {
   //  "material-table": "^2.0.3",
+  const today = new Date()
+  const futureDate = new Date(today)
+  const [filter, setFilter] = useState({
+    startDate: new Date(),
+    endDate: new Date(futureDate.setDate(today.getDate() + 3650)),
+    forcloundch: '',
+    expirystatus: 0,
+  })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   //   const [rowId, setRowId] = useState('')
@@ -37,6 +45,12 @@ const Dashboard = () => {
       const response = await axios.get(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
         {
+          params: {
+            forcloundch: true,
+            startDate: new Intl.DateTimeFormat('en-GB').format(new Date(filter?.startDate)),
+            endDate: new Intl.DateTimeFormat('en-GB').format(new Date(filter?.endDate)),
+            expirystatus: filter?.expirystatus,
+          },
           headers: {
             Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
             Accept: 'application/json',

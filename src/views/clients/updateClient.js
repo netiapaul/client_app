@@ -1229,6 +1229,90 @@ const UpdateClient = () => {
                   </p>
                 </div>
                 <hr className="mb-3 mt-1" />
+                <div className="row mb-1">
+                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                    Client Modules
+                  </label>
+                  <div className="col-md">
+                    <span className="d-flex flex-row gap-5 text-center">
+                      {packages
+                        ?.filter((item) => item !== null)
+                        .map((module, index) => (
+                          <span className="form-check" key={index}>
+                            <input
+                              className="form-check-input"
+                              type="radio"
+                              name="clientType"
+                              id="desktop"
+                              value={module.packageNum}
+                              // packageCode
+                              // packageName
+                              checked={module.packageNum === data.packageCode}
+                              onChange={(e) => console.log(e.target.value)}
+                              disabled
+                            />
+                            <label className="form-check-label" htmlFor="desktop">
+                              {module.description}
+                            </label>
+                          </span>
+                        ))}
+                      {/* <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="desktop"
+                          // value={title}
+                          // checked={title === 'false'}
+                          // onChange={() => setTitle('false')}
+                        />
+                        <label className="form-check-label" htmlFor="desktop">
+                          Light
+                        </label>
+                      </span>
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="cloud"
+                          // value={title}
+                          // checked={title === 'true'}
+                          // onChange={() => setTitle('true')}
+                        />
+                        <label className="form-check-label" htmlFor="cloud">
+                          Standard
+                        </label>
+                      </span>
+                      <span className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="clientType"
+                          id="both"
+                          // value={title}
+                          // checked={title === ''}
+                          // onChange={() => setTitle('')}
+                        />
+                        <label className="form-check-label" htmlFor="both">
+                          Professional
+                        </label>
+                      </span> */}
+                    </span>
+                  </div>
+                </div>
+                <div className="d-flex justify-content-end">
+                  <p
+                    className="my-1 fw-bold"
+                    role="button"
+                    style={{ fontSize: '10px', color: '#c58c4f' }}
+                    onClick={() => setIsClientModal(true)}
+                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
+                  >
+                    Change
+                  </p>
+                </div>
+                <hr className="mb-3 mt-1" />
                 <div className="row mb-3">
                   <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
                     Serial No
@@ -1683,98 +1767,6 @@ const UpdateClient = () => {
                     Change
                   </p>
                 </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Client Modules
-                  </label>
-                  <div className="col-md">
-                    <span className="d-flex flex-row gap-5 text-center">
-                      {packages
-                        ?.filter((item) => item !== null)
-                        .map((module, index) => (
-                          <span className="form-check" key={index}>
-                            <input
-                              className="form-check-input"
-                              type="radio"
-                              name="clientType"
-                              id="desktop"
-                              value={module.packageNum}
-                              // packageCode
-                              // packageName
-                              checked={module.packageNum === data.packageCode}
-                              onChange={(e) => console.log(e.target.value)}
-                              disabled
-                            />
-                            <label className="form-check-label" htmlFor="desktop">
-                              {module.description}
-                            </label>
-                          </span>
-                        ))}
-                      {/* <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="desktop"
-                          // value={title}
-                          // checked={title === 'false'}
-                          // onChange={() => setTitle('false')}
-                        />
-                        <label className="form-check-label" htmlFor="desktop">
-                          Light
-                        </label>
-                      </span>
-                      <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="cloud"
-                          // value={title}
-                          // checked={title === 'true'}
-                          // onChange={() => setTitle('true')}
-                        />
-                        <label className="form-check-label" htmlFor="cloud">
-                          Standard
-                        </label>
-                      </span>
-                      <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="both"
-                          // value={title}
-                          // checked={title === ''}
-                          // onChange={() => setTitle('')}
-                        />
-                        <label className="form-check-label" htmlFor="both">
-                          Professional
-                        </label>
-                      </span> */}
-                    </span>
-                  </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setIsClientModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                {/* <button
-                  type="button"
-                  className="btn btn-sm filter-btn rounded-0"
-                  onClick={() => setIsClientModal(true)}
-                >
-                  Client Modules
-                </button> */}
-
                 <hr className="my-3" />
                 {/* <hr className="mb-3 mt-1" /> */}
               </form>
