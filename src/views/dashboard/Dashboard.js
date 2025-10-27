@@ -341,12 +341,7 @@ const Dashboard = () => {
               {
                 title: '',
                 field: 'icon',
-                // render: (rowData) =>
-                //   rowId === rowData.tableData.id ? (
-                //     <i className="fa fa-caret-right" aria-hidden="true"></i>
-                //   ) : (
-                //     ''
-                //   ),
+                render: (rowData) => (selectedRow?.psCusCode === rowData.psCusCode ? '>' : ''),
                 cellStyle: {
                   width: '1%',
                   textAlign: 'center',
