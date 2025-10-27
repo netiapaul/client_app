@@ -24,7 +24,8 @@ const Dashboard = () => {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawerOpened, setIsDrawerOpened] = useState(false)
-  // const [rowId, setRowId] = useState('')
+  const [selectedRow, setSelectedRow] = useState({})
+  const [summary, setSummary] = useState([])
   const navigate = useNavigate()
   const [data, setData] = useState([])
 
@@ -77,6 +78,12 @@ const Dashboard = () => {
     getClients()
   }
 
+  const handleRowClick = (e, rowData) => {
+    setSelectedRow({ ...rowData })
+    setSummary(data.filter((cus) => cus.psCusCode === rowData?.psCusCode))
+    console.log(data.filter((cus) => cus.psCusCode === rowData?.psCusCode))
+  }
+
   useEffect(() => {
     getClients()
   }, [])
@@ -100,10 +107,11 @@ const Dashboard = () => {
             <React.Fragment>
               <button
                 type="button"
-                className="btn btn-sm filter-btn"
+                style={{ width: '5rem' }}
+                className="btn btn-sm filter-btn rounded-0"
                 onClick={() => setIsDrawerOpened(true)}
               >
-                <i className="fa fa-filter" style={{ marginRight: 5 }}></i> Filters
+                Filters
               </button>
               <Drawer
                 anchor={'right'}
@@ -357,12 +365,13 @@ const Dashboard = () => {
                   width: '1%',
                 },
               },
+              { title: 'Package', field: 'packageName' },
               { title: 'Acct', field: 'psCusCode' },
               {
                 title: 'AcctName',
                 field: 'psCompanyName',
                 cellStyle: {
-                  minWidth: 200,
+                  minWidth: 230,
                 },
               },
               {
@@ -376,7 +385,7 @@ const Dashboard = () => {
                 title: 'Branch',
                 field: 'psBranchName',
                 cellStyle: {
-                  minWidth: 150,
+                  minWidth: 160,
                 },
               },
               { title: 'BranchUsers', field: 'psUserCount' },
@@ -436,7 +445,6 @@ const Dashboard = () => {
                   minWidth: 200,
                 },
               },
-              { title: 'Package', field: 'packageName' },
             ]}
             tableRef={tableRef}
             icons={tableIcons}
@@ -445,11 +453,15 @@ const Dashboard = () => {
               search: true,
               paging: data.length <= 30 ? false : true,
               sorting: true,
-              // rowStyle: (rowData) => ({
-              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-              // }),
+              rowStyle: (rowData) => ({
+                backgroundColor:
+                  // selectedRow?.tableData?.id === rowData.tableData.id ? '#d8d8d8' : '#FFF',
+                  selectedRow?.psCusCode === rowData.psCusCode ? '#d8d8d8' : '#FFF',
+                fontWeight: selectedRow?.psCusCode === rowData.psCusCode ? '600' : '400',
+              }),
             }}
             isLoading={isLoading}
+            onRowClick={(e, selectedRow) => handleRowClick(e, selectedRow)}
             data={data}
             title=""
           />
