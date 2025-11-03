@@ -440,6 +440,24 @@ const Dashboard = () => {
                   minWidth: 200,
                 },
               },
+              {
+                title: 'Cloud',
+                field: 'forCloud',
+                render: (rowData) => (
+                  <input
+                    type="checkbox"
+                    id="forCloud"
+                    name="forCloud"
+                    className="text-center"
+                    checked={rowData.forCloud}
+                    disabled
+                  />
+                ),
+                cellStyle: {
+                  width: '1%',
+                  textAlign: 'center',
+                },
+              },
             ]}
             tableRef={tableRef}
             icons={tableIcons}
