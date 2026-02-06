@@ -12,7 +12,7 @@ import Chip from '@mui/material/Chip'
 const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [bcode, SetBcode] = useState('')
+  // const [bcode, SetBcode] = useState('')
   const [error, setError] = useState('')
   const [totalUsers, setTotalUSers] = useState(0)
   const [clientModal, setClientModal] = useState(false)
@@ -398,10 +398,10 @@ const UpdateClient = () => {
         (customerMember) => customerMember.branchCode === e.target.value,
       )[0]?.branchName,
     })
-    SetBcode(
-      customerMembers.filter((customerMember) => customerMember.branchCode === data.branchCode)[0]
-        ?.bcode,
-    )
+    // SetBcode(
+    //   customerMembers.filter((customerMember) => customerMember.branchCode === data.branchCode)[0]
+    //     ?.bcode,
+    // )
   }
   const UpdateClientDetails = async (e) => {
     e.preventDefault()
@@ -1885,7 +1885,7 @@ const UpdateClient = () => {
                       placeholder="search..."
                       title={editFormData.queryBranchCode}
                       disabled={editFormData.customerMembers <= 0}
-                      onChange={(e) => handleBranchChange(e)}
+                      onChange={handleBranchChange}
                     />
                     <datalist id="customerMembersOptions">
                       <option value="">select</option>
@@ -1906,7 +1906,7 @@ const UpdateClient = () => {
                       onChange={(e) =>
                         setEditFormData({ ...editFormData, queryBranchName: e.target.value })
                       }
-                      readOnly
+                      disabled
                     />
                   </div>
                 </div>
