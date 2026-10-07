@@ -1,25 +1,25 @@
 import React from 'react'
-import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index'
+import { isAuthenticated } from '../utils/session'
+import { AppContent, AppSidebar, AppFooter, AppHeader, PageLoader } from '../components/index'
 import { Navigate } from 'react-router-dom'
+import { BreadcrumbProvider } from '../context/BreadcrumbContext'
 
 const DefaultLayout = () => {
-  if (
-    !localStorage.getItem('accessToken') ||
-    !localStorage.getItem('ID') ||
-    !localStorage.getItem('name')
-  )
-    return <Navigate to={'/'} replace={true} />
+  if (!isAuthenticated()) return <Navigate to={'/'} replace={true} />
   return (
-    <div>
-      <AppSidebar />
-      <div className="wrapper d-flex flex-column min-vh-100 bg-light">
-        <AppHeader />
-        <div className="body flex-grow-1">
-          <AppContent />
+    <BreadcrumbProvider>
+      <div>
+        <AppSidebar />
+        <div className="wrapper d-flex flex-column min-vh-100 bg-light">
+          <AppHeader />
+          <div className="body flex-grow-1 position-relative">
+            <PageLoader />
+            <AppContent />
+          </div>
+          <AppFooter />
         </div>
-        <AppFooter />
       </div>
-    </div>
+    </BreadcrumbProvider>
   )
 }
 

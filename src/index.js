@@ -14,6 +14,16 @@ import 'react-phone-input-2/lib/style.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 // Bootstrap Bundle JS
 import 'bootstrap/dist/js/bootstrap.bundle.min'
+import { installLoadingTracker } from './utils/loadingTracker'
+import { installAuthInterceptor } from './utils/authInterceptor'
+
+installLoadingTracker()
+installAuthInterceptor()
+
+// Apply the persisted colour theme before first paint (avoids a flash of light UI).
+if (localStorage.getItem('theme') === 'dark') {
+  document.documentElement.classList.add('theme-dark')
+}
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>

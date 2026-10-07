@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { getToken } from '../../utils/session'
 import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
@@ -8,16 +9,23 @@ import moment from 'moment'
 import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
 import Chip from '@mui/material/Chip'
+import SearchableSelect from '../../components/SearchableSelect'
+import { toast } from 'react-toastify'
+import { useBreadcrumbLabel } from '../../context/BreadcrumbContext'
 // "homepage": ".",
+const axios = require('axios')
 const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { setLabel } = useBreadcrumbLabel()
   // const [bcode, SetBcode] = useState('')
   const [error, setError] = useState('')
   const [totalUsers, setTotalUSers] = useState(0)
   const [clientModal, setClientModal] = useState(false)
   const [isClientModal, setIsClientModal] = useState(false)
   const [serialModal, setSerialModal] = useState(false)
+  const [tempDays, setTempDays] = useState('') // temporary-expiry extension (days)
+  const [tempDate, setTempDate] = useState(null) // ...or pick the temp expiry date directly
   const [userCALSModal, setUserCALSModal] = useState(false)
   const [branchCALSModal, setBranchCALSModal] = useState(false)
   const [stockTakeCALSModal, setStockTakeCALSModal] = useState(false)
@@ -88,6 +96,13 @@ const UpdateClient = () => {
   const [serialNo, setSerialNo] = useState([])
   const [customerMembers, setCustomerMembers] = useState([])
   const [addOns, setAddOns] = useState([])
+  // Region -> County -> Town location picker for this branch.
+  const [regionOpts, setRegionOpts] = useState([])
+  const [countyOpts, setCountyOpts] = useState([])
+  const [townOpts, setTownOpts] = useState([])
+  const [loc, setLoc] = useState({ regionId: '', countyId: '', townId: '' })
+  const [locSaving, setLocSaving] = useState(false)
+  const [locMsg, setLocMsg] = useState('')
 
   const GetClientDetails = async () => {
     setIsLoading(true)
@@ -98,7 +113,7 @@ const UpdateClient = () => {
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -117,6 +132,7 @@ const UpdateClient = () => {
           psSerialNo: result?.clientDetails.psSerialNo,
           psActivated: result?.clientDetails.psActivated === '1' ? true : false,
           psActivateExpiryDate: result?.clientDetails?.psActivateExpiryDate,
+          psTemporaryActivateExpiryDate: result?.clientDetails?.psTemporaryActivateExpiryDate,
           psBedCount: result?.clientDetails?.psBedCount,
           psGL: result?.clientDetails?.psGL,
           psUserCount: result?.clientDetails.psUserCount,
@@ -175,19 +191,99 @@ const UpdateClient = () => {
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
+        prefillLocation(result?.clientDetails?.townId)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
   }
+
+  // ---- Region -> County -> Town location picker ----
+  const locHeaders = () => ({
+    Authorization: `Bearer ${getToken()}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  })
+  const GetRegions = async () => {
+    try {
+      const r = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Locations/Regions`, {
+        headers: locHeaders(),
+      })
+      setRegionOpts(r.data ?? [])
+    } catch (e) {}
+  }
+  const loadCounties = async (regionId) => {
+    if (!regionId) return
+    const r = await axios.get(
+      `${process.env.REACT_APP_URL_CONFIG}/api/Locations/Counties?regionId=${regionId}`,
+      { headers: locHeaders() },
+    )
+    setCountyOpts(r.data ?? [])
+  }
+  const loadTowns = async (countyId) => {
+    if (!countyId) return
+    const r = await axios.get(
+      `${process.env.REACT_APP_URL_CONFIG}/api/Locations/Towns?countyId=${countyId}`,
+      { headers: locHeaders() },
+    )
+    setTownOpts(r.data ?? [])
+  }
+  const onRegionChange = async (regionId) => {
+    setLoc({ regionId, countyId: '', townId: '' })
+    setCountyOpts([])
+    setTownOpts([])
+    if (regionId) await loadCounties(regionId)
+  }
+  const onCountyChange = async (countyId) => {
+    setLoc((p) => ({ ...p, countyId, townId: '' }))
+    setTownOpts([])
+    if (countyId) await loadTowns(countyId)
+  }
+  // Prefill region/county/town from an existing TownId on the branch.
+  const prefillLocation = async (townId) => {
+    if (!townId) return
+    try {
+      const res = await axios.get(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Locations/Resolve/${townId}`,
+        { headers: locHeaders() },
+      )
+      const d = res.data
+      await loadCounties(d.regionId)
+      await loadTowns(d.countyId)
+      setLoc({
+        regionId: String(d.regionId),
+        countyId: String(d.countyId),
+        townId: String(d.townId),
+      })
+    } catch (e) {}
+  }
+  const saveLocation = async () => {
+    setLocSaving(true)
+    setLocMsg('')
+    try {
+      const qs = loc.townId ? `?id=${id}&townId=${Number(loc.townId)}` : `?id=${id}`
+      await axios.put(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientTown${qs}`,
+        {},
+        {
+          headers: locHeaders(),
+        },
+      )
+      setLocMsg('Saved')
+      setTimeout(() => setLocMsg(''), 4000)
+    } catch (e) {
+      setError(e?.response?.data?.message || e.message)
+    } finally {
+      setLocSaving(false)
+    }
+  }
+
   const GetAllUsersInCompany = async () => {
     setIsLoading(true)
     setError('')
@@ -197,7 +293,7 @@ const UpdateClient = () => {
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -212,11 +308,9 @@ const UpdateClient = () => {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -230,7 +324,7 @@ const UpdateClient = () => {
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -243,13 +337,11 @@ const UpdateClient = () => {
         setError(result.message)
         setIsLoading(false)
       } else {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -263,7 +355,7 @@ const UpdateClient = () => {
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -276,13 +368,11 @@ const UpdateClient = () => {
         setError(result.message)
         setIsLoading(false)
       } else {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -293,7 +383,7 @@ const UpdateClient = () => {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Logs/GetAddOns`, {
         method: 'GET', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
           // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
@@ -305,13 +395,11 @@ const UpdateClient = () => {
         setError(result.message)
         setIsLoading(false)
       } else {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -322,7 +410,7 @@ const UpdateClient = () => {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
         method: 'GET', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
           // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
@@ -333,13 +421,11 @@ const UpdateClient = () => {
         setPackages(result)
         setIsLoading(false)
       } else {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -352,7 +438,7 @@ const UpdateClient = () => {
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -365,13 +451,11 @@ const UpdateClient = () => {
         setError(result.message)
         setIsLoading(false)
       } else {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -413,7 +497,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -427,7 +511,7 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setClientModal(false)
         setIsLoading(false)
         setEditFormData({
@@ -436,17 +520,14 @@ const UpdateClient = () => {
           queryBranchCode: '',
           queryBranchName: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -461,7 +542,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -479,7 +560,18 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        const body = await response.json()
+        // Gated by approval: the change wasn't applied — it's awaiting an approver.
+        if (body?.pendingApproval) {
+          setSerialModal(false)
+          setIsLoading(false)
+          toast.info(body.message || 'Submitted for approval — approvers have been notified.', {
+            position: toast.POSITION.BOTTOM_LEFT,
+            theme: 'colored',
+            autoClose: 8000,
+          })
+          return
+        }
         setSerialModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
@@ -487,67 +579,54 @@ const UpdateClient = () => {
           ...editFormData,
           queryDays: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
   }
   const UpdateTemporaryDate = async () => {
+    const days = Number(tempDays)
+    if (!days || days <= 0) {
+      setError('Enter the number of extension days (greater than zero).')
+      setTimeout(() => setError(''), 6000)
+      return
+    }
     setIsLoading(true)
     setError('')
     try {
+      // Temporary grace extension of N days beyond the client's expiry — applied to all branches.
       const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateTemporaryDate?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateTemporaryDate?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&days=${days}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            serialNo: editFormData.querySerialNo,
-            isActive: editFormData.isActive,
-            // psBedCount: editFormData.psBedCount,
-            // psGL: editFormData.psGL,
-            cusCode: data.psCusCode,
-            branchCode: data.branchCode,
-            expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
-            applyToAllBranches: editFormData.applyToAllBranches,
-          }),
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setSerialModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
-        setEditFormData({
-          ...editFormData,
-          queryDays: '',
-        })
-        console.log(result)
+        setTempDays('')
+        setTempDate(null)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -566,7 +645,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -574,24 +653,21 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setUserCALSModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
           queryUserCount: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -610,7 +686,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -618,24 +694,21 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setBranchCALSModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
           queryBranchCount: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -654,7 +727,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -662,24 +735,21 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setPsBedCountModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
           psBedCount: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -694,7 +764,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -702,24 +772,21 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setPsGLModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
         setEditFormData({
           psGL: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -734,7 +801,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -747,7 +814,7 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setStockTakeCALSModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
@@ -756,17 +823,14 @@ const UpdateClient = () => {
           queryStockTakeStartDate: '',
           queryStockTakeEndDate: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -781,7 +845,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -796,7 +860,7 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setAddOnsModal(false)
         setIsLoading(false)
         setEditFormData({
@@ -804,17 +868,14 @@ const UpdateClient = () => {
           AddOnsArray: [],
           selectedAdons: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -829,31 +890,28 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
         setIsClientModal(false)
         setEditFormData({
           ...editFormData,
           packageCode: '',
         })
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -867,7 +925,7 @@ const UpdateClient = () => {
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -875,21 +933,18 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         // setAddOnsModal(false)
         // setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
-        console.log(result)
         GetClientDetails(id)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -903,7 +958,7 @@ const UpdateClient = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -911,19 +966,16 @@ const UpdateClient = () => {
         },
       )
       if (response.ok) {
-        const result = await response.json()
+        await response.json()
         setData({ ...data, editModal: false, editModalInterface: 0 })
         setIsLoading(false)
-        console.log(result)
         navigate('/dashboard')
       } else {
-        const result = await response.json()
+        await response.json()
         setIsLoading(false)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
-      console.log(error)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
@@ -937,7 +989,7 @@ const UpdateClient = () => {
   //       {
   //         method: 'POST', // *GET, POST, PUT, DELETE, etc.
   //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //           Authorization: `Bearer ${getToken()}`,
   //           // Authorization: `Bearer ${token}`,
   //           Accept: 'application/json',
   //           'Content-Type': 'application/json',
@@ -964,10 +1016,6 @@ const UpdateClient = () => {
 
   const handleDay = (e) => {
     const date = new Date()
-    let res =
-      data.psActivateExpiryDate === '' || data.psActivateExpiryDate === null
-        ? new Date()
-        : new Date(data.psActivateExpiryDate)
 
     setEditFormData({
       ...editFormData,
@@ -977,7 +1025,6 @@ const UpdateClient = () => {
         : new Date(),
     })
     // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
-    console.log(res)
     // console.log(res.setDate(res.getDate() + Number(e.target.value)))
     // console.log(new Date(res.setDate(res.getDate() + Number(e.target.value))))
     // console.log(finalDate)
@@ -991,9 +1038,22 @@ const UpdateClient = () => {
       queryExpiryDate: date,
       queryDays: Math.round(conv / (1000 * 60 * 60 * 24)),
     })
-    console.log(conv)
-    console.log(Math.round(conv / (1000 * 60 * 60 * 24)))
     // console.log(new Date(moment(date).format('DD/MM/YYYY')))
+  }
+
+  // Temporary-extension date <-> days, mirroring the expiry entry above. The backend sets the temp
+  // expiry to TODAY + days, so days are counted as whole calendar days to keep the picked date exact.
+  const handleTempDay = (e) => {
+    const value = e.target.value
+    setTempDays(value)
+    setTempDate(value ? moment().add(Number(value), 'days').toDate() : null)
+  }
+
+  const handleTempDate = (date) => {
+    setTempDate(date)
+    setTempDays(
+      date ? String(moment(date).startOf('day').diff(moment().startOf('day'), 'days')) : '',
+    )
   }
 
   const OnAddOnSelect = (selectedList, selectedItem) => {
@@ -1008,7 +1068,6 @@ const UpdateClient = () => {
       selectedAdons: data,
       // selectedAdons: data.join(','),
     })
-    console.log(data)
   }
   const OnAddOnRemove = (selectedList, selectedItem) => {
     let data = []
@@ -1030,7 +1089,7 @@ const UpdateClient = () => {
   //     const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
   //       method: 'GET', // *GET, POST, PUT, DELETE, etc.
   //       headers: {
-  //         Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //         Authorization: `Bearer ${getToken()}`,
   //         Accept: 'application/json',
   //         'Content-Type': 'application/json',
   //       },
@@ -1072,9 +1131,16 @@ const UpdateClient = () => {
     GetAddOns()
     GetPackages()
     // CloudModules()
+    GetRegions()
     GetClientDetails()
     GetAllUsersInCompany()
   }, [])
+
+  // Show the loaded client's name in the breadcrumb (instead of the generic "Update Client").
+  useEffect(() => {
+    setLabel(data?.psCompanyName || data?.psCusCode || null)
+    return () => setLabel(null)
+  }, [data?.psCompanyName, data?.psCusCode, setLabel])
 
   return (
     <>
@@ -1248,7 +1314,7 @@ const UpdateClient = () => {
                               // packageCode
                               // packageName
                               checked={module.packageNum === data.packageCode}
-                              onChange={(e) => console.log(e.target.value)}
+                              onChange={() => {}}
                               disabled
                             />
                             <label className="form-check-label" htmlFor="desktop">
@@ -1415,6 +1481,58 @@ const UpdateClient = () => {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="row mb-1">
+                  <label htmlFor="regionId" className="col-md-3 col-form-label divider">
+                    Location
+                  </label>
+                  <div className="col-md ps-1">
+                    <div className="row g-1">
+                      <div className="col-md-4">
+                        <SearchableSelect
+                          options={regionOpts}
+                          value={loc.regionId}
+                          onChange={(v) => onRegionChange(v)}
+                          getId={(o) => o.regionId}
+                          getLabel={(o) => o.name}
+                          placeholder="Search region…"
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <SearchableSelect
+                          options={countyOpts}
+                          value={loc.countyId}
+                          onChange={(v) => onCountyChange(v)}
+                          getId={(o) => o.countyId}
+                          getLabel={(o) => o.name}
+                          placeholder="Search county…"
+                          disabled={!loc.regionId}
+                        />
+                      </div>
+                      <div className="col-md-4">
+                        <SearchableSelect
+                          options={townOpts}
+                          value={loc.townId}
+                          onChange={(v) => setLoc((p) => ({ ...p, townId: v }))}
+                          getId={(o) => o.townId}
+                          getLabel={(o) => o.name}
+                          placeholder="Search town…"
+                          disabled={!loc.countyId}
+                        />
+                      </div>
+                    </div>
+                    <div className="d-flex align-items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        className="btn btn-sm add-btn rounded-0"
+                        onClick={saveLocation}
+                        disabled={locSaving || data.psCusCode === ''}
+                      >
+                        {locSaving ? 'Saving…' : 'Save Location'}
+                      </button>
+                      {locMsg && <span className="text-success">{locMsg}</span>}
                     </div>
                   </div>
                 </div>
@@ -1733,7 +1851,7 @@ const UpdateClient = () => {
                               // value=""
                               id={addOn.addonName}
                               readOnly
-                              onChange={(e) => console.log(e)}
+                              onChange={() => {}}
                             />
                             <label
                               className="form-check-label stretched-link fw-bold"
@@ -2089,59 +2207,92 @@ const UpdateClient = () => {
                 </div>
               </div>
             </div>
-            <div className="row">
-              <div className="col-md"></div>
+            <hr />
+            {/* Temporary expiry — a short grace extension before the client pays.
+                Same date-or-days entry as the Expiry above. */}
+            <label className="col-form-label divider fw-semibold p-0 mb-1">
+              Temporary Extension
+            </label>
+            <div className="row mb-2">
               <div className="col-md">
                 <div className="row">
-                  <label htmlFor="nonregistered" className="col-md-3 col-form-label">
-                    {/* Item Name */}
+                  <label htmlFor="tempDate" className="col-md-3 col-form-label divider">
+                    Temp Expiry
                   </label>
                   <div className="col-md ps-1">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={editFormData.applyToAllBranches}
-                        name="blocked"
-                        id="blocked"
-                        onChange={(e) =>
-                          // setEditFormData({ ...editFormData, applyToAllBranches: e.target.checked })
-                          setEditFormData((prevState) => ({
-                            ...prevState,
-                            applyToAllBranches: e.target.checked,
-                          }))
-                        }
-                      />
-                      {/* form-check-label */}
-                      <label className="form-check-label" htmlFor="blocked">
-                        Apply to all Branches
-                      </label>
-                    </div>
+                    <DatePicker
+                      className="form-control form-control-sm rounded-0"
+                      selected={tempDate}
+                      dateFormat="dd/MM/yyyy"
+                      peekNextMonth
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      minDate={new Date()}
+                      onChange={(date) => handleTempDate(date)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="col-md">
+                <div className="row">
+                  <label htmlFor="tempDays" className="col-3 col-form-label divider">
+                    Days
+                  </label>
+                  <div className="col-md ps-1">
+                    <input
+                      type="number"
+                      name="tempDays"
+                      id="tempDays"
+                      min={1}
+                      value={tempDays}
+                      className="form-control form-control-sm rounded-0"
+                      onChange={handleTempDay}
+                    />
                   </div>
                 </div>
               </div>
             </div>
-            <hr />
-            <div className="d-flex justify-content-end gap-2">
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <span className="text-muted" style={{ fontSize: 12 }}>
+                {Number(tempDays) > 0 ? (
+                  <>
+                    → new temp expiry:{' '}
+                    <span className="fw-bold text-body">
+                      {moment().add(Number(tempDays), 'days').format('DD/MM/YYYY')}
+                    </span>
+                  </>
+                ) : (
+                  'enter a date or days'
+                )}
+              </span>
               <button
                 type="button"
-                className="btn filter-btn btn-sm rounded-0"
-                disabled={isLoading}
+                className="btn filter-btn btn-sm rounded-0 ms-auto"
+                disabled={isLoading || !tempDays || Number(tempDays) <= 0}
                 onClick={UpdateTemporaryDate}
               >
                 {isLoading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm m-auto"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                  </>
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
                 ) : (
-                  'Temporary Date'
+                  'Extend temporarily'
                 )}
               </button>
-
+            </div>
+            <div className="form-text" style={{ fontSize: 11 }}>
+              A short grace period before payment — applied to all branches.
+              {data.psTemporaryActivateExpiryDate
+                ? ` Current temporary expiry: ${moment(data.psTemporaryActivateExpiryDate).format(
+                    'DD/MM/YYYY',
+                  )}.`
+                : ' No temporary extension set.'}
+            </div>
+            <hr />
+            <div className="d-flex justify-content-end gap-2">
               <button
                 type="submit"
                 className="btn add-btn btn-sm rounded-0"
@@ -2662,7 +2813,7 @@ const UpdateClient = () => {
                           name="clientType"
                           id="desktop"
                           value={module.packageNum}
-                          // onChange={(e) => console.log(e.target.value)}editFormData
+                          // onChange={() => {}}editFormData
                           onChange={(e) =>
                             setEditFormData({ ...editFormData, packageCode: e.target.value })
                           }

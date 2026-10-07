@@ -2,6 +2,7 @@ import React, { Component, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 // import { Link } from 'react-router-dom'
 
+import ErrorBoundary from './components/ErrorBoundary'
 import './scss/style.scss'
 
 const loading = (
@@ -23,17 +24,19 @@ const Login = React.lazy(() => import('./views/Auth/login'))
 class App extends Component {
   render() {
     return (
-      <BrowserRouter>
-        <Suspense fallback={loading}>
-          <Routes>
-            <Route exact path="/" name="Login Page" element={<Login />} />
-            {/* <Route exact path="/register" name="Register Page" element={<Register />} />
-            <Route exact path="/404" name="Page 404" element={<Page404 />} />
-            <Route exact path="/500" name="Page 500" element={<Page500 />} /> */}
-            <Route path="*" name="Home" element={<DefaultLayout />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Suspense fallback={loading}>
+            <Routes>
+              <Route exact path="/" name="Login Page" element={<Login />} />
+              {/* <Route exact path="/register" name="Register Page" element={<Register />} />
+              <Route exact path="/404" name="Page 404" element={<Page404 />} />
+              <Route exact path="/500" name="Page 500" element={<Page500 />} /> */}
+              <Route path="*" name="Home" element={<DefaultLayout />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </ErrorBoundary>
     )
   }
 }

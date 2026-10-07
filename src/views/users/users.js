@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
+import { getToken } from '../../utils/session'
+import { toast } from 'react-toastify'
 import MaterialTable, { MTableToolbar } from 'material-table'
-import { tableIcons, tableOptions } from '../../utils/helpers'
+import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
 // import Moment from 'react-moment'
 // import { Link } from 'react-router-dom'
 import Drawer from '@mui/material/Drawer'
@@ -29,6 +31,31 @@ const Users = () => {
     tableRef: React.createRef(),
     users: [],
   })
+
+  // Add/remove a user from the approvers group (maker-checker change approval).
+  const toggleApprover = async (rowData, canApprove) => {
+    try {
+      await axios.put(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Users/SetApprover?id=${Number(
+          rowData.id,
+        )}&canApprove=${canApprove}`,
+        {},
+        { headers: { Authorization: `Bearer ${getToken()}` } },
+      )
+      toast.success(
+        `${rowData.name} ${canApprove ? 'can now approve changes' : 'is no longer an approver'}.`,
+        {
+          theme: 'colored',
+        },
+      )
+      GetUsers()
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Could not update approver status', {
+        theme: 'colored',
+      })
+    }
+  }
+
   let column = [
     {
       title: '',
@@ -45,17 +72,13 @@ const Users = () => {
       },
     },
     {
-      title: 'ID',
-      field: 'id',
-      render: (rowData) => (
-        <span className="text-decoration-underline text-primary">{rowData.id}</span>
-        // <Link className="text-decoration-underline" to={`/client/${rowData.id}`}>
-        //   {rowData.id}
-        // </Link>
-      ),
-
+      title: '#',
+      field: 'counter',
+      sorting: false,
+      render: (rowData) => rowData.tableData.id + 1,
       cellStyle: {
         width: '1%',
+        textAlign: 'center',
       },
     },
     { title: 'Name', field: 'name' },
@@ -70,6 +93,21 @@ const Users = () => {
         width: '1%',
       },
     },
+    {
+      title: 'Approver',
+      field: 'canApprove',
+      sorting: false,
+      render: (rowData) => (
+        <input
+          type="checkbox"
+          checked={!!rowData.canApprove}
+          onChange={(e) => toggleApprover(rowData, e.target.checked)}
+          title="Can approve change requests (create client, add branch, expiry, modules)"
+          style={{ cursor: 'pointer' }}
+        />
+      ),
+      cellStyle: { width: '1%', textAlign: 'center' },
+    },
   ]
 
   const GetUsers = async () => {
@@ -78,8 +116,8 @@ const Users = () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetUsers`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
+          // Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -87,7 +125,6 @@ const Users = () => {
       setData({ ...data, users: response.data })
       setIsLoading(false)
     } catch (error) {
-      console.log(error)
       setError(`${error?.code}: ${error?.message}`)
       setIsLoading(false)
     }
@@ -101,8 +138,8 @@ const Users = () => {
     try {
       const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetRoles`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
+          // Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -110,7 +147,6 @@ const Users = () => {
       setRoles(response.data)
       setIsLoading(false)
     } catch (error) {
-      console.log(error)
       setError(`${error?.code}: ${error?.message}`)
       setIsLoading(false)
     }
@@ -126,8 +162,8 @@ const Users = () => {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Users/CreateUser`, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-          // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
+          // Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -140,8 +176,7 @@ const Users = () => {
         }),
       })
       if (response.ok) {
-        const data = await response.json()
-        console.log(data)
+        await response.json()
         setFormData({
           fullNames: '',
           email: '',
@@ -159,12 +194,10 @@ const Users = () => {
         const data = await response.json()
         setError(data.message)
         // setControllerError(Object.keys(data.errors).map((key, value) => data.errors[key]))
-        console.log(data)
         setIsDrawerOpen(false)
         setIsLoading(false)
       }
     } catch (error) {
-      console.log(error)
       setError(data.message)
       setIsLoading(false)
     }
@@ -184,8 +217,8 @@ const Users = () => {
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
+            // Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -199,8 +232,7 @@ const Users = () => {
         },
       )
       if (response.ok) {
-        const data = await response.json()
-        console.log(data)
+        await response.json()
         setFormData({
           fullNames: '',
           email: '',
@@ -218,12 +250,10 @@ const Users = () => {
         const data = await response.json()
         setError(data.message)
         // setControllerError(Object.keys(data.errors).map((key, value) => data.errors[key]))
-        console.log(data)
         setIsDrawerOpen(false)
         setIsLoading(false)
       }
     } catch (error) {
-      console.log(error)
       setError(data.message)
       setIsLoading(false)
     }
@@ -242,16 +272,15 @@ const Users = () => {
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-            // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
+            // Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
       )
       if (response.ok) {
-        const data = await response.json()
-        console.log(data)
+        await response.json()
         setDelLoading(false)
         setSelectedRow([])
         setRowID('')
@@ -259,11 +288,9 @@ const Users = () => {
       } else {
         const data = await response.json()
         setError(data.message)
-        console.log(data)
         setDelLoading(false)
       }
     } catch (error) {
-      console.log(error)
       setError(`${error?.code}: ${error?.message}`)
       setDelLoading(false)
     }
@@ -275,7 +302,6 @@ const Users = () => {
     setRowID(rowData.tableData.id)
     setSelectedRow(rowData)
     setToEdit(true)
-    console.log(rowData)
   }
 
   useEffect(() => {
@@ -485,7 +511,6 @@ const Users = () => {
               disabled={selectedRow.length <= 0}
               onClick={() => {
                 setIsDrawerOpen(true)
-                console.log(selectedRow)
                 setFormData({
                   ...formData,
                   fullNames: selectedRow.name,
@@ -572,9 +597,7 @@ const Users = () => {
                 ...tableOptions,
                 paging: false,
                 sorting: true,
-                rowStyle: (rowData) => ({
-                  backgroundColor: rowID === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-                }),
+                rowStyle: (rowData) => themedRowStyle(rowID === rowData.tableData.id),
               }}
               //  setSelectedRow(selectedRow)
               onRowClick={(evt, selectedRow) => handleRowClick(evt, selectedRow)}

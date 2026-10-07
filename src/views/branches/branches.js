@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { getToken } from '../../utils/session'
 // import MaterialTable, { MTableToolbar } from 'material-table'
 // import { tableIcons, tableOptions } from '../../utils/helpers'
 // import Moment from 'react-moment'
@@ -52,7 +53,7 @@ const Dashboard = () => {
             expirystatus: filter?.expirystatus,
           },
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -61,9 +62,7 @@ const Dashboard = () => {
       setCustomer(response.data)
       //   setData({ ...data, clients: response.data })
       setIsLoading(false)
-      console.log(response.data)
     } catch (error) {
-      console.log(error)
       setError(`${error?.code}: ${error?.message}`)
       setIsLoading(false)
     }
@@ -75,7 +74,7 @@ const Dashboard = () => {
     setIsLoading(true)
     setError('')
     try {
-      const response = await axios.post(
+      await axios.post(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/CreateBranch?cuscode=${userData?.psCusCode}`,
         {
           bcode: userData?.bcode,
@@ -95,7 +94,7 @@ const Dashboard = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -110,9 +109,7 @@ const Dashboard = () => {
         showallcustomer: true,
       })
       setIsLoading(false)
-      console.log(response.data)
     } catch (error) {
-      console.log(error)
       setError(error?.response?.data?.message)
       //   setError(`${error?.response?.status}: ${error?.response?.data?.message}`)
       setIsLoading(false)
@@ -146,7 +143,6 @@ const Dashboard = () => {
       showallcustomer: formData?.showallcustomer,
     }
     CreateBranch(data)
-    console.log(data)
   }
 
   useEffect(() => {
@@ -218,7 +214,7 @@ const Dashboard = () => {
                           id="queryCompanyName"
                           name="queryCompanyName"
                           value={cusData.psCompanyName}
-                          onChange={(e) => console.log(e.target.value)}
+                          onChange={() => {}}
                           readOnly
                           required
                         />

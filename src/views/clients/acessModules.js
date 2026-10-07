@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { getToken } from '../../utils/session'
 import MaterialTable, { MTableToolbar } from 'material-table'
-import { tableIcons, tableOptions } from '../../utils/helpers'
+import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
 // const axios = require('axios')
 
@@ -31,7 +32,7 @@ function AcessModules() {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
         method: 'GET', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
           // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
@@ -48,12 +49,10 @@ function AcessModules() {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
-      console.log(error)
     }
   }
   const GetPackagesDetails = async (id) => {
@@ -65,7 +64,7 @@ function AcessModules() {
         {
           method: 'GET', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
@@ -81,13 +80,11 @@ function AcessModules() {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
       // setError(error)
-      console.log(error)
     }
   }
   const DeletePackages = async () => {
@@ -99,7 +96,7 @@ function AcessModules() {
         {
           method: 'DELETE',
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -117,13 +114,11 @@ function AcessModules() {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
       // setError(error)
-      console.log(error)
     }
   }
   const handleSubmitPackaged = (e) => {
@@ -139,7 +134,7 @@ function AcessModules() {
         {
           method: 'POST', // *GET, POST, PUT, DELETE, etc.
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -163,18 +158,15 @@ function AcessModules() {
         })
         setPackageRowId('')
         setSelectedPackages([])
-        console.log(result)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
       // setError(error)
-      console.log(error)
     }
   }
   const AddModules = async () => {
@@ -184,7 +176,7 @@ function AcessModules() {
       let response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Packages/AddModules`, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -205,18 +197,15 @@ function AcessModules() {
           description: '',
           isActive: true,
         })
-        console.log(result)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
       // setError(error)
-      console.log(error)
     }
   }
   const RemoveModules = async () => {
@@ -226,7 +215,7 @@ function AcessModules() {
       let response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Packages/RemoveModules`, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+          Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -247,18 +236,15 @@ function AcessModules() {
           description: '',
           isActive: true,
         })
-        console.log(result)
       } else {
         const result = await response.json()
         setIsLoading(false)
         setError(result.message)
-        console.log(result)
       }
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
       // setError(error)
-      console.log(error)
     }
   }
 
@@ -271,8 +257,8 @@ function AcessModules() {
   //       {
   //         params: { forcloundch: 'true' },
   //         headers: {
-  //           Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-  //           // Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+  //           Authorization: `Bearer ${getToken()}`,
+  //           // Authorization: `Bearer ${getToken()}`,
   //           Accept: 'application/json',
   //           'Content-Type': 'application/json',
   //         },
@@ -323,26 +309,15 @@ function AcessModules() {
               <MaterialTable
                 columns={[
                   {
-                    title: '',
-                    field: 'icon',
-                    // render: (rowData) =>
-                    //   rowId === rowData.tableData.id ? (
-                    //     <i className="fa fa-caret-right" aria-hidden="true"></i>
-                    //   ) : (
-                    //     ''
-                    //   ),
+                    title: '#',
+                    field: 'counter',
+                    sorting: false,
+                    render: (rowData) => rowData.tableData.id + 1,
                     cellStyle: {
                       width: '1%',
                       textAlign: 'center',
                     },
                   },
-                  // {
-                  //   title: 'ID',
-                  //   field: 'id',
-                  //   cellStyle: {
-                  //     width: '1%',
-                  //   },
-                  // },
                   {
                     title: 'CustomerID',
                     field: 'psCusCode',
@@ -403,6 +378,16 @@ function AcessModules() {
               <MaterialTable
                 columns={[
                   {
+                    title: '#',
+                    field: 'counter',
+                    sorting: false,
+                    render: (rowData) => rowData.tableData.id + 1,
+                    cellStyle: {
+                      width: '1%',
+                      textAlign: 'center',
+                    },
+                  },
+                  {
                     title: '',
                     field: 'icon',
                     render: (rowData) =>
@@ -444,9 +429,7 @@ function AcessModules() {
                   search: true,
                   paging: false,
                   sorting: true,
-                  rowStyle: (rowData) => ({
-                    backgroundColor: packageRowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-                  }),
+                  rowStyle: (rowData) => themedRowStyle(packageRowId === rowData.tableData.id),
                 }}
                 onRowClick={(e, selectedRow) => {
                   setPackageRowId(selectedRow.tableData.id)
@@ -454,7 +437,6 @@ function AcessModules() {
                   setPackageID(selectedRow?.id)
                   setPackageCode(selectedRow?.packageNum)
                   setSelectedPackages(selectedRow)
-                  console.log(selectedRow)
                 }}
                 components={{
                   Toolbar: (props) => (
@@ -518,7 +500,6 @@ function AcessModules() {
                 ]}
                 onSelectionChange={(rows) => {
                   setModulesToRemove(rows.map((item) => item?.moduleCode))
-                  console.log(rows)
                 }}
                 icons={tableIcons}
                 options={{
@@ -598,7 +579,6 @@ function AcessModules() {
                 icons={tableIcons}
                 onSelectionChange={(rows) => {
                   setModulesToAssign(rows.map((item) => item?.moduleCode))
-                  console.log(rows)
                 }}
                 options={{
                   ...tableOptions,

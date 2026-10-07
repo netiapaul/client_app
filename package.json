@@ -59,6 +59,9 @@
     "simplebar-react": "^2.4.1",
     "sweetalert": "^2.1.2"
   },
+  "overrides": {
+    "@material-ui/pickers": "3.3.11"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.3.0",

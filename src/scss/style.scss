@@ -16,3 +16,6 @@ $enable-rtl: true;
 
 // If you want to add custom CSS you can put it here.
 @import "custom";
+
+// Dark mode overrides (toggled via .theme-dark on <html>). Imported last so it wins.
+@import "darkmode";

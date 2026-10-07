@@ -1,10 +1,7 @@
 import React from 'react'
-import CIcon from '@coreui/icons-react'
 
 // import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 import { CNavItem } from '@coreui/react'
-import { cilBuilding } from '@coreui/icons'
-// import { cilAlignCenter } from '@coreui/icons'
 
 const _nav = [
   {
@@ -32,17 +29,6 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Activities',
-    to: '/activities',
-    icon: <span className="material-icons nav-icon">summarize</span>,
-    // icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />,
-    // badge: {
-    //   color: 'info',
-    //   text: 'NEW',
-    // },
-  },
-  {
-    component: CNavItem,
     name: 'Users',
     to: '/users',
     icon: <span className="material-icons nav-icon">group</span>,
@@ -55,14 +41,38 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Database',
-    to: '/company-users',
-    icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
-    // icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
-    // badge: {
-    //   color: 'info',
-    //   text: 'NEW',
-    // },
+    name: 'Servers',
+    to: '/servers',
+    icon: <span className="material-icons nav-icon">dns</span>,
+    badge: { color: 'info', text: 'NEW' },
+  },
+  {
+    component: CNavItem,
+    name: 'Locations',
+    to: '/locations',
+    icon: <span className="material-icons nav-icon">place</span>,
+    badge: { color: 'info', text: 'NEW' },
+  },
+  {
+    component: CNavItem,
+    name: 'Emails',
+    to: '/emails',
+    icon: <span className="material-icons nav-icon">email</span>,
+    badge: { color: 'info', text: 'NEW' },
+  },
+  {
+    component: CNavItem,
+    name: 'User Logs',
+    to: '/user-logs',
+    icon: <span className="material-icons nav-icon">history</span>,
+    badge: { color: 'info', text: 'NEW' },
+  },
+  {
+    component: CNavItem,
+    name: 'Approvals',
+    to: '/approvals',
+    icon: <span className="material-icons nav-icon">verified</span>,
+    badge: { color: 'info', text: 'NEW' },
   },
   // {
   //   component: CNavItem,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { setSession } from '../../utils/session'
 import { useNavigate } from 'react-router-dom'
 import { loginRequest } from '../../utils/requests'
 import { toast } from 'react-toastify'
@@ -35,20 +36,19 @@ function Login() {
           ...data,
           isLoading: false,
         })
-        localStorage.setItem('accessToken', res.accessToken)
-        localStorage.setItem('ID', res.id)
-        localStorage.setItem('name', res.name)
+        setSession({
+          token: res.accessToken,
+          id: res.id,
+          name: res.name,
+          canApprove: res.canApprove,
+        })
         navigate('/dashboard', { replace: true })
-        console.log(res)
       })
       .catch((error) => {
         setData({
           ...data,
           error: error.response?.data?.message || error?.message,
         })
-        console.log(error)
-        // toast.error('could not fetch customers')
-        // throw new Error("Couldn't list customers!")
       })
     return setTimeout(() => {
       setData({
@@ -58,11 +58,21 @@ function Login() {
     }, 8000)
   }
 
+  // Tell the user why they're back at login after an expired/invalid session (set by the 401 interceptor).
+  useEffect(() => {
+    if (sessionStorage.getItem('sessionExpired')) {
+      sessionStorage.removeItem('sessionExpired')
+      toast.info('Your session has expired. Please sign in again.', {
+        position: toast.POSITION.BOTTOM_LEFT,
+        theme: 'colored',
+      })
+    }
+  }, [])
+
   useEffect(() => {
     // Update network status
     const handleStatusChange = () => {
       setIsOnline(navigator.onLine)
-      console.log(navigator.onLine)
       if (navigator.onLine) {
         return toast.success('You are Online !', {
           position: toast.POSITION.BOTTOM_LEFT,

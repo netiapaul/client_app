@@ -47,6 +47,18 @@ const tableIcons = {
   ViewColumn: forwardRef((props, ref) => <ViewColumn {...props} ref={ref} />),
 }
 
+// True when the app is in dark mode (<html class="theme-dark">).
+const isDarkMode = () =>
+  typeof document !== 'undefined' && document.documentElement.classList.contains('theme-dark')
+
+// MaterialTable rowStyle. Deliberately theme-NEUTRAL so the table repaints instantly when the theme
+// is toggled (no re-render needed): non-selected rows are transparent, so the themed Paper background
+// and cell-text colours (driven by CSS, which reacts to the <html> class) show through and update
+// live. The selected highlight uses a translucent accent that reads on both light and dark.
+const themedRowStyle = (selected = false) => ({
+  backgroundColor: selected ? 'rgba(245, 139, 64, 0.18)' : 'transparent',
+})
+
 const tableOptions = {
   //   minBodyHeight: 535,
   // exportButton: true,
@@ -64,4 +76,4 @@ const tableOptions = {
   },
 }
 
-export { tableIcons, tableOptions }
+export { tableIcons, tableOptions, isDarkMode, themedRowStyle }

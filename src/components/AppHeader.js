@@ -17,6 +17,7 @@ import { cilMenu } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
 import { AppHeaderDropdown } from './header/index'
+import ThemeToggle from './ThemeToggle'
 import { logo } from 'src/assets/brand/logo'
 
 const AppHeader = () => {
@@ -66,7 +67,10 @@ const AppHeader = () => {
             </CNavLink>
           </CNavItem>
         </CHeaderNav> */}
-          <CHeaderNav className="ms-3">
+          <CHeaderNav className="ms-auto">
+            <ThemeToggle />
+          </CHeaderNav>
+          <CHeaderNav className="ms-2">
             <AppHeaderDropdown />
           </CHeaderNav>
         </CContainer>

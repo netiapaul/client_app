@@ -1,0 +1,607 @@
+// ===========================================================================
+// Dark mode
+// Toggled by adding `.theme-dark` to <html> (see components/ThemeToggle.js and
+// index.js which applies the persisted choice before first paint).
+// CoreUI 4.2 ships no color-mode CSS, so every surface is themed explicitly
+// here. Colours keep the phAMACore orange accent readable on dark.
+// ===========================================================================
+
+$dk-bg: #14171d; // app background
+$dk-surface: #1e2129; // cards, header, footer, modals, panels
+$dk-surface-2: #262a34; // inputs, table headers, elevated bits
+$dk-surface-3: #2d323d; // hover
+$dk-border: #333945;
+$dk-border-2: #3a4150;
+$dk-text: #e4e6eb;
+$dk-muted: #9aa3b2;
+$dk-accent: #f58b40;
+
+// Colour-theme toggle button (shown in both modes).
+.theme-toggle {
+  color: #51575d;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+
+  &:hover {
+    color: $dk-accent;
+  }
+}
+
+// Soft "note / callout" box (light defaults; dark override below).
+.callout-note {
+  font-size: 11.5px;
+  color: #8a4b16;
+  background: #fff6ef;
+  border: 1px solid #ffd9b8;
+  border-radius: 0;
+  padding: 7px 11px;
+}
+
+// JSON blocks in the audit-log details modal (light defaults; dark override below).
+.log-json {
+  background: #f6f8fa;
+  border: 1px solid #e6e8ec;
+  border-radius: 3px;
+  padding: 8px;
+  margin: 0;
+  max-height: 300px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+}
+
+// Audit-log details: responsive label/value cards. min-width:0 + overflow-wrap let long values
+// (serials, device strings) wrap inside their cell instead of overflowing into the next column.
+.log-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+.log-meta-item {
+  min-width: 0;
+  background: #f6f8fa;
+  border: 1px solid #e6e8ec;
+  border-radius: 4px;
+  padding: 6px 10px;
+}
+.log-meta-wide {
+  grid-column: 1 / -1;
+}
+.log-meta-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8a93a2;
+  margin-bottom: 2px;
+}
+.log-meta-value {
+  font-size: 12px;
+  color: #2f3b52;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.log-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #8a93a2;
+  margin-bottom: 3px;
+}
+
+// Breadcrumbs with a back button (light defaults; dark overrides below).
+.app-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+
+  .breadcrumb {
+    font-size: 10px;
+    margin: 0;
+  }
+  .breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+  }
+  .breadcrumb-item a {
+    color: #6c757d;
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .breadcrumb-item a:hover {
+    color: #f58b40;
+    text-decoration: underline;
+  }
+  .breadcrumb-item.active {
+    color: #2f3b52;
+    font-weight: 600;
+  }
+}
+.app-breadcrumb-home {
+  font-size: 15px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.app-breadcrumb-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border: 1px solid #e0e3e8;
+  background: #fff;
+  color: #51575d;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  .material-icons {
+    font-size: 16px;
+  }
+  &:hover {
+    background: #f58b40;
+    border-color: #f58b40;
+    color: #fff;
+  }
+}
+
+html.theme-dark {
+  color-scheme: dark;
+  background-color: $dk-bg;
+
+  // ---- CoreUI / Bootstrap CSS variables (broad, cheap coverage) ----
+  --cui-body-bg: #{$dk-bg};
+  --cui-body-color: #{$dk-text};
+  --cui-secondary-bg: #{$dk-surface-2};
+  --cui-tertiary-bg: #{$dk-surface};
+  --cui-border-color: #{$dk-border};
+  --cui-card-bg: #{$dk-surface};
+  --cui-card-cap-bg: #{$dk-surface-2};
+  --cui-emphasis-color: #fff;
+  --bs-body-bg: #{$dk-bg};
+  --bs-body-color: #{$dk-text};
+  --bs-border-color: #{$dk-border};
+
+  body {
+    background-color: $dk-bg !important;
+    color: $dk-text;
+  }
+
+  // Layout shell
+  .wrapper,
+  .body,
+  main.body,
+  .c-app,
+  #root {
+    background-color: $dk-bg;
+  }
+
+  // Text helpers
+  .text-muted {
+    color: $dk-muted !important;
+  }
+  .text-dark,
+  .text-body,
+  .text-black {
+    color: $dk-text !important;
+  }
+  .form-text {
+    color: $dk-muted !important;
+  }
+  a:not(.btn) {
+    color: #7fb2ff;
+  }
+
+  // Backgrounds
+  .bg-light,
+  .bg-white,
+  .bg-body,
+  .bg-body-tertiary {
+    background-color: $dk-surface !important;
+  }
+
+  // Cards
+  .card {
+    background-color: $dk-surface !important;
+    border-color: $dk-border !important;
+    color: $dk-text;
+  }
+  .card-header,
+  .card-footer {
+    background-color: $dk-surface-2 !important;
+    border-color: $dk-border !important;
+  }
+
+  // Dividers
+  hr {
+    border-color: $dk-border;
+    opacity: 0.6;
+  }
+  .divider:after {
+    border-bottom-color: $dk-border-2;
+  }
+
+  // Tables (Bootstrap + CoreUI table variables)
+  .table {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: transparent;
+    --bs-table-border-color: #{$dk-border};
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #{$dk-surface-2};
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #{$dk-surface-3};
+    --cui-table-color: #{$dk-text};
+    --cui-table-bg: transparent;
+    --cui-table-border-color: #{$dk-border};
+    --cui-table-hover-color: #fff;
+    --cui-table-hover-bg: #{$dk-surface-3};
+    color: $dk-text;
+    border-color: $dk-border;
+  }
+  .table > :not(caption) > * > * {
+    border-color: $dk-border;
+  }
+  .table-light,
+  thead.table-light,
+  .table-light > th,
+  .table-light > td,
+  .table-light th,
+  .table-light td {
+    --bs-table-bg: #{$dk-surface-2};
+    --bs-table-color: #{$dk-text};
+    background-color: $dk-surface-2 !important;
+    color: $dk-text !important;
+    border-color: $dk-border !important;
+  }
+
+  // Forms
+  .form-control,
+  .form-select,
+  .input-group-text {
+    background-color: $dk-surface-2 !important;
+    border-color: $dk-border-2 !important;
+    color: $dk-text !important;
+  }
+  .form-control::placeholder {
+    color: #78818f !important;
+  }
+  .form-control:disabled,
+  .form-select:disabled,
+  .form-control[readonly] {
+    background-color: #1a1d24 !important;
+    color: #8b93a1 !important;
+  }
+  .form-control:focus,
+  .form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba($dk-accent, 0.25) !important;
+    border-color: $dk-accent !important;
+  }
+  .form-select option {
+    background-color: $dk-surface-2;
+    color: $dk-text;
+  }
+  .form-check-input {
+    background-color: $dk-surface-2;
+    border-color: $dk-border-2;
+  }
+
+  // Buttons: the white-bg cancel button needs a dark surface; the outline
+  // button variants (reverse/new/edit/delete/filter) already sit fine on dark.
+  .cancel-btn {
+    background-color: $dk-surface !important;
+  }
+  .btn-close {
+    filter: invert(1) grayscale(1) brightness(1.6);
+  }
+
+  // Modals
+  .modal-content {
+    background-color: $dk-surface !important;
+    color: $dk-text;
+    border-color: $dk-border;
+  }
+  .modal-header,
+  .modal-footer {
+    border-color: $dk-border !important;
+  }
+
+  // Offcanvas
+  .offcanvas {
+    background-color: $dk-surface;
+    color: $dk-text;
+  }
+
+  // Dropdowns
+  .dropdown-menu {
+    --cui-dropdown-bg: #{$dk-surface};
+    --cui-dropdown-color: #{$dk-text};
+    --cui-dropdown-link-color: #{$dk-text};
+    --cui-dropdown-link-hover-bg: #{$dk-surface-3};
+    --cui-dropdown-border-color: #{$dk-border};
+    background-color: $dk-surface;
+    border-color: $dk-border;
+    color: $dk-text;
+  }
+  .dropdown-item {
+    color: $dk-text;
+  }
+  .dropdown-item:hover,
+  .dropdown-item:focus {
+    background-color: $dk-surface-3;
+    color: #fff;
+  }
+  .dropdown-divider {
+    border-color: $dk-border;
+  }
+
+  // List groups
+  .list-group-item {
+    background-color: $dk-surface;
+    color: $dk-text;
+    border-color: $dk-border;
+  }
+
+  // Header (CoreUI)
+  .header {
+    --cui-header-bg: #{$dk-surface};
+    --cui-header-color: #{$dk-text};
+    --cui-header-border-color: #{$dk-border};
+    background-color: $dk-surface !important;
+    border-bottom-color: $dk-border !important;
+  }
+  .header-toggler {
+    color: $dk-text !important;
+  }
+  .breadcrumb {
+    --cui-breadcrumb-divider-color: #{$dk-muted};
+  }
+  .breadcrumb-item,
+  .breadcrumb-item a {
+    color: $dk-muted;
+  }
+
+  // Sidebar (already dark in light mode; deepen slightly for consistency)
+  .sidebar {
+    --cui-sidebar-bg: #16191f;
+    background-color: #16191f;
+  }
+
+  // Footer
+  .footer,
+  .app-footer {
+    background: $dk-surface !important;
+    color: $dk-muted;
+  }
+  .footer p {
+    color: $dk-muted !important;
+  }
+
+  // Page-loader overlay
+  .page-loader {
+    background-color: rgba(8, 10, 14, 0.6);
+  }
+
+  // Alerts: tone down the bright Bootstrap backgrounds
+  .alert-info {
+    background-color: #10323d;
+    color: #a9dbe8;
+    border-color: #1b5566;
+  }
+  .alert-success {
+    background-color: #123524;
+    color: #a7e3bf;
+    border-color: #1e5e39;
+  }
+  .alert-warning {
+    background-color: #3a2f12;
+    color: #ecd08a;
+    border-color: #5e4c1e;
+  }
+  .alert-danger {
+    background-color: #3a1618;
+    color: #f0a8ac;
+    border-color: #5e2327;
+  }
+
+  // Account picker pop-over (clientPicker.css)
+  .client-picker .picker-panel {
+    background: $dk-surface;
+    border-color: $dk-border;
+    color: $dk-text;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+  .client-picker .picker-panel .search {
+    border-bottom-color: $dk-border;
+  }
+  .client-picker .picker-panel th {
+    background: $dk-surface-2;
+    color: $dk-text;
+  }
+  .client-picker .picker-panel td {
+    border-top-color: $dk-border;
+  }
+  .client-picker .picker-panel tr.pick:hover {
+    background: $dk-accent;
+    color: #fff;
+  }
+
+  // react-datepicker
+  .react-datepicker {
+    background-color: $dk-surface;
+    border-color: $dk-border;
+    color: $dk-text;
+  }
+  .react-datepicker__header {
+    background-color: $dk-surface-2;
+    border-bottom-color: $dk-border;
+  }
+  .react-datepicker__current-month,
+  .react-datepicker-time__header,
+  .react-datepicker__day-name,
+  .react-datepicker__day,
+  .react-datepicker__time-name {
+    color: $dk-text;
+  }
+  .react-datepicker__day:hover {
+    background-color: $dk-surface-3;
+  }
+  .react-datepicker__day--selected,
+  .react-datepicker__day--keyboard-selected {
+    background-color: $dk-accent;
+    color: #fff;
+  }
+  .react-datepicker__day--disabled {
+    color: #5a616e;
+  }
+
+  // react-multiselect-dropdown
+  .searchWrapper {
+    background-color: $dk-surface-2 !important;
+    border-color: $dk-border-2 !important;
+  }
+  .optionListContainer,
+  .optionContainer {
+    background-color: $dk-surface !important;
+    color: $dk-text;
+  }
+  .optionContainer li:hover,
+  .optionContainer .highlightOption {
+    background-color: $dk-surface-3 !important;
+    color: #fff;
+  }
+
+  // MUI MaterialTable (used in the modules modal + legacy screens)
+  .MuiPaper-root {
+    background-color: $dk-surface !important;
+    color: $dk-text !important;
+  }
+  .MuiTableCell-root {
+    color: $dk-text !important;
+    border-color: $dk-border !important;
+  }
+  .MuiTableCell-head {
+    background-color: $dk-surface-2 !important;
+    color: $dk-text !important;
+    border-bottom-color: $dk-border !important;
+  }
+  .MuiTableRow-root:hover {
+    background-color: $dk-surface-3 !important;
+  }
+  .MuiInputBase-root,
+  .MuiInputBase-input,
+  .MuiTypography-root {
+    color: $dk-text !important;
+  }
+  // Search box in the table toolbar (its light inline background is forced here).
+  .MuiToolbar-root .MuiInputBase-root {
+    background-color: $dk-surface-2 !important;
+    border-radius: 3px;
+  }
+  .MuiIconButton-root,
+  .MuiSvgIcon-root {
+    color: #c7cdd7 !important;
+  }
+  .MuiTablePagination-root,
+  .MuiTablePagination-caption,
+  .MuiTablePagination-selectLabel,
+  .MuiTablePagination-displayedRows {
+    color: $dk-muted !important;
+  }
+  .MuiInput-underline:after {
+    border-bottom-color: $dk-accent !important;
+  }
+
+  // Scrollbars
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: $dk-bg;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3a414e;
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4a5260;
+  }
+
+  // Theme toggle in dark mode
+  .theme-toggle {
+    color: $dk-accent;
+  }
+
+  // Audit-log JSON blocks
+  .log-json {
+    background: #161a21;
+    border-color: $dk-border;
+    color: #d6dae1;
+  }
+
+  // Audit-log details label/value cards
+  .log-meta-item {
+    background: #161a21;
+    border-color: $dk-border;
+  }
+  .log-meta-value {
+    color: $dk-text;
+  }
+
+  // Note / callout box
+  .callout-note {
+    color: #e7b483;
+    background: #2a2012;
+    border-color: #5e4a2a;
+  }
+
+  // Breadcrumbs + back button
+  .app-breadcrumb .breadcrumb-item a {
+    color: $dk-muted;
+  }
+  .app-breadcrumb .breadcrumb-item a:hover {
+    color: $dk-accent;
+  }
+  .app-breadcrumb .breadcrumb-item.active {
+    color: $dk-text;
+  }
+  .app-breadcrumb-back {
+    background: $dk-surface-2;
+    border-color: $dk-border;
+    color: $dk-text;
+  }
+  .app-breadcrumb-back:hover {
+    background: $dk-accent;
+    border-color: $dk-accent;
+    color: #fff;
+  }
+
+  // MaterialTable selection toolbar (shown when rows are selected)
+  .MTableToolbar-highlight {
+    background-color: $dk-surface-3 !important;
+    color: $dk-text !important;
+  }
+
+  // SweetAlert dialogs (render their own markup on <body>)
+  .swal-modal {
+    background-color: $dk-surface !important;
+  }
+  .swal-title {
+    color: $dk-text !important;
+  }
+  .swal-text {
+    color: $dk-muted !important;
+  }
+  .swal-content__input {
+    background-color: $dk-surface-2 !important;
+    color: $dk-text !important;
+    border-color: $dk-border-2 !important;
+  }
+  .swal-footer {
+    border-top-color: $dk-border;
+  }
+}

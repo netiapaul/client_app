@@ -1,0 +1,56 @@
+/* clientPicker.css — searchable pop-over picker for the Create Client "Acct Name"
+   field. Mirrors the Book Sales member/item picker: a readonly field that opens a
+   floating panel with a search box and a tabular result list. */
+
+.client-picker { position: relative; }
+
+.client-picker .picker-panel {
+  position: absolute;
+  z-index: 1050;
+  top: 100%;
+  left: 0;
+  right: 0;
+  min-width: 560px;
+  max-width: 95vw;
+  background: #fff;
+  border: 1px solid #d8dbe0;
+  border-radius: 0;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  margin-top: 2px;
+}
+.client-picker .picker-panel .search {
+  padding: 0.5rem;
+  border-bottom: 1px solid #d8dbe0;
+}
+.client-picker .picker-panel .list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.client-picker .picker-panel table {
+  width: 100%;
+  font-size: 0.7rem;
+  margin: 0;
+  border-collapse: collapse;
+}
+.client-picker .picker-panel th {
+  position: sticky;
+  top: 0;
+  background: #ebedef;
+  padding: 0.4rem 0.6rem;
+  white-space: nowrap;
+  text-align: left;
+  font-weight: 600;
+}
+.client-picker .picker-panel td {
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid #eceff1;
+}
+.client-picker .picker-panel tr.pick { cursor: pointer; }
+.client-picker .picker-panel tr.pick:hover {
+  background: #F58B40;
+  color: #fff;
+}
+.client-picker .picker-panel .empty td {
+  color: #8a93a2;
+  padding: 0.6rem;
+}

@@ -5,10 +5,13 @@ const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const CreateClient = React.lazy(() => import('./views/clients/createClient'))
 const AccessModules = React.lazy(() => import('./views/clients/acessModules'))
 const UpdateClient = React.lazy(() => import('./views/clients/updateClient'))
-const ActivityLog = React.lazy(() => import('./views/activityLogs/activityLogs'))
 const Users = React.lazy(() => import('./views/users/users'))
-const CompanyUsers = React.lazy(() => import('./views/companyUser/companyUser'))
 const Branches = React.lazy(() => import('./views/branches/branches'))
+const Servers = React.lazy(() => import('./views/servers/servers'))
+const Locations = React.lazy(() => import('./views/locations/locations'))
+const Emails = React.lazy(() => import('./views/emails/emails'))
+const UserLogs = React.lazy(() => import('./views/logs/userLogs'))
+const Approvals = React.lazy(() => import('./views/approvals/approvals'))
 // const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
 
 // // Base
@@ -63,10 +66,13 @@ const routes = [
   { path: '/client/:id', name: 'Update Client', element: UpdateClient, exact: true },
   { path: '/client/create-client', name: 'Create Client', element: CreateClient, exact: true },
   { path: '/client/access-modules', name: 'Access Modules', element: AccessModules, exact: true },
-  { path: '/activities', name: 'Activities', element: ActivityLog, exact: true },
   { path: '/users', name: 'Users', element: Users, exact: true },
-  { path: '/company-users', name: 'Company Users', element: CompanyUsers, exact: true },
   { path: '/user-branches', name: 'User Branches', element: Branches, exact: true },
+  { path: '/servers', name: 'Servers', element: Servers, exact: true },
+  { path: '/locations', name: 'Locations', element: Locations, exact: true },
+  { path: '/emails', name: 'Emails', element: Emails, exact: true },
+  { path: '/user-logs', name: 'User Logs', element: UserLogs, exact: true },
+  { path: '/approvals', name: 'Approvals', element: Approvals, exact: true },
   // { path: '/theme', name: 'Theme', element: Colors, exact: true },
   // { path: '/theme/colors', name: 'Colors', element: Colors },
   // { path: '/theme/typography', name: 'Typography', element: Typography },

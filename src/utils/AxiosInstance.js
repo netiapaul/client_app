@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { getToken } from './session'
+
 const API_URL = process.env.REACT_APP_URL_CONFIG
 
 const ServiceInstance = () => {
@@ -6,7 +8,7 @@ const ServiceInstance = () => {
     headers: {
       baseURL: `${API_URL}`,
       'Content-Type': 'application/json; charset=utf-8',
-      Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+      Authorization: `Bearer ${getToken()}`,
     },
   })
   return axiosInstance

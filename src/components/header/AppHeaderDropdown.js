@@ -1,4 +1,5 @@
 import React from 'react'
+import { getName, clearSession } from '../../utils/session'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -28,7 +29,7 @@ import CIcon from '@coreui/icons-react'
 
 const AppHeaderDropdown = () => {
   const handleLogOut = () => {
-    localStorage.clear()
+    clearSession()
     return navigate('/', { replace: true })
   }
   // function stringAvatar(name) {
@@ -41,9 +42,9 @@ const AppHeaderDropdown = () => {
   return (
     <CDropdown>
       <CDropdownToggle placement="bottom-end" className="profile" size="sm">
-        {localStorage.getItem('name')}
+        {getName()}
         {/* <Avatar
-          {...stringAvatar(localStorage.getItem('name'))}
+          {...stringAvatar(getName())}
           sx={{ bgcolor: '#C58C4F', width: 24, height: 24, fontSize: '11px' }}
         /> */}
         {/* <CAvatar src={avatar8} size="md" /> */}
