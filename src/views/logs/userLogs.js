@@ -44,18 +44,202 @@ const actionBadge = (a) => {
   )
 }
 
-const prettyJson = (s) => {
-  if (!s) return ''
+const parseObj = (s) => {
+  if (!s) return {}
   try {
-    return JSON.stringify(JSON.parse(s), null, 1)
+    return JSON.parse(s)
   } catch {
-    return s
+    return {}
   }
+}
+
+const fmtVal = (v) => {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No'
+  if (typeof v === 'object') return JSON.stringify(v)
+  const s = String(v)
+  // tidy ISO date-times → DD/MM/YYYY HH:mm:ss
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/)
+  return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]}` : s
+}
+
+// Field-by-field diff of the old/new JSON snapshots the audit stores.
+const diffRows = (oldV, newV) => {
+  const o = parseObj(oldV)
+  const n = parseObj(newV)
+  const keys = Array.from(new Set([...Object.keys(o), ...Object.keys(n)]))
+  return keys.map((k) => ({
+    field: k,
+    oldVal: o[k],
+    newVal: n[k],
+    changed: JSON.stringify(o[k] ?? null) !== JSON.stringify(n[k] ?? null),
+  }))
+}
+
+// ---- Humanising the raw audit data for a non-technical reader --------------------
+// The audit stores raw entity/property names; map the common ones to plain labels and
+// hide internal plumbing fields so the listing reads like a sentence, not a DB dump.
+
+// camelCase / PascalCase / snake_case  ->  "Spaced words"
+const prettify = (s) =>
+  String(s)
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^./, (c) => c.toUpperCase())
+    .replace(/\bId\b/gi, 'ID')
+
+const MODULE_LABELS = {
+  ClientProvisioning: 'Client provisioning',
+  ChangeRequest: 'Approval request',
+  ClientDetail: 'Client',
+  ClientDetails: 'Client',
+  CompanyDetail: 'Company',
+  ServerConfiguration: 'Server',
+  SmtpConfig: 'Email settings',
+  User: 'User',
+}
+const friendlyModule = (m) => MODULE_LABELS[m] || prettify(m)
+
+const FIELD_LABELS = {
+  CurrentStep: 'Stage',
+  DbName: 'Database',
+  ResolvedByEmail: 'Approved by',
+  ResolvedAt: 'Approved on',
+  ErrorMessage: 'Error',
+  CusCode: 'Customer code',
+  PackageCode: 'Package',
+  UserCount: 'Users',
+  AdminUsername: 'Admin username',
+  AdminFullName: 'Admin name',
+  AdminCellnumber: 'Admin phone',
+  AdminEmail: 'Admin email',
+  CompanyName: 'Company',
+  CompanyEmail: 'Company email',
+  CompanyPhone: 'Phone',
+  ExpiryDate: 'Expires',
+  ActivateDate: 'Activated',
+  ExpiresAt: 'Link expires',
+  CanApprove: 'Can approve',
+  PhysicalAddress: 'Address',
+  TownName: 'Town',
+  PinNo: 'PIN',
+  VatNo: 'VAT',
+}
+const friendlyField = (f) => FIELD_LABELS[f] || prettify(f)
+
+// Best-effort client name for the row: the Company column, else a name carried in the
+// change values (ChangeRequest rows keep the client inside their serialized payload).
+const clientNameOf = (l) => {
+  const direct = (l.company || '').trim()
+  if (direct) return direct
+  const vals = { ...parseObj(l.oldValues), ...parseObj(l.newValues) }
+  for (const k of ['CompanyName', 'PsCompanyName', 'Company']) {
+    if (vals[k]) return String(vals[k])
+  }
+  if (vals.PayloadJson) {
+    const p = parseObj(vals.PayloadJson)
+    for (const k of ['CompanyName', 'PsCompanyName', 'CusCode']) {
+      if (p[k]) return String(p[k])
+    }
+  }
+  return ''
+}
+
+// The resulting Status value of a change (or null) — drives the activity wording.
+const statusOf = (l) => {
+  const st = diffRows(l.oldValues, l.newValues).find(
+    (r) => String(r.field).toLowerCase() === 'status' && (l.actionType !== 'Modified' || r.changed),
+  )
+  if (!st) return null
+  return String(fmtVal(l.actionType === 'Deleted' ? st.oldVal : st.newVal)).toLowerCase()
+}
+
+// One short plain-English sentence describing what happened (no raw fields, no JSON).
+// Full before/after detail stays in the row's popup.
+const activityText = (l) => {
+  const name = clientNameOf(l)
+  const forName = name ? ` '${name}'` : ''
+  const act = l.actionType
+  const status = statusOf(l) || ''
+
+  switch (l.moduleName) {
+    case 'ClientProvisioning':
+      if (act === 'Added') return `Started setting up a new client${forName}`
+      if (act === 'Deleted') return `Removed client${forName}`
+      if (status === 'completed') return `Client${forName} set up successfully`
+      if (status === 'failed' || status === 'error') return `Client${forName} setup failed`
+      return `Client${forName} setup updated`
+    case 'ChangeRequest': {
+      const forClient = name ? ` for '${name}'` : ''
+      if (act === 'Added') return `Requested a change${forClient}`
+      if (status === 'approved') return `Approved a change${forClient}`
+      if (status === 'cancelled' || status === 'canceled' || status === 'rejected')
+        return `Cancelled a change${forClient}`
+      if (status === 'completed') return `Completed a change${forClient}`
+      if (status === 'executing') return `Applying a change${forClient}`
+      return `Updated a change request${forClient}`
+    }
+    case 'ClientDetail':
+    case 'ClientDetails':
+      if (act === 'Added') return `Added client${forName}`
+      if (act === 'Deleted') return `Removed client${forName}`
+      return `Updated client${forName}`
+    case 'CompanyDetail':
+      if (act === 'Added') return `Added company${forName}`
+      if (act === 'Deleted') return `Removed company${forName}`
+      return `Updated company${forName}`
+    case 'User':
+      if (act === 'Added') return 'Added a user'
+      if (act === 'Deleted') return 'Removed a user'
+      return 'Updated a user'
+    case 'ServerConfiguration':
+      if (act === 'Added') return 'Registered a server'
+      if (act === 'Deleted') return 'Removed a server'
+      return 'Updated server settings'
+    case 'SmtpConfig':
+      return 'Updated email settings'
+    default: {
+      const verb = act === 'Added' ? 'Created' : act === 'Deleted' ? 'Removed' : 'Updated'
+      return `${verb} ${friendlyModule(l.moduleName).toLowerCase()}${forName}`
+    }
+  }
+}
+
+// Arranged field/old/new table for the details modal (replaces raw JSON).
+const changesTable = (l) => {
+  const rows = diffRows(l.oldValues, l.newValues)
+  if (rows.length === 0) return <div className="text-muted">No field-level data recorded.</div>
+  const isMod = l.actionType === 'Modified'
+  return (
+    <table className="table table-sm table-bordered mb-0" style={{ fontSize: 12 }}>
+      <thead className="table-light">
+        <tr>
+          <th style={{ width: '34%' }}>Field</th>
+          <th>Old value</th>
+          <th>New value</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.field} className={isMod && r.changed ? 'table-warning' : ''}>
+            <td className="fw-semibold" title={r.field}>
+              {friendlyField(r.field)}
+            </td>
+            <td>{fmtVal(r.oldVal)}</td>
+            <td>{fmtVal(r.newVal)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 const UserLogs = () => {
   const [items, setItems] = useState([])
   const [modules, setModules] = useState([])
+  const [companies, setCompanies] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [detail, setDetail] = useState(null) // the log entry shown in the details modal
@@ -64,6 +248,7 @@ const UserLogs = () => {
     username: '',
     module: '',
     action: '',
+    company: '',
     from: '',
     to: today,
   })
@@ -80,6 +265,7 @@ const UserLogs = () => {
       if (filter.username) params.username = filter.username
       if (filter.module) params.module = filter.module
       if (filter.action) params.action = filter.action
+      if (filter.company) params.company = filter.company
       if (filter.from) params.from = filter.from
       if (filter.to) params.to = filter.to
       const r = await axios.get(`${BASE_URL}/api/UserLogs`, { headers: authHeaders(), params })
@@ -100,6 +286,10 @@ const UserLogs = () => {
     axios
       .get(`${BASE_URL}/api/UserLogs/Modules`, { headers: authHeaders() })
       .then((r) => setModules(r.data ?? []))
+      .catch(() => {})
+    axios
+      .get(`${BASE_URL}/api/UserLogs/Companies`, { headers: authHeaders() })
+      .then((r) => setCompanies(r.data ?? []))
       .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -126,13 +316,28 @@ const UserLogs = () => {
       <div className="card rounded-0 mb-2">
         <div className="card-body py-2">
           <div className="row g-2 align-items-end" style={{ fontSize: 12 }}>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label mb-0">User (name / email)</label>
               <input
                 className="form-control form-control-sm rounded-0"
                 value={filter.username}
                 onChange={(e) => setFilter({ ...filter, username: e.target.value })}
               />
+            </div>
+            <div className="col-md-2">
+              <label className="form-label mb-0">Client</label>
+              <input
+                className="form-control form-control-sm rounded-0"
+                list="log-companies"
+                placeholder="All clients"
+                value={filter.company}
+                onChange={(e) => setFilter({ ...filter, company: e.target.value })}
+              />
+              <datalist id="log-companies">
+                {companies.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
             </div>
             <div className="col-md-2">
               <label className="form-label mb-0">Module</label>
@@ -149,7 +354,7 @@ const UserLogs = () => {
                 ))}
               </select>
             </div>
-            <div className="col-md-2">
+            <div className="col-md-1">
               <label className="form-label mb-0">Action</label>
               <select
                 className="form-select form-select-sm rounded-0"
@@ -202,9 +407,7 @@ const UserLogs = () => {
                 <th style={{ width: '1%' }}>#</th>
                 <th>When</th>
                 <th>User</th>
-                <th>Action</th>
-                <th>Module</th>
-                <th>Ref</th>
+                <th>Activity</th>
                 <th>Company</th>
                 <th>IP</th>
                 <th style={{ width: '1%' }}></th>
@@ -213,7 +416,7 @@ const UserLogs = () => {
             <tbody>
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-muted text-center py-3">
+                  <td colSpan={7} className="text-muted text-center py-3">
                     No log entries for the selected filters.
                   </td>
                 </tr>
@@ -228,9 +431,7 @@ const UserLogs = () => {
                   <td>{(page - 1) * pageSize + idx + 1}</td>
                   <td>{moment(l.createdAt).format('DD/MM/YY HH:mm:ss')}</td>
                   <td title={l.email}>{l.userName || l.email}</td>
-                  <td>{actionBadge(l.actionType)}</td>
-                  <td>{l.moduleName}</td>
-                  <td>{l.referenceId}</td>
+                  <td style={{ maxWidth: 520 }}>{activityText(l)}</td>
                   <td>{l.company}</td>
                   <td>{l.ipAddress}</td>
                   <td>
@@ -358,16 +559,8 @@ const UserLogs = () => {
                   <div className="log-meta-value">{detail.deviceInfo || '—'}</div>
                 </div>
               </div>
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <div className="log-section-title">Old values</div>
-                  <pre className="log-json">{prettyJson(detail.oldValues) || '—'}</pre>
-                </div>
-                <div className="col-md-6">
-                  <div className="log-section-title">New values</div>
-                  <pre className="log-json">{prettyJson(detail.newValues) || '—'}</pre>
-                </div>
-              </div>
+              <div className="log-section-title">Changes</div>
+              {changesTable(detail)}
             </>
           )}
         </CModalBody>
