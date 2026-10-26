@@ -4,6 +4,62 @@ import moment from 'moment'
 
 const axios = require('axios')
 const BASE_URL = process.env.REACT_APP_URL_CONFIG
+const PAGE_SIZE = 25
+
+// Status summary tiles that double as the list filter. 'All' clears the filter.
+const STATUS_FILTERS = [
+  { key: 'All', label: 'Total', cls: 'is-all', icon: 'inbox' },
+  { key: 'Sent', label: 'Sent', cls: 'is-sent', icon: 'send' },
+  { key: 'Pending', label: 'Pending', cls: 'is-pending', icon: 'clock' },
+  { key: 'Failed', label: 'Failed', cls: 'is-failed', icon: 'alert' },
+]
+
+// Small inline (Feather-style) icons for the summary tiles — no extra dependency.
+const renderStatIcon = (name) => {
+  const svg = {
+    width: 20,
+    height: 20,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  }
+  switch (name) {
+    case 'inbox':
+      return (
+        <svg {...svg}>
+          <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+          <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+        </svg>
+      )
+    case 'send':
+      return (
+        <svg {...svg}>
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
+      )
+    case 'clock':
+      return (
+        <svg {...svg}>
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      )
+    case 'alert':
+      return (
+        <svg {...svg}>
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      )
+    default:
+      return null
+  }
+}
 
 const authHeaders = () => ({
   Authorization: `Bearer ${getToken()}`,
@@ -39,6 +95,12 @@ const statusBadge = (status) => {
 const Emails = () => {
   const [items, setItems] = useState([])
   const [configured, setConfigured] = useState(true)
+  const [summary, setSummary] = useState({ total: 0, sent: 0, pending: 0, failed: 0 })
+  const [statusFilter, setStatusFilter] = useState('All')
+  const [searchInput, setSearchInput] = useState('') // what the user is typing
+  const [search, setSearch] = useState('') // debounced term sent to the API
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
@@ -52,6 +114,7 @@ const Emails = () => {
     fromName: '',
     fromAddress: '',
     supportEmail: '',
+    bccAddresses: '',
     useSsl: true,
     ignoreSslErrors: false,
     throttleDelayMs: 0,
@@ -82,6 +145,7 @@ const Emails = () => {
           fromName: r.data.fromName ?? '',
           fromAddress: r.data.fromAddress ?? '',
           supportEmail: r.data.supportEmail ?? '',
+          bccAddresses: r.data.bccAddresses ?? '',
           useSsl: !!r.data.useSsl,
           ignoreSslErrors: !!r.data.ignoreSslErrors,
           throttleDelayMs: r.data.throttleDelayMs ?? 0,
@@ -111,6 +175,7 @@ const Emails = () => {
           fromName: smtp.fromName,
           fromAddress: smtp.fromAddress,
           supportEmail: smtp.supportEmail,
+          bccAddresses: smtp.bccAddresses,
           useSsl: smtp.useSsl,
           ignoreSslErrors: smtp.ignoreSslErrors,
           throttleDelayMs: Number(smtp.throttleDelayMs) || 0,
@@ -131,17 +196,46 @@ const Emails = () => {
   const load = useCallback(async () => {
     setError('')
     try {
-      const r = await axios.get(`${BASE_URL}/api/Email/Queue?take=200`, { headers: authHeaders() })
+      const r = await axios.get(
+        `${BASE_URL}/api/Email/Queue?status=${encodeURIComponent(
+          statusFilter,
+        )}&search=${encodeURIComponent(search)}&page=${page}&pageSize=${PAGE_SIZE}`,
+        { headers: authHeaders() },
+      )
       setItems(r.data?.items ?? [])
       setConfigured(r.data?.configured ?? false)
+      setSummary(r.data?.summary ?? { total: 0, sent: 0, pending: 0, failed: 0 })
+      setTotal(r.data?.total ?? 0)
     } catch (e) {
       err(e)
     }
-  }, [])
+  }, [statusFilter, search, page])
 
   useEffect(() => {
     load()
   }, [load])
+
+  // Debounce the search box: apply the typed term 300ms after the last keystroke and jump to page 1.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  // If the filtered total shrinks below the current page (e.g. after Resend Failed empties the
+  // Failed view), snap back to the last valid page — which reloads at a sensible position.
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  const applyFilter = (key) => {
+    setStatusFilter(key)
+    setPage(1)
+  }
 
   const sendPending = async () => {
     setBusy(true)
@@ -215,8 +309,8 @@ const Emails = () => {
     }
   }
 
-  const failedCount = items.filter((i) => i.status === 'Failed').length
-  const pendingCount = items.filter((i) => i.status === 'Pending').length
+  const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+  const rangeEnd = Math.min(page * PAGE_SIZE, total)
 
   return (
     <>
@@ -224,9 +318,6 @@ const Emails = () => {
       <div className="d-flex justify-content-between align-items-center">
         <h6 className="m-0">Email Tracking</h6>
         <div className="d-flex align-items-center gap-2">
-          <span className="text-muted" style={{ fontSize: 11 }}>
-            {pendingCount} pending · {failedCount} failed
-          </span>
           <button
             className="btn btn-sm cancel-btn rounded-0"
             onClick={load}
@@ -246,10 +337,10 @@ const Emails = () => {
           <button
             className="btn btn-sm add-btn rounded-0"
             onClick={resendFailed}
-            disabled={busy || !configured || failedCount === 0}
+            disabled={busy || !configured || summary.failed === 0}
             type="button"
           >
-            Resend Failed ({failedCount})
+            Resend Failed ({summary.failed})
           </button>
           <button
             className="btn btn-sm cancel-btn rounded-0"
@@ -353,6 +444,20 @@ const Emails = () => {
                   onChange={(e) => setSmtp({ ...smtp, supportEmail: e.target.value })}
                 />
               </div>
+              <div className="col-md-12">
+                <label className="form-label mb-0">
+                  BCC addresses{' '}
+                  <span className="text-muted" style={{ fontSize: 10 }}>
+                    (copied on every outbound email — separate with commas or semicolons)
+                  </span>
+                </label>
+                <input
+                  className="form-control form-control-sm rounded-0"
+                  value={smtp.bccAddresses}
+                  onChange={(e) => setSmtp({ ...smtp, bccAddresses: e.target.value })}
+                  placeholder="admin@corebase.co.ke; records@corebase.co.ke"
+                />
+              </div>
               <div className="col-md-12 d-flex gap-3 mt-1">
                 <div className="form-check">
                   <input
@@ -415,8 +520,9 @@ const Emails = () => {
 
       {!configured && (
         <div className="alert alert-warning rounded-0 p-2" role="alert" style={{ fontSize: 12 }}>
-          SMTP is not configured. Click <strong>SMTP Settings</strong> to set it. Emails are queued
-          but will not be sent until it is configured.
+          SMTP is not configured. Click <strong>SMTP Settings</strong> to set it. New emails are
+          stored as <strong>Failed</strong> until it is configured — once set up, use{' '}
+          <strong>Resend Failed</strong> to send them.
         </div>
       )}
       {error && (
@@ -429,6 +535,120 @@ const Emails = () => {
           {msg}
         </div>
       )}
+
+      {/* Status summary — each tile filters the list; the active one is highlighted. */}
+      <div className="email-stats">
+        {STATUS_FILTERS.map((c) => {
+          const count =
+            c.key === 'All'
+              ? summary.total
+              : c.key === 'Sent'
+              ? summary.sent
+              : c.key === 'Pending'
+              ? summary.pending
+              : summary.failed
+          const active = statusFilter === c.key
+          const pct =
+            c.key !== 'All' && summary.total > 0 ? Math.round((count / summary.total) * 100) : null
+          return (
+            <div
+              key={c.key}
+              className={`email-stat ${c.cls}${active ? ' active' : ''}`}
+              onClick={() => applyFilter(c.key)}
+              onKeyDown={(ev) => {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                  ev.preventDefault()
+                  applyFilter(c.key)
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-pressed={active}
+              title={`Show ${c.key === 'All' ? 'all' : c.label.toLowerCase()} emails`}
+            >
+              <span className="email-stat__icon">{renderStatIcon(c.icon)}</span>
+              <span className="email-stat__body">
+                <span className="email-stat__value">{count.toLocaleString()}</span>
+                <span className="email-stat__label">{c.label}</span>
+                <span className="email-stat__meta">
+                  {pct !== null ? `${pct}% of total` : 'all emails'}
+                </span>
+              </span>
+              {pct !== null && (
+                <span className="email-stat__bar">
+                  <span className="email-stat__bar-fill" style={{ width: `${pct}%` }} />
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Search toolbar */}
+      <div className="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <div style={{ position: 'relative', maxWidth: 340, width: '100%' }}>
+          <span
+            style={{
+              position: 'absolute',
+              left: 10,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: '#8a94a6',
+              pointerEvents: 'none',
+              display: 'flex',
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </span>
+          <input
+            className="form-control form-control-sm rounded-0"
+            style={{ paddingLeft: 32, paddingRight: 26 }}
+            placeholder="Search recipient, subject, client or type…"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            aria-label="Search email queue"
+          />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={() => setSearchInput('')}
+              title="Clear search"
+              style={{
+                position: 'absolute',
+                right: 6,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                border: 'none',
+                background: 'transparent',
+                color: '#8a94a6',
+                fontSize: 16,
+                lineHeight: 1,
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {search && (
+          <span className="text-muted" style={{ fontSize: 11 }}>
+            {total} result{total === 1 ? '' : 's'} for “{search}”
+          </span>
+        )}
+      </div>
 
       <div className="card rounded-0">
         <div className="table-responsive">
@@ -452,7 +672,13 @@ const Emails = () => {
               {items.length === 0 && (
                 <tr>
                   <td colSpan={11} className="text-muted text-center py-3">
-                    No emails yet.
+                    {search
+                      ? `No emails match “${search}”${
+                          statusFilter === 'All' ? '' : ` with status ${statusFilter}`
+                        }.`
+                      : statusFilter === 'All'
+                      ? 'No emails yet.'
+                      : `No ${statusFilter.toLowerCase()} emails.`}
                   </td>
                 </tr>
               )}
@@ -463,11 +689,24 @@ const Emails = () => {
                   style={{ cursor: 'pointer' }}
                   title="Click to preview"
                 >
-                  <td>{idx + 1}</td>
+                  <td>{(page - 1) * PAGE_SIZE + idx + 1}</td>
                   <td>{e.emailType}</td>
                   <td>{e.toAddress}</td>
                   <td>{e.subject}</td>
-                  <td>{e.relatedCusCode}</td>
+                  <td>
+                    {e.relatedClientName ? (
+                      <>
+                        <div style={{ fontWeight: 600 }}>{e.relatedClientName}</div>
+                        {e.relatedCusCode && (
+                          <div className="text-muted" style={{ fontSize: 9 }}>
+                            {e.relatedCusCode}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      e.relatedCusCode || '—'
+                    )}
+                  </td>
                   <td>{statusBadge(e.status)}</td>
                   <td style={{ textAlign: 'center' }}>{e.attempts}</td>
                   <td>{e.createdAt ? moment(e.createdAt).format('DD/MM/YY HH:mm') : ''}</td>
@@ -510,6 +749,54 @@ const Emails = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div
+        className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2"
+        style={{ fontSize: 12 }}
+      >
+        <span className="text-muted">
+          {total === 0 ? 'No emails' : `Showing ${rangeStart}–${rangeEnd} of ${total}`}
+          {statusFilter !== 'All' ? ` ${statusFilter.toLowerCase()}` : ''}
+        </span>
+        <div className="d-flex align-items-center gap-2">
+          <button
+            className="btn btn-sm cancel-btn rounded-0"
+            onClick={() => setPage(1)}
+            disabled={busy || page <= 1}
+            type="button"
+          >
+            « First
+          </button>
+          <button
+            className="btn btn-sm cancel-btn rounded-0"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={busy || page <= 1}
+            type="button"
+          >
+            ‹ Prev
+          </button>
+          <span className="text-muted">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            className="btn btn-sm cancel-btn rounded-0"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={busy || page >= totalPages}
+            type="button"
+          >
+            Next ›
+          </button>
+          <button
+            className="btn btn-sm cancel-btn rounded-0"
+            onClick={() => setPage(totalPages)}
+            disabled={busy || page >= totalPages}
+            type="button"
+          >
+            Last »
+          </button>
         </div>
       </div>
     </>

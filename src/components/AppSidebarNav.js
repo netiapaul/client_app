@@ -3,6 +3,10 @@ import { NavLink, useLocation } from 'react-router-dom'
 import PropTypes from 'prop-types'
 
 import { CBadge } from '@coreui/react'
+import { hasModule } from '../utils/session'
+
+// Hide any item (or child) the user lacks the module for. Items without a `module` are always shown.
+const allowed = (item) => !item.module || hasModule(item.module)
 
 export const AppSidebarNav = ({ items }) => {
   const location = useLocation()
@@ -22,6 +26,7 @@ export const AppSidebarNav = ({ items }) => {
 
   const navItem = (item, index) => {
     const { component, name, badge, icon, ...rest } = item
+    delete rest.module // our own gating field — not a DOM/component prop
     const Component = component
     return (
       <Component
@@ -57,7 +62,9 @@ export const AppSidebarNav = ({ items }) => {
   return (
     <React.Fragment>
       {items &&
-        items.map((item, index) => (item.items ? navGroup(item, index) : navItem(item, index)))}
+        items
+          .filter(allowed)
+          .map((item, index) => (item.items ? navGroup(item, index) : navItem(item, index)))}
     </React.Fragment>
   )
 }

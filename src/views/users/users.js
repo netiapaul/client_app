@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { getToken } from '../../utils/session'
+import { getToken, hasModule } from '../../utils/session'
+import { MODULES } from '../../utils/permissions'
 import { toast } from 'react-toastify'
 import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
@@ -15,12 +16,14 @@ const Users = () => {
   const [error, setError] = useState('')
   // const [controllerError, setControllerError] = useState([])
   const [roles, setRoles] = useState([])
+  const [groups, setGroups] = useState([])
   const [formData, setFormData] = useState({
     fullNames: '',
     email: '',
     phoneNumber: '',
     role: '',
     password: '',
+    groupIds: [],
   })
   const [isLoading, setIsLoading] = useState(false)
   const [delLoading, setDelLoading] = useState(false)
@@ -32,28 +35,32 @@ const Users = () => {
     users: [],
   })
 
-  // Add/remove a user from the approvers group (maker-checker change approval).
-  const toggleApprover = async (rowData, canApprove) => {
-    try {
-      await axios.put(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Users/SetApprover?id=${Number(
-          rowData.id,
-        )}&canApprove=${canApprove}`,
-        {},
-        { headers: { Authorization: `Bearer ${getToken()}` } },
-      )
-      toast.success(
-        `${rowData.name} ${canApprove ? 'can now approve changes' : 'is no longer an approver'}.`,
-        {
-          theme: 'colored',
-        },
-      )
-      GetUsers()
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Could not update approver status', {
-        theme: 'colored',
-      })
-    }
+  // Button-level permissions (the screen itself is gated by ViewUsers via the route/nav).
+  // Approver status is no longer managed here — it's a group in Access Control.
+  const canManageUsers = hasModule(MODULES.ManageUsers)
+  const canDeleteUsers = hasModule(MODULES.DeleteUsers)
+
+  // Admin reset for a locked-out user who lost their authenticator (server enforces Admin role).
+  const reset2fa = (rowData) => {
+    swal({
+      title: `Reset 2FA for ${rowData.name}?`,
+      text: 'They will then sign in with just their password and can re-enroll. Use only when a user has lost their authenticator device.',
+      icon: 'warning',
+      buttons: true,
+      dangerMode: true,
+    }).then(async (ok) => {
+      if (!ok) return
+      try {
+        await axios.post(
+          `${process.env.REACT_APP_URL_CONFIG}/api/TwoFactor/Reset/${Number(rowData.id)}`,
+          {},
+          { headers: { Authorization: `Bearer ${getToken()}` } },
+        )
+        toast.success(`Two-factor authentication reset for ${rowData.name}.`, { theme: 'colored' })
+      } catch (e) {
+        toast.error(e.response?.data?.message || 'Could not reset 2FA', { theme: 'colored' })
+      }
+    })
   }
 
   let column = [
@@ -97,15 +104,42 @@ const Users = () => {
       title: 'Approver',
       field: 'canApprove',
       sorting: false,
-      render: (rowData) => (
-        <input
-          type="checkbox"
-          checked={!!rowData.canApprove}
-          onChange={(e) => toggleApprover(rowData, e.target.checked)}
-          title="Can approve change requests (create client, add branch, expiry, modules)"
-          style={{ cursor: 'pointer' }}
-        />
-      ),
+      render: (rowData) =>
+        rowData.canApprove ? (
+          <span
+            className="badge"
+            style={{ background: '#2eb85c', color: '#fff', fontSize: 9, fontWeight: 600 }}
+            title="Can approve change requests (admin, or a member of a group granting Approve changes). Manage via Access Control + group membership."
+          >
+            Approver
+          </span>
+        ) : (
+          <span className="text-muted" style={{ fontSize: 10 }}>
+            —
+          </span>
+        ),
+      cellStyle: { width: '1%', textAlign: 'center' },
+    },
+    {
+      title: '2FA',
+      field: 'twoFactor',
+      sorting: false,
+      render: (rowData) =>
+        canManageUsers ? (
+          <button
+            className="btn btn-sm delete-btn rounded-0"
+            style={{ fontSize: 10, padding: '1px 6px' }}
+            onClick={(e) => {
+              e.stopPropagation()
+              reset2fa(rowData)
+            }}
+            title="Reset this user's two-factor authentication (for lockouts)"
+          >
+            Reset
+          </button>
+        ) : (
+          ''
+        ),
       cellStyle: { width: '1%', textAlign: 'center' },
     },
   ]
@@ -173,6 +207,7 @@ const Users = () => {
           phoneNumber: formData.phoneNumber,
           role: formData.role,
           password: formData.password,
+          groupIds: formData.groupIds || [],
         }),
       })
       if (response.ok) {
@@ -183,6 +218,7 @@ const Users = () => {
           phoneNumber: '',
           role: '',
           password: '',
+          groupIds: [],
         })
         setIsLoading(false)
         setSelectedRow([])
@@ -228,6 +264,7 @@ const Users = () => {
             phoneNumber: formData.phoneNumber,
             role: formData.role,
             password: formData.password,
+            groupIds: formData.groupIds || [],
           }),
         },
       )
@@ -239,6 +276,7 @@ const Users = () => {
           phoneNumber: '',
           role: '',
           password: '',
+          groupIds: [],
         })
         setIsLoading(false)
         setSelectedRow([])
@@ -304,9 +342,22 @@ const Users = () => {
     setToEdit(true)
   }
 
+  // Access groups available to assign on the form (only if the user can manage users).
+  const GetGroups = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/Groups`, {
+        headers: { Authorization: `Bearer ${getToken()}`, Accept: 'application/json' },
+      })
+      setGroups(response.data || [])
+    } catch (e) {
+      // Groups are optional on this screen; ignore if the user can't fetch them.
+    }
+  }
+
   useEffect(() => {
     GetUsers()
     GetRoles()
+    if (canManageUsers) GetGroups()
   }, [])
 
   return (
@@ -319,20 +370,30 @@ const Users = () => {
           </div>
           <div className="">
             <React.Fragment key={'right'}>
-              <button
-                type="button"
-                style={{ width: '4rem' }}
-                className="btn btn-sm new-btn me-1 top-btn rounded-0"
-                onClick={() => {
-                  setIsDrawerOpen(true)
-                  setSelectedRow([])
-                  setRowID('')
-                  setToEdit(false)
-                }}
-              >
-                {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
-                New
-              </button>
+              {canManageUsers && (
+                <button
+                  type="button"
+                  style={{ width: '4rem' }}
+                  className="btn btn-sm new-btn me-1 top-btn rounded-0"
+                  onClick={() => {
+                    setIsDrawerOpen(true)
+                    setSelectedRow([])
+                    setRowID('')
+                    setToEdit(false)
+                    setFormData({
+                      fullNames: '',
+                      email: '',
+                      phoneNumber: '',
+                      role: '',
+                      password: '',
+                      groupIds: [],
+                    })
+                  }}
+                >
+                  {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
+                  New
+                </button>
+              )}
 
               <Drawer
                 // sx={{ width: 540, bgcolor: '#C58C4F' }}
@@ -444,6 +505,11 @@ const Users = () => {
                     <div className="row mb-3">
                       <label htmlFor="password" className="col-md-4 col-form-label divider">
                         Password
+                        {toEdit && (
+                          <div className="text-muted" style={{ fontSize: 9, fontWeight: 400 }}>
+                            leave blank to keep current
+                          </div>
+                        )}
                       </label>
                       <div className="col-md">
                         <input
@@ -460,13 +526,47 @@ const Users = () => {
                           }
                           pattern="[-@.\/#&+\w\s]{6,20}"
                           minLength={6}
-                          // pattern="[a-zA-Z0-9]{6,20}"
-                          title="Please enter the 6-digit password"
-                          required
+                          placeholder={toEdit ? '••••••••' : ''}
+                          title="At least 6 characters"
+                          required={!toEdit}
                           // onChange={this.function.handleChange}
                         />
                       </div>
                     </div>
+                    {groups.length > 0 && (
+                      <div className="row mb-3">
+                        <label className="col-md-4 col-form-label divider">Access Groups</label>
+                        <div className="col-md">
+                          {groups.map((g) => (
+                            <div className="form-check" key={g.id}>
+                              <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id={`grp-${g.id}`}
+                                checked={(formData.groupIds || []).includes(g.id)}
+                                onChange={(e) => {
+                                  const set = new Set(formData.groupIds || [])
+                                  if (e.target.checked) set.add(g.id)
+                                  else set.delete(g.id)
+                                  setFormData({ ...formData, groupIds: Array.from(set) })
+                                }}
+                              />
+                              <label
+                                className="form-check-label"
+                                htmlFor={`grp-${g.id}`}
+                                style={{ fontSize: 11 }}
+                                title={g.description || ''}
+                              >
+                                {g.name}
+                              </label>
+                            </div>
+                          ))}
+                          <div className="text-muted" style={{ fontSize: 10 }}>
+                            A user can belong to several groups; their access is the combination.
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="d-flex justify-content-end">
                       <button
                         type="submit"
@@ -504,56 +604,61 @@ const Users = () => {
                 </div>
               </Drawer>
             </React.Fragment>
-            <button
-              type="button"
-              style={{ width: '4rem' }}
-              className="btn btn-sm edit-btn me-1 top-btn rounded-0"
-              disabled={selectedRow.length <= 0}
-              onClick={() => {
-                setIsDrawerOpen(true)
-                setFormData({
-                  ...formData,
-                  fullNames: selectedRow.name,
-                  email: selectedRow.email,
-                  phoneNumber: selectedRow.phoneNumber,
-                  role: selectedRow.role,
-                })
-              }}
-            >
-              {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
-              Edit
-            </button>
-            <button
-              className="btn btn-sm delete-btn top-btn rounded-0"
-              style={{ width: '4rem' }}
-              disabled={selectedRow.length <= 0}
-              onClick={() =>
-                swal({
-                  title: 'Are you sure?',
-                  text: 'Once deleted, you will not be able to recover',
-                  icon: 'warning',
-                  buttons: true,
-                  dangerMode: true,
-                }).then((willDelete) => {
-                  if (willDelete) {
-                    DeleteUser()
-                    // alert('I am Headed to greatness With Kinjoz')
-                  } else {
-                    return
-                  }
-                })
-              }
-            >
-              {delLoading ? (
-                <span
-                  className="spinner-border text-denter spinner-border-sm"
-                  role="status"
-                  aria-hidden="true"
-                ></span>
-              ) : (
-                'Delete'
-              )}
-            </button>
+            {canManageUsers && (
+              <button
+                type="button"
+                style={{ width: '4rem' }}
+                className="btn btn-sm edit-btn me-1 top-btn rounded-0"
+                disabled={selectedRow.length <= 0}
+                onClick={() => {
+                  setIsDrawerOpen(true)
+                  setFormData({
+                    ...formData,
+                    fullNames: selectedRow.name,
+                    email: selectedRow.email,
+                    phoneNumber: selectedRow.phoneNumber,
+                    role: selectedRow.role,
+                    groupIds: selectedRow.groupIds || [],
+                  })
+                }}
+              >
+                {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
+                Edit
+              </button>
+            )}
+            {canDeleteUsers && (
+              <button
+                className="btn btn-sm delete-btn top-btn rounded-0"
+                style={{ width: '4rem' }}
+                disabled={selectedRow.length <= 0}
+                onClick={() =>
+                  swal({
+                    title: 'Are you sure?',
+                    text: 'Once deleted, you will not be able to recover',
+                    icon: 'warning',
+                    buttons: true,
+                    dangerMode: true,
+                  }).then((willDelete) => {
+                    if (willDelete) {
+                      DeleteUser()
+                      // alert('I am Headed to greatness With Kinjoz')
+                    } else {
+                      return
+                    }
+                  })
+                }
+              >
+                {delLoading ? (
+                  <span
+                    className="spinner-border text-denter spinner-border-sm"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

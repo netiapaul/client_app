@@ -568,6 +568,143 @@ input:checked {
   display: none !important;
 }
 
+/**** Email status summary tiles ****/
+.email-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.email-stat {
+  --accent: #2f3b52;
+  --tint: #eef1f6;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  background: #fff;
+  border: 1px solid #e9edf2;
+  border-radius: 10px;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    opacity: .9;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(32, 43, 69, .12);
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
+  }
+
+  &.active {
+    border-color: var(--accent);
+    background: var(--tint);
+    box-shadow: inset 0 0 0 2px var(--accent), 0 6px 16px rgba(32, 43, 69, .10);
+  }
+
+  &.is-all {
+    --accent: #{$primary-color};
+    --tint: #fdf1e8;
+  }
+
+  &.is-sent {
+    --accent: #{$success-color};
+    --tint: #e8f7ee;
+  }
+
+  &.is-pending {
+    --accent: #e0a800;
+    --tint: #fdf6e3;
+  }
+
+  &.is-failed {
+    --accent: #{$danger-color};
+    --tint: #fdecec;
+  }
+
+  &__icon {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tint);
+    color: var(--accent);
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+  }
+
+  &__value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #22304a;
+    letter-spacing: -.5px;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #8a94a6;
+    margin-top: 1px;
+  }
+
+  &__meta {
+    font-size: 10px;
+    color: #aab2c0;
+    margin-top: 2px;
+  }
+
+  &__bar {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 8px;
+    height: 3px;
+    border-radius: 3px;
+    background: #eef1f5;
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width .35s ease;
+  }
+}
+
 /***** CUSTOM SHAPE STYLE *****/
 // @media (min-width: 1200px) {
 //   .w-cover {

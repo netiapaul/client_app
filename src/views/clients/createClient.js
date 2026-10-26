@@ -99,6 +99,7 @@ function CreateClient() {
       errs.push('Branch CALs must be 1 or greater.')
     if (f.provisionDb && !f.serverName)
       errs.push('Select a server to provision the database, or turn off cloud provisioning.')
+    if (!f.packageCode) errs.push('Select a Client Module.')
     return errs
   }
 
@@ -1136,7 +1137,7 @@ function CreateClient() {
               <hr className="mb-3 mt-1" />
               <div className="row mb-1">
                 <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                  Client Modules
+                  Client Modules <span style={{ color: '#e55353' }}>*</span>
                 </label>
                 <div className="col-md">
                   <span className="d-flex flex-row gap-5 text-center">

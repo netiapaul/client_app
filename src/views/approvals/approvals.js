@@ -35,12 +35,14 @@ const Approvals = () => {
     load()
   }, [load])
 
-  const act = async (token, action) => {
-    setBusy(token)
+  const act = async (id, action) => {
+    setBusy(id)
     try {
-      await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Approvals/${token}/${action}`, {
-        headers: authHeaders(),
-      })
+      await axios.post(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Approvals/${id}/${action}`,
+        {},
+        { headers: authHeaders() },
+      )
       toast.success(action === 'approve' ? 'Change approved and started.' : 'Request cancelled.', {
         theme: 'colored',
       })
@@ -70,61 +72,82 @@ const Approvals = () => {
           {loading ? 'Loading…' : 'Refresh'}
         </button>
       </div>
-      <div className="table-responsive">
-        <table className="table table-sm align-middle">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Change</th>
-              <th>Details</th>
-              <th>Client</th>
-              <th>Requested by</th>
-              <th>When</th>
-              <th>Expires</th>
-              {canApprove && <th></th>}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && !loading && (
+      <div className="card rounded-0">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover align-middle mb-0" style={{ fontSize: 12 }}>
+            <thead className="table-light">
               <tr>
-                <td colSpan={canApprove ? 8 : 7} className="text-center text-muted py-3">
-                  No pending approvals.
-                </td>
+                <th style={{ width: '1%' }}>#</th>
+                <th>Change</th>
+                <th>Details</th>
+                <th>Client</th>
+                <th>Requested by</th>
+                <th>When</th>
+                <th>Expires</th>
+                {canApprove && <th className="text-end">Actions</th>}
               </tr>
-            )}
-            {rows.map((r, i) => (
-              <tr key={r.id}>
-                <td>{i + 1}</td>
-                <td>{r.type}</td>
-                <td>{r.summary}</td>
-                <td>{r.targetCusCode || '-'}</td>
-                <td>{r.requestedByName || r.requestedByEmail || '-'}</td>
-                <td>{r.requestedAt ? moment(r.requestedAt).format('DD/MM/YYYY HH:mm') : '-'}</td>
-                <td>{r.expiresAt ? moment(r.expiresAt).format('DD/MM/YYYY') : '-'}</td>
-                {canApprove && (
-                  <td className="text-nowrap">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-success rounded-0 me-1"
-                      disabled={busy === r.token}
-                      onClick={() => act(r.token, 'approve')}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-danger rounded-0"
-                      disabled={busy === r.token}
-                      onClick={() => act(r.token, 'cancel')}
-                    >
-                      Cancel
-                    </button>
+            </thead>
+            <tbody>
+              {rows.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={canApprove ? 8 : 7} className="text-center text-muted py-3">
+                    No pending approvals.
                   </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </tr>
+              )}
+              {rows.map((r, i) => (
+                <tr key={r.id}>
+                  <td>{i + 1}</td>
+                  <td>
+                    <span
+                      className="badge rounded-0"
+                      style={{
+                        background: '#2f3b52',
+                        color: '#fff',
+                        fontSize: 10,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {r.type}
+                    </span>
+                  </td>
+                  <td>{r.summary}</td>
+                  <td>{r.targetCusCode || '—'}</td>
+                  <td>{r.requestedByName || r.requestedByEmail || '—'}</td>
+                  <td className="text-nowrap">
+                    {r.requestedAt ? moment(r.requestedAt).format('DD/MM/YY HH:mm') : '—'}
+                  </td>
+                  <td className="text-nowrap">
+                    {r.expiresAt ? moment(r.expiresAt).format('DD/MM/YY') : '—'}
+                  </td>
+                  {canApprove && (
+                    <td className="text-end text-nowrap">
+                      {!r.isOwn && (
+                        <button
+                          type="button"
+                          className="btn btn-sm add-btn rounded-0 me-1"
+                          disabled={busy === r.id}
+                          onClick={() => act(r.id, 'approve')}
+                        >
+                          Approve
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-sm delete-btn rounded-0"
+                        title={r.isOwn ? 'Withdraw your request' : 'Reject this change'}
+                        disabled={busy === r.id}
+                        onClick={() => act(r.id, 'cancel')}
+                      >
+                        Cancel
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   )

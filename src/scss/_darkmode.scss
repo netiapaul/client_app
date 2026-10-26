@@ -604,4 +604,34 @@ html.theme-dark {
   .swal-footer {
     border-top-color: $dk-border;
   }
+
+  // Email status summary tiles (.email-stat in _custom.scss). The accent (left bar, icon colour,
+  // progress fill) comes from --accent and reads fine on dark; only the light surfaces/text need
+  // re-theming here.
+  .email-stat {
+    background: $dk-surface;
+    border-color: $dk-border;
+
+    &:hover {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    }
+    &.active {
+      background: $dk-surface-2;
+    }
+    &__icon {
+      background: $dk-surface-2;
+    }
+    &__value {
+      color: $dk-text;
+    }
+    &__label {
+      color: $dk-muted;
+    }
+    &__meta {
+      color: $dk-muted;
+    }
+    &__bar {
+      background: $dk-surface-3;
+    }
+  }
 }

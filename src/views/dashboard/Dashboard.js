@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { getToken } from '../../utils/session'
+import { getToken, hasModule } from '../../utils/session'
+import { MODULES } from '../../utils/permissions'
 import { toast } from 'react-toastify'
 import MaterialTable from 'material-table'
 import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
@@ -759,14 +760,16 @@ const Dashboard = () => {
                 Desktop
               </li>
             </ul> */}
-            <button
-              type="button"
-              style={{ width: '5rem' }}
-              className="btn btn-sm add-btn ms-3 rounded-0"
-              onClick={() => navigate('/client/create-client')}
-            >
-              Create
-            </button>
+            {hasModule(MODULES.CreateClient) && (
+              <button
+                type="button"
+                style={{ width: '5rem' }}
+                className="btn btn-sm add-btn ms-3 rounded-0"
+                onClick={() => navigate('/client/create-client')}
+              >
+                Create
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -943,13 +946,15 @@ const Dashboard = () => {
                       {selectedRow?.psCusCode})
                     </div>
                     <div className="d-flex gap-2">
-                      <button
-                        type="button"
-                        className="btn btn-sm add-btn rounded-0"
-                        onClick={openAddBranch}
-                      >
-                        Add Branch
-                      </button>
+                      {hasModule(MODULES.AddBranch) && (
+                        <button
+                          type="button"
+                          className="btn btn-sm add-btn rounded-0"
+                          onClick={openAddBranch}
+                        >
+                          Add Branch
+                        </button>
+                      )}
                     </div>
                   </div>
                   <MaterialTable
@@ -1009,7 +1014,11 @@ const Dashboard = () => {
                       padding: 'dense',
                       maxBodyHeight: 420,
                     }}
-                    onRowClick={(e, rowData) => navigate(`/client/${rowData.id}`)}
+                    onRowClick={(e, rowData) => {
+                      // Opening a client is the edit screen — only for users who can update clients.
+                      if (hasModule(MODULES.UpdateClient)) navigate(`/client/${rowData.id}`)
+                      else toast.info('You have view-only access to clients.', { theme: 'colored' })
+                    }}
                     data={branches}
                     title=""
                   />
