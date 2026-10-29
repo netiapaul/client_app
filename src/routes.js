@@ -8,6 +8,7 @@ const UpdateClient = React.lazy(() => import('./views/clients/updateClient'))
 const Users = React.lazy(() => import('./views/users/users'))
 const Branches = React.lazy(() => import('./views/branches/branches'))
 const Servers = React.lazy(() => import('./views/servers/servers'))
+const Analytics = React.lazy(() => import('./views/analytics/analytics'))
 const Locations = React.lazy(() => import('./views/locations/locations'))
 const Emails = React.lazy(() => import('./views/emails/emails'))
 const UserLogs = React.lazy(() => import('./views/logs/userLogs'))
@@ -59,6 +60,13 @@ const routes = [
     path: '/servers',
     name: 'Servers',
     element: Servers,
+    exact: true,
+    module: MODULES.ManageServers,
+  },
+  {
+    path: '/analytics',
+    name: 'Analytics',
+    element: Analytics,
     exact: true,
     module: MODULES.ManageServers,
   },

@@ -7,6 +7,13 @@ import { hasModule } from '../utils/session'
 
 // Hide any item (or child) the user lacks the module for. Items without a `module` are always shown.
 const allowed = (item) => !item.module || hasModule(item.module)
+const isTitle = (item) => !item.to && !item.items
+
+// Drop section titles whose section ends up empty after permission filtering.
+const visibleItems = (items) =>
+  items
+    .filter(allowed)
+    .filter((item, i, list) => !isTitle(item) || (list[i + 1] && !isTitle(list[i + 1])))
 
 export const AppSidebarNav = ({ items }) => {
   const location = useLocation()
@@ -62,9 +69,9 @@ export const AppSidebarNav = ({ items }) => {
   return (
     <React.Fragment>
       {items &&
-        items
-          .filter(allowed)
-          .map((item, index) => (item.items ? navGroup(item, index) : navItem(item, index)))}
+        visibleItems(items).map((item, index) =>
+          item.items ? navGroup(item, index) : navItem(item, index),
+        )}
     </React.Fragment>
   )
 }

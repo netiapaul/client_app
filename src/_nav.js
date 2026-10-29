@@ -1,23 +1,58 @@
 import React from 'react'
-import { CNavItem } from '@coreui/react'
+import { CNavItem, CNavTitle } from '@coreui/react'
 import { MODULES } from './utils/permissions'
 
 // Each item carries the module code required to see it. AppSidebarNav hides items the user
 // lacks. Items with no `module` are always shown. (Admins receive every module code at login.)
+// CNavTitle entries are section headings; a heading is hidden when none of its items are visible.
 const _nav = [
   {
+    component: CNavTitle,
+    name: 'Clients',
+  },
+  {
     component: CNavItem,
-    name: 'Lincenses',
+    name: 'Licenses',
     to: '/dashboard',
     module: MODULES.ViewClients,
     icon: <span className="material-icons nav-icon">home</span>,
   },
   {
     component: CNavItem,
+    name: 'Approvals',
+    to: '/approvals',
+    module: MODULES.ViewApprovals,
+    icon: <span className="material-icons nav-icon">verified</span>,
+  },
+  {
+    component: CNavItem,
     name: 'Client Access Modules',
     to: '/client/access-modules',
     module: MODULES.ManageClientModules,
-    icon: <span className="material-icons nav-icon">manage_accounts</span>,
+    icon: <span className="material-icons nav-icon">extension</span>,
+  },
+  {
+    component: CNavTitle,
+    name: 'Infrastructure',
+  },
+  {
+    component: CNavItem,
+    name: 'Servers',
+    to: '/servers',
+    module: MODULES.ManageServers,
+    icon: <span className="material-icons nav-icon">dns</span>,
+  },
+  {
+    component: CNavItem,
+    name: 'Analytics',
+    to: '/analytics',
+    module: MODULES.ManageServers,
+    icon: <span className="material-icons nav-icon">insights</span>,
+    badge: { color: 'info', text: 'NEW' },
+  },
+  {
+    component: CNavTitle,
+    name: 'Users & Security',
   },
   {
     component: CNavItem,
@@ -36,17 +71,14 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Servers',
-    to: '/servers',
-    module: MODULES.ManageServers,
-    icon: <span className="material-icons nav-icon">dns</span>,
+    name: 'User Logs',
+    to: '/user-logs',
+    module: MODULES.ViewUserLogs,
+    icon: <span className="material-icons nav-icon">history</span>,
   },
   {
-    component: CNavItem,
-    name: 'Locations',
-    to: '/locations',
-    module: MODULES.ManageLocations,
-    icon: <span className="material-icons nav-icon">place</span>,
+    component: CNavTitle,
+    name: 'Settings',
   },
   {
     component: CNavItem,
@@ -57,17 +89,10 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'User Logs',
-    to: '/user-logs',
-    module: MODULES.ViewUserLogs,
-    icon: <span className="material-icons nav-icon">history</span>,
-  },
-  {
-    component: CNavItem,
-    name: 'Approvals',
-    to: '/approvals',
-    module: MODULES.ViewApprovals,
-    icon: <span className="material-icons nav-icon">verified</span>,
+    name: 'Locations',
+    to: '/locations',
+    module: MODULES.ManageLocations,
+    icon: <span className="material-icons nav-icon">place</span>,
   },
 ]
 

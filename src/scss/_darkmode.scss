@@ -605,6 +605,17 @@ html.theme-dark {
     border-top-color: $dk-border;
   }
 
+  // Server analytics page (.an-* in _custom.scss): every surface reads these tokens.
+  .an-page {
+    --an-surface: #{$dk-surface};
+    --an-surface-2: #{$dk-surface-2};
+    --an-border: #{$dk-border};
+    --an-text: #{$dk-text};
+    --an-muted: #{$dk-muted};
+    --an-track: #{$dk-surface-3};
+    --an-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  }
+
   // Email status summary tiles (.email-stat in _custom.scss). The accent (left bar, icon colour,
   // progress fill) comes from --accent and reads fine on dark; only the light surfaces/text need
   // re-theming here.

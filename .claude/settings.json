@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npx eslint src/views/analytics/analytics.js; npx sass --load-path=node_modules src/scss/style.scss $env:TEMP\\\\an-test.css --no-source-map 2>&1 | Select-Object -Last 15; Select-String -Path $env:TEMP\\\\an-test.css -Pattern \"@property|an-kpi__icon\" | Select-Object -First 3)"
+    ]
+  }
+}
