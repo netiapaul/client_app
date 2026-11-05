@@ -76,6 +76,29 @@ input:checked {
   font-size: 10px !important
 }
 
+// CoreUI gives .form-control-sm a min-height but gives .form-select-sm none, so an input and a
+// select sitting side by side are not the same height. It usually passes unnoticed, but this app
+// forces both to 10px and a <select> will not shrink its internal line box the way an <input>
+// does — so the two drift apart. Same formula as .form-control-sm, so they resolve identically.
+.form-select-sm {
+  min-height: calc(1.5em + 0.5rem + calc(var(--cui-border-width) * 2));
+}
+
+/**** Side-by-side filter controls ****
+ * Matching min-heights still leaves a <select> and an <input> a pixel or two apart, because the
+ * browser lays out a select's internal text box itself and ignores the line-height an input obeys.
+ * For controls that sit next to each other and must read as one row, stop negotiating: fix the
+ * box height outright and vertically centre the text in it. Applies to both element types, so
+ * whatever the browser would have chosen is overridden identically.
+ */
+.filter-control {
+  height: 26px !important;
+  min-height: 26px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 24px !important;
+}
+
 .auth-input,
 .auth-input-lg {
   font-size: 12px !important;
@@ -520,6 +543,136 @@ input:checked {
 
   .icon {
     color: $sidebar-color;
+  }
+}
+
+/**** Pager ****
+ * Matches the pagination MaterialTable renders on the Licences listing — "N rows" selector, then
+ * first / prev / range / next / last — so a server-paged screen reads the same as a client-paged
+ * one. Borderless and quiet by default, picking up the phAMACore accent on hover.
+ */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.pager-btn {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 2px 6px !important;
+  line-height: 1;
+  color: #6c757d !important;
+  box-shadow: none !important;
+  transition: color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: $phAMACore-color !important;
+  }
+
+  // Flat grey rather than Bootstrap's 0.65 opacity, so "can't go further" reads as a state
+  // instead of a washed-out active control.
+  &:disabled {
+    opacity: 1;
+    color: #d3d7dd !important;
+  }
+}
+
+.pager-range {
+  font-size: 11px;
+  color: #6c757d;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.pager-size {
+  font-size: 11px !important;
+  width: auto;
+  padding: 2px 26px 2px 6px !important;
+  // Opt out of the .form-select-sm floor above — this one is a borderless inline control, not a
+  // form field that has to line up with an input.
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #6c757d !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+
+  &:focus {
+    color: $phAMACore-color !important;
+  }
+}
+
+// .filter-btn had no hover state at all, which is most of why these controls felt flat.
+.filter-btn:hover:not(:disabled) {
+  background-color: $phAMACore-color !important;
+  color: #fff !important;
+}
+
+/**** "How this works" hint ****
+ * A help panel that starts hidden still has to be discoverable. The button pulses a few times on
+ * arrival and then stops — enough to catch the eye without becoming permanent visual noise.
+ */
+@keyframes guide-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba($phAMACore-color, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba($phAMACore-color, 0);
+  }
+}
+
+.guide-hint {
+  animation: guide-pulse 1.4s ease-out 6;
+}
+
+// Honour a user's motion preference — a pulsing control is exactly what this setting is for.
+@media (prefers-reduced-motion: reduce) {
+  .guide-hint {
+    animation: none;
+    outline: 1px dashed $phAMACore-color;
+  }
+}
+
+/**** Tabs (Update Client: Company Level / Branch Level) ****
+ * CoreUI styles .nav-tabs .nav-link with the default primary BLUE, which outranks the plain
+ * .nav-link rule above (two classes vs one). These rules put the tabs back on the phAMACore
+ * accent and give the titles the weight they need to read as section headings.
+ */
+.nav-tabs {
+  border-bottom: 1px solid rgba($phAMACore-color, 0.4);
+
+  .nav-link {
+    color: #6c757d; // neutral grey for the inactive tab — never the default blue
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: 0;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+
+    // The sidebar's orange corner wedge is a navigation affordance; on a tab it reads as a
+    // stray clipped triangle, and the active border/colour already carry the state.
+    &::before,
+    &:hover::before {
+      content: none !important;
+    }
+
+    &:hover,
+    &:focus {
+      color: $phAMACore-color;
+      border-color: transparent;
+    }
+
+    &.active {
+      color: $phAMACore-color;
+      font-weight: 700;
+      background-color: #fff;
+      border-color: rgba($phAMACore-color, 0.4);
+      border-bottom-color: #fff; // sit the active tab on top of the strip
+    }
   }
 }
 

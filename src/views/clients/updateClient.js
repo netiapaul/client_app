@@ -3,12 +3,15 @@ import { getToken } from '../../utils/session'
 import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
+// CoreUI's icon set — the `fa fa-*` classes used elsewhere in this app render nothing, as
+// Font Awesome is neither installed nor linked.
+import CIcon from '@coreui/icons-react'
+import { cilCalendar, cilTrash, cilWarning } from '@coreui/icons'
 // import MaterialTable from 'material-table'
 // import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
 import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
-import Chip from '@mui/material/Chip'
 import SearchableSelect from '../../components/SearchableSelect'
 import { toast } from 'react-toastify'
 import { useBreadcrumbLabel } from '../../context/BreadcrumbContext'
@@ -32,10 +35,29 @@ const UpdateClient = () => {
   const [psBedCountModal, setPsBedCountModal] = useState(false)
   const [psGLModal, setPsGLModal] = useState(false)
   const [addOnsModal, setAddOnsModal] = useState(false)
+  // Add-on grants live per branch, so each change picks a scope. Expiry is optional — blank never lapses.
+  const [addOnScope, setAddOnScope] = useState('all')
+  const [addOnExpiry, setAddOnExpiry] = useState(null)
+  // One size for every per-add-on action button, so they align down the column however long the
+  // label is. minWidth rather than width: the icon + text still sets the floor on narrow screens.
+  const addOnActionStyle = { fontSize: 10, minWidth: 84 }
+  // Expiry editor for an add-on already granted: null when closed, otherwise the coverage row being
+  // extended. Days and date are two ways to express the same change — see onExtendDays.
+  const [expiryEdit, setExpiryEdit] = useState(null)
+  const [extendDays, setExtendDays] = useState('')
+  const [extendDate, setExtendDate] = useState(null)
+  const [extendScope, setExtendScope] = useState('all')
+  // Branch-level Is Active/Archived are edited together in their own modal, matching how every other
+  // field group on this screen works: read-only inline, "Change" opens the editor. The company-level
+  // pair lives in the Update Serial No modal, beside the expiry it is set with.
+  const [branchStatusModal, setBranchStatusModal] = useState(false)
+  const [branchStatusForm, setBranchStatusForm] = useState({ isActive: false, archived: false })
   // const [cloudModules, setCloudModules] = useState([])
   // const [modulesSelected, setModulesSelected] = useState([])
   const [packages, setPackages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+  // Company level changes every branch of the client; branch level changes only this one row.
+  const [activeTab, setActiveTab] = useState('company')
   const [data, setData] = useState({
     error: '',
     psCusCode: '',
@@ -51,6 +73,7 @@ const UpdateClient = () => {
     psStockTakeStartDate: '',
     stockTakeEndDate: '',
     addons: [],
+    addOnCoverage: [],
     moduleAccess: [],
     psBranchCount: '',
     psUserCount: '',
@@ -63,6 +86,12 @@ const UpdateClient = () => {
     packageCode: '',
     packageName: '',
     totalUsers: 0,
+    // Rollups across every branch (not this row's own flags) — see GetClientDetailsVM.
+    companyArchived: false,
+    companyActive: false,
+    branchCount: 0,
+    // This branch's own flags.
+    archived: false,
   })
   const [editFormData, setEditFormData] = useState({
     /*** Change Details ***/
@@ -77,6 +106,7 @@ const UpdateClient = () => {
     psBedCount: '',
     psGL: false,
     isActive: false,
+    archived: false,
     applyToAllBranches: false,
     /*3*/
     queryUserCount: '',
@@ -92,9 +122,7 @@ const UpdateClient = () => {
     selectedAdons: '',
     packageCode: '',
   })
-  const [customers, setCustomers] = useState([])
   const [serialNo, setSerialNo] = useState([])
-  const [customerMembers, setCustomerMembers] = useState([])
   const [addOns, setAddOns] = useState([])
   // Region -> County -> Town location picker for this branch.
   const [regionOpts, setRegionOpts] = useState([])
@@ -141,6 +169,8 @@ const UpdateClient = () => {
           psStockTakeStartDate: result?.clientDetails.psStockTakeStartDate,
           stockTakeEndDate: result?.clientDetails.stockTakeEndDate,
           addons: result?.clientAddOn,
+          // One entry per add-on with branch coverage + expiry (grants are stored per branch).
+          addOnCoverage: result?.addOnCoverage ?? [],
           moduleAccess: result?.moduleAccess,
           psPickCpu: result?.clientDetails.psPickCPU,
           psPickBios: result?.clientDetails.psPickBios,
@@ -150,6 +180,10 @@ const UpdateClient = () => {
           pickDate: result?.clientDetails.pickDate,
           packageCode: result?.clientDetails.packageCode,
           packageName: result?.clientDetails.packageName,
+          companyArchived: result?.companyArchived === true,
+          companyActive: result?.companyActive === true,
+          branchCount: result?.branchCount ?? 0,
+          archived: result?.clientDetails?.archived === true,
         })
         setEditFormData({
           ...editFormData,
@@ -166,7 +200,11 @@ const UpdateClient = () => {
               ? ''
               : // : moment(result?.clientDetails?.psActivateExpiryDate).format('DD/MM/YYYY'),
                 new Date(result?.clientDetails?.psActivateExpiryDate),
-          isActive: result?.clientDetails.psActivated === '1' ? true : false,
+          // The Serial/Expiry modal is company level, so seed its Is Active and Archived from the
+          // company rollups rather than the opened branch — otherwise they read "active"/"archived"
+          // while other branches differ.
+          isActive: result?.companyActive === true,
+          archived: result?.companyArchived === true,
           queryStockTakeStartDate:
             result.clientDetails.psStockTakeStartDate === '' ||
             result.clientDetails.psStockTakeStartDate === null
@@ -178,16 +216,11 @@ const UpdateClient = () => {
               ? ''
               : new Date(result?.clientDetails?.stockTakeEndDate),
           queryUserCount: result?.clientDetails?.psUserCount,
-          //       selectedList.forEach((item) => {
-          //   data.push(item.addonId)
-          // })
-          // {editFormData.AddOnsArray: result?.clientAddOn.forEach((item) => {
-          //   data.push(item.addonId)
-          // }),
-          AddOnsArray: result?.clientAddOn?.filter((item) => item !== null).map((item) => item),
-          selectedAdons: result?.clientAddOn
-            ?.filter((item) => item !== null)
-            .map((item) => item.addonId),
+          // The add-on picker starts EMPTY and is only for what you're granting now. Pre-selecting
+          // what the client already holds would make the default Edit re-grant everything, silently
+          // overwriting each existing expiry with whatever is in the date box.
+          AddOnsArray: [],
+          selectedAdons: [],
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
           queryBranchCount: result?.clientDetails.psBranchCount,
         })
@@ -315,37 +348,6 @@ const UpdateClient = () => {
       setTimeout(() => setError(''), 10000)
     }
   }
-  const getCustomers = async () => {
-    setIsLoading(true)
-    setError('')
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomers`,
-        {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
-          headers: {
-            Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        },
-      )
-      if (response.ok) {
-        const result = await response.json()
-        setCustomers(result)
-        setError(result.message)
-        setIsLoading(false)
-      } else {
-        await response.json()
-        setIsLoading(false)
-      }
-    } catch (error) {
-      setIsLoading(false)
-    } finally {
-      setTimeout(() => setError(''), 10000)
-    }
-  }
   const GetSerialNumbers = async () => {
     setIsLoading(true)
     setError('')
@@ -430,63 +432,113 @@ const UpdateClient = () => {
       setTimeout(() => setError(''), 10000)
     }
   }
-  const getCustomerMembers = async (query) => {
+  // Every gated endpoint answers in one of four ways: queued for approval, applied but the client
+  // database couldn't be reached (warning), applied with nothing to do (unchanged), or applied.
+  // Returns true when the change was actually applied, so callers know whether to close and reload.
+  const handleGatedResponse = (body) => {
+    if (body?.pendingApproval) {
+      toast.info(body.message || 'Submitted for approval — approvers have been notified.', {
+        position: toast.POSITION.BOTTOM_LEFT,
+        theme: 'colored',
+        autoClose: 8000,
+      })
+      return false
+    }
+    if (body?.unchanged) {
+      toast.info(body.message || 'Nothing changed.', { theme: 'colored', autoClose: 5000 })
+      return false
+    }
+    // The central write succeeded; only the mirror into the client database failed. Surfaced as a
+    // warning rather than an error so the operator knows to retry the push, not the edit.
+    if (body?.warning) {
+      toast.warning(body.warning, { theme: 'colored', autoClose: 12000 })
+    }
+    return true
+  }
+
+  // One PUT, shared by the simple query-string toggles (archive / branch activation).
+  // reload is skipped when the caller fires more than one of these and wants a single refresh.
+  const putToggle = async (path, params, { reload = true } = {}) => {
     setIsLoading(true)
+    setError('')
     try {
+      const qs = new URLSearchParams({
+        id,
+        cpu: data.psPickCpu ?? '',
+        bios: data.psPickBios ?? '',
+        hdd: data.psPickHdd ?? '',
+        ...params,
+      })
       const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetCustomerMembers?cusCode=${query}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/${path}?${qs.toString()}`,
         {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
         },
       )
-      if (response.ok) {
-        const result = await response.json()
-        setCustomerMembers(result)
-        setError(result.message)
-        setIsLoading(false)
-      } else {
-        await response.json()
-        setIsLoading(false)
+      const body = await response.json()
+      if (!response.ok) {
+        setError(body?.message || 'The change could not be applied.')
+        return { ok: false, applied: false }
       }
-    } catch (error) {
-      setIsLoading(false)
+      // ok but not applied is the normal "queued for approval" case — not a failure.
+      const applied = handleGatedResponse(body)
+      if (applied && reload) GetClientDetails(id)
+      return { ok: true, applied }
+    } catch (err) {
+      setError(err?.message || 'The change could not be applied.')
+      return { ok: false, applied: false }
     } finally {
+      setIsLoading(false)
       setTimeout(() => setError(''), 10000)
     }
   }
-  //
-  const handleAccounthange = (e) => {
-    setEditFormData({
-      ...editFormData,
-      queryAcctCode: e.target.value,
-      queryAcctName: customers.filter((customer) => customer.cusCode === e.target.value)[0]
-        ?.cusName,
-    })
-    if (e.target.value !== '' || e.target.value !== null) {
-      getCustomerMembers(e.target.value)
-    } else {
-      return false
+
+  // Branch level — Is Active and Archived are separate endpoints, so only the ones that actually
+  // changed are sent, and the screen is refreshed once at the end rather than after each. A failed
+  // call aborts the rest: the second request would almost certainly fail the same way and its error
+  // would overwrite the first one's message.
+  const SaveBranchStatus = async (e) => {
+    e.preventDefault()
+    const activeChanged = branchStatusForm.isActive !== data.psActivated
+    const archivedChanged = branchStatusForm.archived !== data.archived
+    if (!activeChanged && !archivedChanged) {
+      toast.info('Nothing changed.', { theme: 'colored', autoClose: 5000 })
+      return
     }
+    if (activeChanged) {
+      const r = await putToggle(
+        'UpdateBranchActive',
+        { isActive: String(branchStatusForm.isActive) },
+        { reload: false },
+      )
+      if (!r.ok) {
+        GetClientDetails(id)
+        return
+      }
+    }
+    if (archivedChanged) {
+      const r = await putToggle(
+        'UpdateBranchArchived',
+        { archived: String(branchStatusForm.archived) },
+        { reload: false },
+      )
+      if (!r.ok) {
+        GetClientDetails(id)
+        return
+      }
+    }
+    setBranchStatusModal(false)
+    GetClientDetails(id)
   }
-  const handleBranchChange = (e) => {
-    setEditFormData({
-      ...editFormData,
-      queryBranchCode: e.target.value,
-      queryBranchName: customerMembers.filter(
-        (customerMember) => customerMember.branchCode === e.target.value,
-      )[0]?.branchName,
-    })
-    // SetBcode(
-    //   customerMembers.filter((customerMember) => customerMember.branchCode === data.branchCode)[0]
-    //     ?.bcode,
-    // )
-  }
+
+  // Company level — the name is applied to every branch and mirrored to the client database's
+  // SYSDEFAULTS plus both PhamacoreWeb company records. The server skips all of that when the name
+  // hasn't actually changed. Only the name is editable: the account and branch codes are join keys.
   const UpdateClientDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -503,35 +555,27 @@ const UpdateClient = () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            cusCode: editFormData.queryAcctCode,
             companyName: editFormData.queryAcctName,
-            branchCode: editFormData.queryBranchCode,
-            branchName: editFormData.queryBranchName,
           }),
         },
       )
-      if (response.ok) {
-        await response.json()
-        setClientModal(false)
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          queryAcctCode: '',
-          queryAcctName: '',
-          queryBranchCode: '',
-          queryBranchName: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setClientModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
   }
+  // Serial / expiry / Is Active go together in one request; Archived is its own endpoint, so it is
+  // sent separately and only when it actually changed. Both are company level.
   const UpdateSerialsDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -559,32 +603,36 @@ const UpdateClient = () => {
           }),
         },
       )
-      if (response.ok) {
-        const body = await response.json()
-        // Gated by approval: the change wasn't applied — it's awaiting an approver.
-        if (body?.pendingApproval) {
-          setSerialModal(false)
+      const body = await response.json()
+      if (!response.ok) {
+        setIsLoading(false)
+        setError(body.message)
+        return
+      }
+      const serialApplied = handleGatedResponse(body)
+
+      // Archive change, if any. Skipped on a failure rather than stacking a second error message.
+      if (editFormData.archived !== data.companyArchived) {
+        const r = await putToggle(
+          'UpdateCompanyArchived',
+          { archived: String(editFormData.archived) },
+          { reload: false },
+        )
+        if (!r.ok) {
           setIsLoading(false)
-          toast.info(body.message || 'Submitted for approval — approvers have been notified.', {
-            position: toast.POSITION.BOTTOM_LEFT,
-            theme: 'colored',
-            autoClose: 8000,
-          })
+          GetClientDetails(id)
           return
         }
-        setSerialModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
-        setIsLoading(false)
-        setEditFormData({
-          ...editFormData,
-          queryDays: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
       }
+
+      setSerialModal(false)
+      setIsLoading(false)
+      setEditFormData({
+        ...editFormData,
+        queryDays: '',
+      })
+      // Reload when anything landed, or when the archive leg ran, so the screen matches the server.
+      if (serialApplied || editFormData.archived !== data.companyArchived) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -613,18 +661,17 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        setSerialModal(false)
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setTempDays('')
-        setTempDate(null)
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setSerialModal(false)
+      setIsLoading(false)
+      setTempDays('')
+      setTempDate(null)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -652,20 +699,15 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        setUserCALSModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          queryUserCount: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setUserCALSModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -693,20 +735,15 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        setBranchCALSModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          queryBranchCount: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setBranchCALSModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -734,20 +771,15 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        setPsBedCountModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          psBedCount: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setPsBedCountModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -771,20 +803,15 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        setPsGLModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          psGL: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setPsGLModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -813,35 +840,46 @@ const UpdateClient = () => {
           }),
         },
       )
-      if (response.ok) {
-        await response.json()
-        setStockTakeCALSModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          queryStockTakeCals: '',
-          queryStockTakeStartDate: '',
-          queryStockTakeEndDate: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setStockTakeCALSModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
   }
+  // Grants are stored per branch, so the scope choice is real: all branches, or just this one.
+  // A blank expiry means the add-on never lapses. Re-granting one a branch already holds just moves
+  // its expiry, which is how a lapsed add-on is renewed.
   const UpdateAddsOn = async (e) => {
     e.preventDefault()
+    const ids = editFormData.selectedAdons
+    if (!ids || ids.length === 0) {
+      setError('Select at least one add-on')
+      setTimeout(() => setError(''), 6000)
+      return
+    }
     setIsLoading(true)
     setError('')
     try {
+      const qs = new URLSearchParams({
+        id,
+        cpu: data.psPickCpu ?? '',
+        bios: data.psPickBios ?? '',
+        hdd: data.psPickHdd ?? '',
+        allBranches: String(addOnScope === 'all'),
+      })
+      if (addOnExpiry) qs.set('expiryDate', moment(addOnExpiry).format('DD/MM/YYYY'))
+
       const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateAddsOn?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateAddsOn?${qs.toString()}`,
         {
           method: 'PUT', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -852,28 +890,19 @@ const UpdateClient = () => {
           body: JSON.stringify({
             psCusCode: data.psCusCode,
             branchCode: data.branchCode,
-            addonId: editFormData.selectedAdons,
-            // addonId: editFormData?.selectedAdons?.split(',').filter(function (entry) {
-            //   return entry.trim() !== ''
-            // }),
+            addonId: ids,
           }),
         },
       )
-      if (response.ok) {
-        await response.json()
-        setAddOnsModal(false)
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setEditFormData({
-          ...editFormData,
-          AddOnsArray: [],
-          selectedAdons: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setAddOnsModal(false)
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -896,32 +925,127 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        setIsClientModal(false)
-        setEditFormData({
-          ...editFormData,
-          packageCode: '',
-        })
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setIsLoading(false)
+      setIsClientModal(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
       setTimeout(() => setError(''), 10000)
     }
   }
-  const DeleteAddsOn = async (addonId) => {
+  // --- Extending an add-on already granted ---
+
+  // The baseline a days-extension counts from: the add-on's own expiry while it is still running,
+  // otherwise today. Extending a lapsed add-on by 30 days therefore buys 30 usable days rather than
+  // landing on a date still in the past, and one with time left keeps its remainder. Mirrors exactly
+  // what the server does per grant row.
+  const extendBaseline = (row) => {
+    const current = row?.expiryDate ?? row?.earliestExpiry
+    if (!current) return moment().startOf('day')
+    const m = moment(current).startOf('day')
+    return m.isAfter(moment().startOf('day')) ? m : moment().startOf('day')
+  }
+
+  const openExpiryEdit = (row) => {
+    setExpiryEdit(row)
+    setExtendDays('')
+    setExtendDate(row?.expiryDate ? new Date(row.expiryDate) : null)
+    // Default the scope to however the add-on is currently held.
+    setExtendScope(row?.allBranches ? 'all' : 'branch')
+  }
+
+  // Days -> date. Shown as a preview; when the add-on has mixed expiries across branches the days
+  // value is what gets sent, so each branch moves forward from its own date.
+  const onExtendDays = (e) => {
+    const value = e.target.value
+    setExtendDays(value)
+    setExtendDate(value ? extendBaseline(expiryEdit).add(Number(value), 'days').toDate() : null)
+  }
+
+  // Date -> days, counted from the same baseline so the two boxes agree.
+  const onExtendDate = (date) => {
+    setExtendDate(date)
+    setExtendDays(
+      date ? String(moment(date).startOf('day').diff(extendBaseline(expiryEdit), 'days')) : '',
+    )
+  }
+
+  const SaveAddOnExpiry = async (e) => {
+    e.preventDefault()
+    if (!expiryEdit) return
+    const days = Number(extendDays)
+    if (!extendDate && !(days > 0)) {
+      setError('Enter a new expiry date or a number of days.')
+      setTimeout(() => setError(''), 6000)
+      return
+    }
     setIsLoading(true)
     setError('')
     try {
+      const qs = new URLSearchParams({
+        id,
+        cpu: data.psPickCpu ?? '',
+        bios: data.psPickBios ?? '',
+        hdd: data.psPickHdd ?? '',
+        addonId: expiryEdit.addonId,
+        allBranches: String(extendScope === 'all'),
+      })
+      // Mixed expiries only stay staggered if the server does the arithmetic per row, so send days
+      // when they were entered and fall back to the absolute date otherwise.
+      if (days > 0 && expiryEdit.mixedExpiry) qs.set('days', String(days))
+      else if (extendDate) qs.set('expiryDate', moment(extendDate).format('DD/MM/YYYY'))
+      else qs.set('days', String(days))
+
       const response = await fetch(
-        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/RemoveAddons?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&cusCode=${data.psCusCode}&branchCode=${data.branchCode}&addonId=${addonId}`,
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateAddOnExpiry?${qs.toString()}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      const body = await response.json()
+      if (!response.ok) {
+        setError(body?.message || 'The expiry could not be changed.')
+        return
+      }
+      setExpiryEdit(null)
+      if (handleGatedResponse(body)) GetClientDetails(id)
+    } catch (err) {
+      setError(err?.message || 'The expiry could not be changed.')
+    } finally {
+      setIsLoading(false)
+      setTimeout(() => setError(''), 10000)
+    }
+  }
+
+  // Removal is scoped the same way granting is — all branches, or only this one.
+  const DeleteAddsOn = async (addonId, allBranches) => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const qs = new URLSearchParams({
+        id,
+        cpu: data.psPickCpu ?? '',
+        bios: data.psPickBios ?? '',
+        hdd: data.psPickHdd ?? '',
+        cusCode: data.psCusCode ?? '',
+        branchCode: data.branchCode ?? '',
+        addonId,
+        allBranches: String(allBranches),
+      })
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/RemoveAddons?${qs.toString()}`,
         {
           method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
           headers: {
@@ -932,17 +1056,14 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        // setAddOnsModal(false)
-        // setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        GetClientDetails(id)
-      } else {
-        const result = await response.json()
-        setIsLoading(false)
-        setError(result.message)
+        setError(body.message)
+        return
       }
+      setIsLoading(false)
+      if (handleGatedResponse(body)) GetClientDetails(id)
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -965,15 +1086,15 @@ const UpdateClient = () => {
           },
         },
       )
-      if (response.ok) {
-        await response.json()
-        setData({ ...data, editModal: false, editModalInterface: 0 })
+      const body = await response.json()
+      if (!response.ok) {
         setIsLoading(false)
-        navigate('/dashboard')
-      } else {
-        await response.json()
-        setIsLoading(false)
+        setError(body.message)
+        return
       }
+      setIsLoading(false)
+      // Finalize is gated too: only leave the screen once it has actually been applied.
+      if (handleGatedResponse(body)) navigate('/dashboard')
     } catch (error) {
       setIsLoading(false)
     } finally {
@@ -1056,32 +1177,14 @@ const UpdateClient = () => {
     )
   }
 
-  const OnAddOnSelect = (selectedList, selectedItem) => {
-    let data = []
-    selectedList.forEach((item) => {
-      data.push(item.addonId)
-    })
-
+  // Select and de-select must both leave selectedAdons as an ARRAY of ids — the grant endpoint binds
+  // a string[]. (De-select used to join it into a comma string, which broke the next submit.)
+  const onAddOnPick = (selectedList) =>
     setEditFormData({
       ...editFormData,
       AddOnsArray: selectedList,
-      selectedAdons: data,
-      // selectedAdons: data.join(','),
+      selectedAdons: selectedList.map((item) => item.addonId),
     })
-  }
-  const OnAddOnRemove = (selectedList, selectedItem) => {
-    let data = []
-    selectedList.forEach((item) => {
-      data.push(item.addonId)
-    })
-
-    setEditFormData({
-      ...editFormData,
-      AddOnsArray: selectedList,
-      selectedAdons: data.join(','),
-    })
-    // console.log(data)
-  }
 
   // const CloudModules = async () => {
   //   setIsLoading(true)
@@ -1126,7 +1229,6 @@ const UpdateClient = () => {
   // }
 
   useEffect(() => {
-    getCustomers()
     GetSerialNumbers()
     GetAddOns()
     GetPackages()
@@ -1198,131 +1300,134 @@ const UpdateClient = () => {
           <span> {error} </span>
         </div>
       )}
-      <div className="row g-2">
-        <div className="col-md">
-          <div className="card h-100 rounded-0">
-            <div className="card-body">
-              <div className="d-flex justify-content-between">
+      {/* Company level changes every branch of this client; Branch level changes only the branch
+          that was opened. Keeping them on separate tabs makes the blast radius of each edit explicit. */}
+      {/* Colour and weight come from .nav-tabs in _custom.scss (theme accent, not the default
+          blue). The scope suffix stays a size down so the title itself leads. */}
+      <ul className="nav nav-tabs" style={{ fontSize: '13px' }}>
+        <li className="nav-item">
+          <button
+            type="button"
+            className={`nav-link ${activeTab === 'company' ? 'active' : ''}`}
+            onClick={() => setActiveTab('company')}
+          >
+            Company Level
+            <span className="text-muted ms-1 fw-normal" style={{ fontSize: '11px' }}>
+              (all {data.branchCount || 0} branch{data.branchCount === 1 ? '' : 'es'})
+            </span>
+          </button>
+        </li>
+        <li className="nav-item">
+          <button
+            type="button"
+            className={`nav-link ${activeTab === 'branch' ? 'active' : ''}`}
+            onClick={() => setActiveTab('branch')}
+          >
+            Branch Level
+            <span className="text-muted ms-1 fw-normal" style={{ fontSize: '11px' }}>
+              ({data.psBranchName || data.branchCode || 'this branch'})
+            </span>
+          </button>
+        </li>
+      </ul>
+      <div className="row g-2 mt-0">
+        {activeTab === 'company' && (
+          <div className="col-md">
+            <div className="card h-100 rounded-0" style={{ borderTopLeftRadius: 0 }}>
+              <div className="card-body">
                 <div className="d-flex justify-content-between">
-                  <p className="mb-0 fw-bold align-self-end" style={{ fontSize: '11px' }}>
-                    Client Details
-                  </p>
-                </div>
+                  <div className="d-flex justify-content-between">
+                    <p className="mb-0 fw-bold align-self-end" style={{ fontSize: '11px' }}>
+                      Company Level — applies to every branch
+                    </p>
+                  </div>
 
-                <div className="d-flex">
-                  {/* <div className="vr fw-bold mx-2"></div> */}
-                  <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
-                    Status:{' '}
-                    <span className={data.psActivated ? 'text-success' : 'text-danger'}>
-                      {data.psActivated ? 'Active' : 'Not Active'}
-                    </span>
-                  </p>
+                  <div className="d-flex">
+                    {/* <div className="vr fw-bold mx-2"></div> */}
+                    <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
+                      Status:{' '}
+                      <span className={data.companyActive ? 'text-success' : 'text-danger'}>
+                        {data.companyActive ? 'All branches active' : 'Not all branches active'}
+                      </span>
+                      {data.companyArchived && <span className="text-danger ms-2">• Archived</span>}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <hr className="mt-1 mb-2" />
-              <form autoComplete="off">
-                <div className="row my-3">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Acct Name
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row">
-                      <div className="col pe-0">
-                        <input
-                          type="text"
-                          name="psCusCode"
-                          id="psCusCode"
-                          value={data.psCusCode}
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          disabled
-                          readOnly
-                        />
-                      </div>
-                      <div className="col-8 ps-0">
-                        <input
-                          type="text"
-                          name="psCompanyName"
-                          id="psCompanyName"
-                          value={data.psCompanyName}
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          disabled
-                          readOnly
-                        />
+                <hr className="mt-1 mb-2" />
+                <form autoComplete="off">
+                  <div className="row my-3">
+                    <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                      Acct Name
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="row">
+                        <div className="col pe-0">
+                          <input
+                            type="text"
+                            name="psCusCode"
+                            id="psCusCode"
+                            value={data.psCusCode}
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            disabled
+                            readOnly
+                          />
+                        </div>
+                        <div className="col-8 ps-0">
+                          <input
+                            type="text"
+                            name="psCompanyName"
+                            id="psCompanyName"
+                            value={data.psCompanyName}
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            disabled
+                            readOnly
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Branch
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row">
-                      <div className="col pe-0">
-                        <input
-                          type="text"
-                          name="branchCode"
-                          id="branchCode"
-                          value={data.branchCode}
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          disabled
-                          readOnly
-                        />
-                      </div>
-                      <div className="col-8 ps-0">
-                        <input
-                          type="text"
-                          name="psBranchName"
-                          id="psBranchName"
-                          value={data.psBranchName}
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          readOnly
-                          disabled
-                        />
-                      </div>
-                    </div>
+                  {/* The branch code/name belong to the Branch Level tab — a company-level edit must not
+                    look like it is scoped to whichever branch happened to be opened. */}
+                  <div className="d-flex justify-content-end">
+                    <p
+                      className="my-1 fw-bold"
+                      role="button"
+                      style={{ fontSize: '10px', color: '#c58c4f' }}
+                      onClick={() => setClientModal(true)}
+                      // onClick={() => setData({ ...data, editModal: true, editModalInterface: 1 })}
+                    >
+                      Change
+                    </p>
                   </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setClientModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 1 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Client Modules
-                  </label>
-                  <div className="col-md">
-                    <span className="d-flex flex-row gap-5 text-center">
-                      {packages
-                        ?.filter((item) => item !== null)
-                        .map((module, index) => (
-                          <span className="form-check" key={index}>
-                            <input
-                              className="form-check-input"
-                              type="radio"
-                              name="clientType"
-                              id="desktop"
-                              value={module.packageNum}
-                              // packageCode
-                              // packageName
-                              checked={module.packageNum === data.packageCode}
-                              onChange={() => {}}
-                              disabled
-                            />
-                            <label className="form-check-label" htmlFor="desktop">
-                              {module.description}
-                            </label>
-                          </span>
-                        ))}
-                      {/* <span className="form-check">
+                  <hr className="mb-3 mt-1" />
+                  <div className="row mb-1">
+                    <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                      Client Modules
+                    </label>
+                    <div className="col-md">
+                      <span className="d-flex flex-row gap-5 text-center">
+                        {packages
+                          ?.filter((item) => item !== null)
+                          .map((module, index) => (
+                            <span className="form-check" key={index}>
+                              <input
+                                className="form-check-input"
+                                type="radio"
+                                name="clientType"
+                                id="desktop"
+                                value={module.packageNum}
+                                // packageCode
+                                // packageName
+                                checked={module.packageNum === data.packageCode}
+                                onChange={() => {}}
+                                disabled
+                              />
+                              <label className="form-check-label" htmlFor="desktop">
+                                {module.description}
+                              </label>
+                            </span>
+                          ))}
+                        {/* <span className="form-check">
                         <input
                           className="form-check-input"
                           type="radio"
@@ -1364,79 +1469,113 @@ const UpdateClient = () => {
                           Professional
                         </label>
                       </span> */}
-                    </span>
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setIsClientModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-3">
-                  <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
-                    Serial No
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row">
-                      <div className="col-6">
-                        <input
-                          type="text"
-                          name="psSerialNo"
-                          id="psSerialNo"
-                          value={data.psSerialNo}
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          disabled
-                          // readOnly
-                        />
-                      </div>
-                      <div className="col-6">
-                        <div className="row">
-                          <label htmlFor="blocked" className="col-3 col-form-label">
-                            {/* Item Name */}
-                          </label>
-                          <div className="col ps-0">
-                            <div className="form-check">
-                              <input
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={data.psActivated}
-                                name="blocked"
-                                id="blocked"
-                                // disabled
-                                readOnly
-                              />
-                              <label
-                                className={
-                                  data.psActivated
-                                    ? 'form-check-label text-success fw-bold'
-                                    : 'form-check-label text-danger fw-bold'
-                                }
-                                htmlFor="blocked"
-                              >
-                                {data.psActivated ? 'Is Active' : 'Not Active'}
-                              </label>
+                  <div className="d-flex justify-content-end">
+                    <p
+                      className="my-1 fw-bold"
+                      role="button"
+                      style={{ fontSize: '10px', color: '#c58c4f' }}
+                      onClick={() => setIsClientModal(true)}
+                      // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
+                    >
+                      Change
+                    </p>
+                  </div>
+                  <hr className="mb-3 mt-1" />
+                  <div className="row mb-3">
+                    <label htmlFor="psSerialNo" className="col-md-3 col-form-label divider">
+                      Serial No
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="row">
+                        <div className="col-6">
+                          <input
+                            type="text"
+                            name="psSerialNo"
+                            id="psSerialNo"
+                            value={data.psSerialNo}
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            disabled
+                            // readOnly
+                          />
+                        </div>
+                        <div className="col-6">
+                          <div className="row">
+                            <label htmlFor="blocked" className="col-3 col-form-label">
+                              {/* Item Name */}
+                            </label>
+                            <div className="col ps-0">
+                              <div className="form-check">
+                                <input
+                                  className="form-check-input"
+                                  type="checkbox"
+                                  checked={data.companyActive}
+                                  name="blocked"
+                                  id="blocked"
+                                  // disabled
+                                  readOnly
+                                />
+                                <label
+                                  className={
+                                    data.companyActive
+                                      ? 'form-check-label text-success fw-bold'
+                                      : 'form-check-label text-danger fw-bold'
+                                  }
+                                  htmlFor="blocked"
+                                >
+                                  {data.companyActive ? 'Is Active' : 'Not Active'}
+                                </label>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Expiry Date
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row">
-                      <div className="col-6">
-                        {/* <DatePicker
+                  {/* Archive is independent of activation: an archived client is not deactivated, and a
+                    deactivated one is not archived. Company level sets it on every branch.
+                    Read-only here — edited in the Archived modal, like every other field group. */}
+                  <div className="row mb-1">
+                    <label
+                      htmlFor="companyArchivedView"
+                      className="col-md-3 col-form-label divider"
+                    >
+                      Archived
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={data.companyArchived}
+                          name="companyArchivedView"
+                          id="companyArchivedView"
+                          readOnly
+                          disabled
+                        />
+                        <label
+                          className={
+                            data.companyArchived
+                              ? 'form-check-label text-danger fw-bold'
+                              : 'form-check-label fw-bold'
+                          }
+                          htmlFor="companyArchivedView"
+                        >
+                          {data.companyArchived ? 'Archived' : 'Not Archived'}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="row mb-1">
+                    <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                      Expiry Date
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="row">
+                        <div className="col-6">
+                          {/* <DatePicker
                           className="form-control form-control-sm rounded-0"
                           selected={data.psActivateExpiryDate}
                           dateFormat="dd/MM/yyyy"
@@ -1449,172 +1588,121 @@ const UpdateClient = () => {
                           readOnly
                           disabled
                         /> */}
-                        <input
-                          type="text"
-                          name="psActivateExpiryDate"
-                          id="psActivateExpiryDate"
-                          // value={data.psActivateExpiryDate}
-                          value={
-                            !data.psActivateExpiryDate
-                              ? ''
-                              : moment(data.psActivateExpiryDate).format('DD/MM/YYYY')
-                          }
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          readOnly
-                          disabled
-                        />
-                      </div>
-                      <div className="col-6">
-                        <div className="row">
-                          <label htmlFor="branchCode" className="col-3 col-form-label divider">
-                            Days
-                          </label>
-                          <div className="col ps-0">
-                            <input
-                              type="text"
-                              name=""
-                              id=""
-                              className="form-control form-control-sm rounded-0 fw-medium"
-                              readOnly
-                              disabled
-                            />
+                          <input
+                            type="text"
+                            name="psActivateExpiryDate"
+                            id="psActivateExpiryDate"
+                            // value={data.psActivateExpiryDate}
+                            value={
+                              !data.psActivateExpiryDate
+                                ? ''
+                                : moment(data.psActivateExpiryDate).format('DD/MM/YYYY')
+                            }
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            readOnly
+                            disabled
+                          />
+                        </div>
+                        <div className="col-6">
+                          <div className="row">
+                            <label htmlFor="branchCode" className="col-3 col-form-label divider">
+                              Days
+                            </label>
+                            <div className="col ps-0">
+                              <input
+                                type="text"
+                                name=""
+                                id=""
+                                className="form-control form-control-sm rounded-0 fw-medium"
+                                readOnly
+                                disabled
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="row mb-1">
-                  <label htmlFor="regionId" className="col-md-3 col-form-label divider">
-                    Location
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row g-1">
-                      <div className="col-md-4">
-                        <SearchableSelect
-                          options={regionOpts}
-                          value={loc.regionId}
-                          onChange={(v) => onRegionChange(v)}
-                          getId={(o) => o.regionId}
-                          getLabel={(o) => o.name}
-                          placeholder="Search region…"
-                        />
-                      </div>
-                      <div className="col-md-4">
-                        <SearchableSelect
-                          options={countyOpts}
-                          value={loc.countyId}
-                          onChange={(v) => onCountyChange(v)}
-                          getId={(o) => o.countyId}
-                          getLabel={(o) => o.name}
-                          placeholder="Search county…"
-                          disabled={!loc.regionId}
-                        />
-                      </div>
-                      <div className="col-md-4">
-                        <SearchableSelect
-                          options={townOpts}
-                          value={loc.townId}
-                          onChange={(v) => setLoc((p) => ({ ...p, townId: v }))}
-                          getId={(o) => o.townId}
-                          getLabel={(o) => o.name}
-                          placeholder="Search town…"
-                          disabled={!loc.countyId}
-                        />
-                      </div>
-                    </div>
-                    <div className="d-flex align-items-center gap-2 mt-1">
-                      <button
-                        type="button"
-                        className="btn btn-sm add-btn rounded-0"
-                        onClick={saveLocation}
-                        disabled={locSaving || data.psCusCode === ''}
+                  {/* Location is per-branch — it lives on the Branch Level tab. */}
+                  <div className="d-flex justify-content-end">
+                    {data.psCusCode === '' || data.branchCode === '' ? (
+                      ''
+                    ) : (
+                      <p
+                        className="my-1 fw-bold"
+                        role="button"
+                        style={{ fontSize: '10px', color: '#c58c4f' }}
+                        disabled={!data.psCusCode || !data.branchCode}
+                        onClick={() => setSerialModal(true)}
                       >
-                        {locSaving ? 'Saving…' : 'Save Location'}
-                      </button>
-                      {locMsg && <span className="text-success">{locMsg}</span>}
-                    </div>
+                        Change
+                      </p>
+                    )}
                   </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  {data.psCusCode === '' || data.branchCode === '' ? (
-                    ''
-                  ) : (
-                    <p
-                      className="my-1 fw-bold"
-                      role="button"
-                      style={{ fontSize: '10px', color: '#c58c4f' }}
-                      disabled={!data.psCusCode || !data.branchCode}
-                      onClick={() => setSerialModal(true)}
-                    >
-                      Change
-                    </p>
-                  )}
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-1">
-                  <div className="col-md">
-                    <div className="row">
-                      <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                        User CALS
-                      </label>
-                      <div className="col-md ps-1">
-                        <div className="row">
-                          <div className="col">
-                            <input
-                              type="text"
-                              name="psUserCount"
-                              id="psUserCount"
-                              value={data.psUserCount}
-                              className="form-control form-control-sm rounded-0 fw-medium"
-                              disabled
-                              readOnly
-                            />
-                            <div className="d-flex justify-content-end">
-                              <p
-                                className="my-1 fw-bold"
-                                role="button"
-                                style={{ fontSize: '10px', color: '#c58c4f' }}
-                                onClick={() => setUserCALSModal(true)}
-                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
-                              >
-                                Change
-                              </p>
-                            </div>
-                          </div>
-                          <div className="col">
-                            <div className="row">
-                              <label
-                                htmlFor="branchCode"
-                                className="col-md-5 col-form-label divider"
-                              >
-                                Branch CALS
-                              </label>
-                              <div className="col-md ps-1">
-                                <input
-                                  type="text"
-                                  name="psBranchCount"
-                                  id="psBranchCount"
-                                  value={data.psBranchCount}
-                                  className="form-control form-control-sm rounded-0 fw-medium"
-                                  disabled
-                                  readOnly
-                                />
+                  <hr className="mb-3 mt-1" />
+                  <div className="row mb-1">
+                    <div className="col-md">
+                      <div className="row">
+                        <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                          User CALS
+                        </label>
+                        <div className="col-md ps-1">
+                          <div className="row">
+                            <div className="col">
+                              <input
+                                type="text"
+                                name="psUserCount"
+                                id="psUserCount"
+                                value={data.psUserCount}
+                                className="form-control form-control-sm rounded-0 fw-medium"
+                                disabled
+                                readOnly
+                              />
+                              <div className="d-flex justify-content-end">
+                                <p
+                                  className="my-1 fw-bold"
+                                  role="button"
+                                  style={{ fontSize: '10px', color: '#c58c4f' }}
+                                  onClick={() => setUserCALSModal(true)}
+                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
+                                >
+                                  Change
+                                </p>
                               </div>
                             </div>
-                            <div className="d-flex justify-content-end">
-                              <p
-                                className="my-1 fw-bold"
-                                role="button"
-                                style={{ fontSize: '10px', color: '#c58c4f' }}
-                                onClick={() => setBranchCALSModal(true)}
-                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
-                              >
-                                Change
-                              </p>
+                            <div className="col">
+                              <div className="row">
+                                <label
+                                  htmlFor="branchCode"
+                                  className="col-md-5 col-form-label divider"
+                                >
+                                  Branch CALS
+                                </label>
+                                <div className="col-md ps-1">
+                                  <input
+                                    type="text"
+                                    name="psBranchCount"
+                                    id="psBranchCount"
+                                    value={data.psBranchCount}
+                                    className="form-control form-control-sm rounded-0 fw-medium"
+                                    disabled
+                                    readOnly
+                                  />
+                                </div>
+                              </div>
+                              <div className="d-flex justify-content-end">
+                                <p
+                                  className="my-1 fw-bold"
+                                  role="button"
+                                  style={{ fontSize: '10px', color: '#c58c4f' }}
+                                  onClick={() => setBranchCALSModal(true)}
+                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
+                                >
+                                  Change
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          {/* <div className="col">
+                            {/* <div className="col">
                             <div className="row">
                               <label
                                 htmlFor="branchCode"
@@ -1635,75 +1723,75 @@ const UpdateClient = () => {
                               </div>
                             </div>
                           </div> */}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-1">
-                  <div className="col-md">
-                    <div className="row">
-                      <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                        Bed Count
-                      </label>
-                      <div className="col-md ps-1">
-                        <div className="row">
-                          <div className="col">
-                            <input
-                              type="text"
-                              name="psUserCount"
-                              id="psUserCount"
-                              value={data.psBedCount}
-                              className="form-control form-control-sm rounded-0 fw-medium"
-                              disabled
-                              readOnly
-                            />
-                            <div className="d-flex justify-content-end">
-                              <p
-                                className="my-1 fw-bold"
-                                role="button"
-                                style={{ fontSize: '10px', color: '#c58c4f' }}
-                                onClick={() => setPsBedCountModal(true)}
-                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
-                              >
-                                Change
-                              </p>
-                            </div>
-                          </div>
-                          <div className="col">
-                            <div className="row">
-                              <label
-                                htmlFor="branchCode"
-                                className="col-md-5 col-form-label divider"
-                              >
-                                GL
-                              </label>
-                              <div className="col-md ps-1">
-                                <input
-                                  type="text"
-                                  name="psGL"
-                                  id="psGL"
-                                  value={data.psGL}
-                                  className="form-control form-control-sm rounded-0 fw-medium"
-                                  disabled
-                                  readOnly
-                                />
+                  <hr className="mb-3 mt-1" />
+                  <div className="row mb-1">
+                    <div className="col-md">
+                      <div className="row">
+                        <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                          Bed Count
+                        </label>
+                        <div className="col-md ps-1">
+                          <div className="row">
+                            <div className="col">
+                              <input
+                                type="text"
+                                name="psUserCount"
+                                id="psUserCount"
+                                value={data.psBedCount}
+                                className="form-control form-control-sm rounded-0 fw-medium"
+                                disabled
+                                readOnly
+                              />
+                              <div className="d-flex justify-content-end">
+                                <p
+                                  className="my-1 fw-bold"
+                                  role="button"
+                                  style={{ fontSize: '10px', color: '#c58c4f' }}
+                                  onClick={() => setPsBedCountModal(true)}
+                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
+                                >
+                                  Change
+                                </p>
                               </div>
                             </div>
-                            <div className="d-flex justify-content-end">
-                              <p
-                                className="my-1 fw-bold"
-                                role="button"
-                                style={{ fontSize: '10px', color: '#c58c4f' }}
-                                onClick={() => setPsGLModal(true)}
-                                // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
-                              >
-                                Change
-                              </p>
+                            <div className="col">
+                              <div className="row">
+                                <label
+                                  htmlFor="branchCode"
+                                  className="col-md-5 col-form-label divider"
+                                >
+                                  GL
+                                </label>
+                                <div className="col-md ps-1">
+                                  <input
+                                    type="text"
+                                    name="psGL"
+                                    id="psGL"
+                                    value={data.psGL}
+                                    className="form-control form-control-sm rounded-0 fw-medium"
+                                    disabled
+                                    readOnly
+                                  />
+                                </div>
+                              </div>
+                              <div className="d-flex justify-content-end">
+                                <p
+                                  className="my-1 fw-bold"
+                                  role="button"
+                                  style={{ fontSize: '10px', color: '#c58c4f' }}
+                                  onClick={() => setPsGLModal(true)}
+                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
+                                >
+                                  Change
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                          {/* <div className="col">
+                            {/* <div className="col">
                             <div className="row">
                               <label
                                 htmlFor="branchCode"
@@ -1724,49 +1812,49 @@ const UpdateClient = () => {
                               </div>
                             </div>
                           </div> */}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Stock Take CALS
-                  </label>
-                  <div className="col-md ps-1">
-                    <div className="row">
-                      <div className="col">
-                        <input
-                          type="text"
-                          name="psStockTakeCals"
-                          id="psStockTakeCals"
-                          value={data.psStockTakeCals}
-                          className="form-control form-control-sm rounded-0 fw-medium"
-                          disabled
-                          readOnly
-                        />
-                      </div>
-                      <div className="col">
-                        <div className="row">
-                          <label htmlFor="branchCode" className="col-3 col-form-label divider">
-                            From
-                          </label>
-                          <div className="col ps-0">
-                            <input
-                              type="text"
-                              name="psStockTakeStartDate"
-                              id="psStockTakeStartDate"
-                              value={
-                                !data.psStockTakeStartDate
-                                  ? ''
-                                  : moment(data.psStockTakeStartDate).format('DD/MM/YYYY')
-                              }
-                              className="form-control form-control-sm rounded-0 fw-medium"
-                              disabled
-                              readOnly
-                            />
-                            {/* <DatePicker
+                  <hr className="mb-3 mt-1" />
+                  <div className="row mb-1">
+                    <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                      Stock Take CALS
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="row">
+                        <div className="col">
+                          <input
+                            type="text"
+                            name="psStockTakeCals"
+                            id="psStockTakeCals"
+                            value={data.psStockTakeCals}
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            disabled
+                            readOnly
+                          />
+                        </div>
+                        <div className="col">
+                          <div className="row">
+                            <label htmlFor="branchCode" className="col-3 col-form-label divider">
+                              From
+                            </label>
+                            <div className="col ps-0">
+                              <input
+                                type="text"
+                                name="psStockTakeStartDate"
+                                id="psStockTakeStartDate"
+                                value={
+                                  !data.psStockTakeStartDate
+                                    ? ''
+                                    : moment(data.psStockTakeStartDate).format('DD/MM/YYYY')
+                                }
+                                className="form-control form-control-sm rounded-0 fw-medium"
+                                disabled
+                                readOnly
+                              />
+                              {/* <DatePicker
                               className="form-control form-control-sm rounded-0"
                               selected={data.psStockTakeStartDate}
                               dateFormat="dd/MM/yyyy"
@@ -1777,29 +1865,29 @@ const UpdateClient = () => {
                               disabled
                               readOnly
                             /> */}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="col">
-                        <div className="row">
-                          <label htmlFor="branchCode" className="col-3 col-form-label divider">
-                            To
-                          </label>
-                          <div className="col ps-0">
-                            <input
-                              type="text"
-                              name="stockTakeEndDate"
-                              id="stockTakeEndDate"
-                              value={
-                                !data.stockTakeEndDate
-                                  ? ''
-                                  : moment(data.stockTakeEndDate).format('DD/MM/YYYY')
-                              }
-                              className="form-control form-control-sm rounded-0 fw-medium"
-                              disabled
-                              readOnly
-                            />
-                            {/* <DatePicker
+                        <div className="col">
+                          <div className="row">
+                            <label htmlFor="branchCode" className="col-3 col-form-label divider">
+                              To
+                            </label>
+                            <div className="col ps-0">
+                              <input
+                                type="text"
+                                name="stockTakeEndDate"
+                                id="stockTakeEndDate"
+                                value={
+                                  !data.stockTakeEndDate
+                                    ? ''
+                                    : moment(data.stockTakeEndDate).format('DD/MM/YYYY')
+                                }
+                                className="form-control form-control-sm rounded-0 fw-medium"
+                                disabled
+                                readOnly
+                              />
+                              {/* <DatePicker
                               className="form-control form-control-sm rounded-0"
                               selected={data.stockTakeEndDate}
                               dateFormat="dd/MM/yyyy"
@@ -1810,87 +1898,287 @@ const UpdateClient = () => {
                               disabled
                               readOnly
                             /> */}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setStockTakeCALSModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 5 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="mb-3 mt-1" />
-                <div className="row mb-1">
-                  <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
-                    Add Ons
-                  </label>
-                  <div className="col-md ps-1">
-                    <ul className="list-group list-group-flush">
-                      {data.addons
-                        ?.filter((item) => item !== null)
-                        .map((addOn, index) => (
-                          // <Chip
-                          //   size="small"
-                          //   className="chip col"
-                          //   key={index}
-                          //   label={addOn.addonName}
-                          // />
-                          <li className="list-group-item py-1" key={index}>
-                            <input
-                              className="form-check-input me-1"
-                              type="checkbox"
-                              checked
-                              // value=""
-                              id={addOn.addonName}
-                              readOnly
-                              onChange={() => {}}
-                            />
-                            <label
-                              className="form-check-label stretched-link fw-bold"
-                              htmlFor={addOn.addonName}
-                            >
-                              {addOn.addonName}
-                            </label>
-                          </li>
-                        ))}
-                    </ul>
-                    {/* <div className="d-flex">
-                      {data.addons.map((addOn, index) => (
-                        <Chip
-                          size="small"
-                          className="chip col"
-                          key={index}
-                          label={addOn.addonName}
-                        />
-                      ))}
-                    </div> */}
+                  <div className="d-flex justify-content-end">
+                    <p
+                      className="my-1 fw-bold"
+                      role="button"
+                      style={{ fontSize: '10px', color: '#c58c4f' }}
+                      onClick={() => setStockTakeCALSModal(true)}
+                      // onClick={() => setData({ ...data, editModal: true, editModalInterface: 5 })}
+                    >
+                      Change
+                    </p>
                   </div>
-                </div>
-                <div className="d-flex justify-content-end">
-                  <p
-                    className="my-1 fw-bold"
-                    role="button"
-                    style={{ fontSize: '10px', color: '#c58c4f' }}
-                    onClick={() => setAddOnsModal(true)}
-                    // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
-                  >
-                    Change
-                  </p>
-                </div>
-                <hr className="my-3" />
-                {/* <hr className="mb-3 mt-1" /> */}
-              </form>
+                  <hr className="mb-3 mt-1" />
+                  <div className="row mb-1">
+                    <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
+                      Add Ons
+                    </label>
+                    {/* One row per add-on rather than per grant: a single add-on can cover some
+                        branches and not others, on different expiries. */}
+                    <div className="col-md ps-1">
+                      {(data.addOnCoverage ?? []).length === 0 ? (
+                        <span className="text-muted" style={{ fontSize: 11 }}>
+                          No add-ons on this client.
+                        </span>
+                      ) : (
+                        <ul className="list-group list-group-flush">
+                          {data.addOnCoverage.map((a) => (
+                            <li
+                              className="list-group-item py-1 d-flex justify-content-between align-items-center"
+                              key={a.addonId}
+                            >
+                              <span className="fw-bold">
+                                {a.addonName}
+                                {a.fullyExpired && (
+                                  <span className="badge bg-danger ms-2">Expired</span>
+                                )}
+                                {!a.fullyExpired && a.branchesExpired > 0 && (
+                                  <span className="badge bg-warning text-dark ms-2">
+                                    {a.branchesExpired} expired
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-muted" style={{ fontSize: 10 }}>
+                                {a.allBranches
+                                  ? `all ${a.branchesTotal} branches`
+                                  : `${a.branchesGranted} of ${a.branchesTotal} branches`}
+                                {' · '}
+                                {a.mixedExpiry
+                                  ? `mixed expiry${
+                                      a.earliestExpiry
+                                        ? `, from ${moment(a.earliestExpiry).format('DD/MM/YYYY')}`
+                                        : ''
+                                    }`
+                                  : a.expiryDate
+                                  ? `expires ${moment(a.expiryDate).format('DD/MM/YYYY')}`
+                                  : 'no expiry'}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                  <div className="d-flex justify-content-end">
+                    <p
+                      className="my-1 fw-bold"
+                      role="button"
+                      style={{ fontSize: '10px', color: '#c58c4f' }}
+                      onClick={() => {
+                        // Always open on a clean grant form — nothing selected, no expiry, scope
+                        // back to all branches.
+                        setEditFormData({ ...editFormData, AddOnsArray: [], selectedAdons: [] })
+                        setAddOnScope('all')
+                        setAddOnExpiry(null)
+                        setExpiryEdit(null)
+                        setAddOnsModal(true)
+                      }}
+                    >
+                      Change
+                    </p>
+                  </div>
+                  <hr className="my-3" />
+                  {/* <hr className="mb-3 mt-1" /> */}
+                </form>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+        {activeTab === 'branch' && (
+          <div className="col-md">
+            <div className="card h-100 rounded-0" style={{ borderTopLeftRadius: 0 }}>
+              <div className="card-body">
+                <div className="d-flex justify-content-between">
+                  <p className="mb-0 fw-bold align-self-end" style={{ fontSize: '11px' }}>
+                    Branch Level — applies to this branch only
+                  </p>
+                  <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
+                    Status:{' '}
+                    <span className={data.psActivated ? 'text-success' : 'text-danger'}>
+                      {data.psActivated ? 'Active' : 'Not Active'}
+                    </span>
+                    {data.archived && <span className="text-danger ms-2">• Archived</span>}
+                  </p>
+                </div>
+                <hr className="mt-1 mb-2" />
+                <form autoComplete="off">
+                  <div className="row my-3">
+                    <label
+                      htmlFor="branchCodeBranchTab"
+                      className="col-md-3 col-form-label divider"
+                    >
+                      Branch
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="row">
+                        <div className="col pe-0">
+                          <input
+                            type="text"
+                            name="branchCodeBranchTab"
+                            id="branchCodeBranchTab"
+                            value={data.branchCode}
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            disabled
+                            readOnly
+                          />
+                        </div>
+                        <div className="col-8 ps-0">
+                          <input
+                            type="text"
+                            name="psBranchNameBranchTab"
+                            id="psBranchNameBranchTab"
+                            value={data.psBranchName}
+                            className="form-control form-control-sm rounded-0 fw-medium"
+                            readOnly
+                            disabled
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <hr className="mb-3 mt-1" />
+                  {/* Region -> County -> Town for this branch. Saved centrally and mirrored onto this
+                    branch's BRANCH row in the client database. */}
+                  <div className="row mb-1">
+                    <label htmlFor="regionId" className="col-md-3 col-form-label divider">
+                      Location
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="row g-1">
+                        <div className="col-md-4">
+                          <SearchableSelect
+                            options={regionOpts}
+                            value={loc.regionId}
+                            onChange={(v) => onRegionChange(v)}
+                            getId={(o) => o.regionId}
+                            getLabel={(o) => o.name}
+                            placeholder="Search region…"
+                          />
+                        </div>
+                        <div className="col-md-4">
+                          <SearchableSelect
+                            options={countyOpts}
+                            value={loc.countyId}
+                            onChange={(v) => onCountyChange(v)}
+                            getId={(o) => o.countyId}
+                            getLabel={(o) => o.name}
+                            placeholder="Search county…"
+                            disabled={!loc.regionId}
+                          />
+                        </div>
+                        <div className="col-md-4">
+                          <SearchableSelect
+                            options={townOpts}
+                            value={loc.townId}
+                            onChange={(v) => setLoc((p) => ({ ...p, townId: v }))}
+                            getId={(o) => o.townId}
+                            getLabel={(o) => o.name}
+                            placeholder="Search town…"
+                            disabled={!loc.countyId}
+                          />
+                        </div>
+                      </div>
+                      <div className="d-flex align-items-center gap-2 mt-1">
+                        <button
+                          type="button"
+                          className="btn btn-sm add-btn rounded-0"
+                          onClick={saveLocation}
+                          disabled={locSaving || data.psCusCode === ''}
+                        >
+                          {locSaving ? 'Saving…' : 'Save Location'}
+                        </button>
+                        {locMsg && <span className="text-success">{locMsg}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <hr className="mb-3 mt-3" />
+                  {/* Per-branch activation and archival. Read-only here — both are edited together in
+                    the Branch Status modal. The company-wide equivalents live on the Company tab. */}
+                  <div className="row mb-1">
+                    <label htmlFor="branchActiveView" className="col-md-3 col-form-label divider">
+                      Is Active
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={data.psActivated}
+                          name="branchActiveView"
+                          id="branchActiveView"
+                          readOnly
+                          disabled
+                        />
+                        <label
+                          className={
+                            data.psActivated
+                              ? 'form-check-label text-success fw-bold'
+                              : 'form-check-label text-danger fw-bold'
+                          }
+                          htmlFor="branchActiveView"
+                        >
+                          {data.psActivated ? 'Is Active' : 'Not Active'}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="row mb-1">
+                    <label htmlFor="branchArchivedView" className="col-md-3 col-form-label divider">
+                      Archived
+                    </label>
+                    <div className="col-md ps-1">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={data.archived}
+                          name="branchArchivedView"
+                          id="branchArchivedView"
+                          readOnly
+                          disabled
+                        />
+                        <label
+                          className={
+                            data.archived
+                              ? 'form-check-label text-danger fw-bold'
+                              : 'form-check-label fw-bold'
+                          }
+                          htmlFor="branchArchivedView"
+                        >
+                          {data.archived ? 'Archived' : 'Not Archived'}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="d-flex justify-content-end">
+                    <p
+                      className="my-1 fw-bold"
+                      role="button"
+                      style={{ fontSize: '10px', color: '#c58c4f' }}
+                      onClick={() => {
+                        setBranchStatusForm({
+                          isActive: data.psActivated,
+                          archived: data.archived,
+                        })
+                        setBranchStatusModal(true)
+                      }}
+                    >
+                      Change
+                    </p>
+                  </div>
+                  <hr className="my-3" />
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="col-md-3">
           <div className="card h-100 rounded-0">
             <div className="card-body p-2">
@@ -1937,105 +2225,63 @@ const UpdateClient = () => {
       {/* Client Modal */}
       <CModal alignment="center" visible={clientModal} backdrop="static">
         <CModalHeader>
-          <CModalTitle>Update Client Details</CModalTitle>
+          <CModalTitle>Update Client Name</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <form autoComplete="off" onSubmit={UpdateClientDetails}>
             <div className="row mb-3">
-              <label htmlFor="queryAcctCode" className="col-md col-form-label divider">
-                Account
+              <label htmlFor="queryAcctCode" className="col-md-3 col-form-label divider">
+                Acct Code
               </label>
-              <div className="col-md-10">
-                <div className="row">
-                  <div className="col-4 pe-0">
-                    <input
-                      className="form-control form-control-sm rounded-0"
-                      list="customerOptions"
-                      id="queryAcctCode"
-                      name="queryAcctCode"
-                      value={editFormData.queryAcctCode}
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="top"
-                      title={editFormData.queryAcctCode}
-                      placeholder="search..."
-                      onChange={handleAccounthange}
-                    />
-                    <datalist id="customerOptions">
-                      <option value="">select</option>
-                      {customers.map((customer, index) => (
-                        <option key={index} value={customer.cusCode}>
-                          {customer.cusName}
-                        </option>
-                      ))}
-                    </datalist>
-                  </div>
-                  <div className="col ps-0">
-                    <input
-                      type="text"
-                      className="form-control form-control-sm rounded-0"
-                      id="queryAcctName"
-                      name="queryAcctName"
-                      value={editFormData.queryAcctName}
-                      onChange={(e) =>
-                        setEditFormData({ ...editFormData, queryAcctName: e.target.name })
-                      }
-                      readOnly
-                    />
-                  </div>
-                </div>
+              <div className="col-md ps-1">
+                {/* The account code is the join key to the serials, add-ons, provisioning runs, the
+                    company record and the derived P{code}DB database name — it is not editable. */}
+                <input
+                  type="text"
+                  className="form-control form-control-sm rounded-0"
+                  id="queryAcctCode"
+                  name="queryAcctCode"
+                  value={editFormData.queryAcctCode}
+                  disabled
+                  readOnly
+                />
               </div>
             </div>
             <div className="row mb-3">
-              <label htmlFor="querySuppID" className="col-md col-form-label divider">
-                Branch
+              <label htmlFor="queryAcctName" className="col-md-3 col-form-label divider">
+                Client Name
               </label>
-              <div className="col-md-10">
-                <div className="row">
-                  <div className="col-4 pe-0">
-                    <input
-                      className="form-control form-control-sm rounded-0"
-                      list="customerMembersOptions"
-                      id="queryBranchCode"
-                      name="queryBranchCode"
-                      value={editFormData.queryBranchCode}
-                      data-bs-toggle="tooltip"
-                      data-bs-placement="top"
-                      placeholder="search..."
-                      title={editFormData.queryBranchCode}
-                      disabled={editFormData.customerMembers <= 0}
-                      onChange={handleBranchChange}
-                    />
-                    <datalist id="customerMembersOptions">
-                      <option value="">select</option>
-                      {customerMembers.map((customerMember, index) => (
-                        <option key={index} value={customerMember.branchCode}>
-                          {customerMember.branchName}
-                        </option>
-                      ))}
-                    </datalist>
-                  </div>
-                  <div className="col ps-0">
-                    <input
-                      type="text"
-                      className="form-control form-control-sm rounded-0"
-                      id="queryBranchName"
-                      name="queryBranchName"
-                      value={editFormData.queryBranchName}
-                      onChange={(e) =>
-                        setEditFormData({ ...editFormData, queryBranchName: e.target.value })
-                      }
-                      disabled
-                    />
-                  </div>
-                </div>
+              <div className="col-md ps-1">
+                <input
+                  type="text"
+                  className="form-control form-control-sm rounded-0"
+                  id="queryAcctName"
+                  name="queryAcctName"
+                  value={editFormData.queryAcctName ?? ''}
+                  minLength={2}
+                  maxLength={50}
+                  required
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, queryAcctName: e.target.value })
+                  }
+                />
               </div>
+            </div>
+            <div className="alert alert-light border rounded-0 py-1 mb-2" style={{ fontSize: 11 }}>
+              Renaming applies to all {data.branchCount || 0} branch
+              {data.branchCount === 1 ? '' : 'es'} and also updates the client database
+              (SYSDEFAULTS) and the company record. Saving an unchanged name does nothing.
             </div>
             <div className="d-flex justify-content-end mt-3">
               <button
                 type="submit"
                 className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
-                disabled={isLoading}
+                disabled={
+                  isLoading ||
+                  !editFormData.queryAcctName ||
+                  editFormData.queryAcctName.trim() === (data.psCompanyName ?? '').trim()
+                }
               >
                 {isLoading ? (
                   <>
@@ -2121,7 +2367,9 @@ const UpdateClient = () => {
                   <label htmlFor="nonregistered" className="col-md-3 col-form-label">
                     {/* Item Name */}
                   </label>
-                  <div className="col-md ps-1">
+                  {/* Is Active and Archived sit together: both are company level and independent of
+                      each other (archiving does not deactivate, deactivating does not archive). */}
+                  <div className="col-md ps-1 d-flex gap-3">
                     <div className="form-check">
                       <input
                         className="form-check-input"
@@ -2146,9 +2394,57 @@ const UpdateClient = () => {
                         {editFormData.isActive ? 'Is Active' : 'Not Active'}
                       </label>
                     </div>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={editFormData.archived}
+                        name="archived"
+                        id="archived"
+                        onChange={(e) =>
+                          setEditFormData({ ...editFormData, archived: e.target.checked })
+                        }
+                      />
+                      <label
+                        className={
+                          editFormData.archived
+                            ? 'form-check-label text-danger fw-bold'
+                            : 'form-check-label fw-bold'
+                        }
+                        htmlFor="archived"
+                      >
+                        {editFormData.archived ? 'Archived' : 'Not Archived'}
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
+            {/* Both flags here are company level: Is Active sets psActivated AND the ENABLED flag on
+                every branch in the client's database; Archived sets Archived on every branch. The
+                per-branch equivalents are on the Branch Level tab. */}
+            <div
+              className={`alert ${
+                !editFormData.isActive || editFormData.archived
+                  ? 'alert-warning'
+                  : 'alert-light border'
+              } rounded-0 py-1 mb-3`}
+              style={{ fontSize: 11 }}
+            >
+              <CIcon icon={cilWarning} size="sm" className="me-2" />
+              <strong>
+                Applies to all {data.branchCount || 0} branch
+                {data.branchCount === 1 ? '' : 'es'}.
+              </strong>{' '}
+              {editFormData.isActive
+                ? 'Every branch will be activated, including any that are currently switched off.'
+                : 'Every branch will be deactivated — the whole client loses access, not just this branch.'}{' '}
+              {editFormData.archived !== data.companyArchived &&
+                (editFormData.archived
+                  ? 'Every branch will also be archived. '
+                  : 'Every branch will also be un-archived. ')}
+              Archiving is separate from Is Active. To change one branch only, use the Branch Level
+              tab.
             </div>
             <div className="row mb-3">
               <div className="col-md">
@@ -2698,8 +2994,8 @@ const UpdateClient = () => {
           </form>
         </CModalBody>
       </CModal>
-      {/* Client Modal */}
-      <CModal alignment="center" visible={addOnsModal} backdrop="static">
+      {/* Add Ons — grants are per branch, so every change picks a scope and an optional expiry */}
+      <CModal alignment="center" visible={addOnsModal} backdrop="static" size="lg">
         <CModalHeader>
           <CModalTitle>Update Add Ons</CModalTitle>
         </CModalHeader>
@@ -2710,20 +3006,252 @@ const UpdateClient = () => {
                 <span> {error} </span>
               </div>
             )}
-            <div className="hstack gap-2 mb-3 ">
-              {data.addons
-                ?.filter((item) => item !== null)
-                .map((addOn, index) => (
-                  <Chip
-                    className="chip ms-auto"
-                    size="small"
-                    key={index}
-                    label={addOn.addonName}
-                    onDelete={() => DeleteAddsOn(addOn.addonId)}
-                  />
-                ))}
-            </div>
-            <div className="row mb-1">
+
+            {/* Current grants, with what they cover and when they lapse. Removing uses the same
+                scope as granting: the whole client, or only this branch. */}
+            <label className="col-form-label divider fw-semibold p-0 mb-1">Current Add Ons</label>
+            {(data.addOnCoverage ?? []).length === 0 ? (
+              <div className="text-muted mb-3" style={{ fontSize: 11 }}>
+                None granted yet.
+              </div>
+            ) : (
+              <table className="table table-sm mb-3" style={{ fontSize: 11 }}>
+                <thead>
+                  <tr>
+                    <th>Add On</th>
+                    <th>Coverage</th>
+                    <th>Expiry</th>
+                    <th className="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.addOnCoverage.map((a) => (
+                    // Highlight the row the expiry panel below is currently editing.
+                    <tr
+                      key={a.addonId}
+                      className={expiryEdit?.addonId === a.addonId ? 'table-active' : ''}
+                    >
+                      <td className="fw-bold align-middle">
+                        {a.addonName}
+                        {a.fullyExpired && <span className="badge bg-danger ms-2">Expired</span>}
+                        {!a.fullyExpired && a.branchesExpired > 0 && (
+                          <span className="badge bg-warning text-dark ms-2">
+                            {a.branchesExpired} expired
+                          </span>
+                        )}
+                      </td>
+                      <td className="align-middle">
+                        {a.allBranches
+                          ? `all ${a.branchesTotal}`
+                          : `${a.branchesGranted} of ${a.branchesTotal}`}
+                        {a.onThisBranch ? '' : ' (not this branch)'}
+                      </td>
+                      <td className="align-middle">
+                        {a.mixedExpiry
+                          ? 'mixed'
+                          : a.expiryDate
+                          ? moment(a.expiryDate).format('DD/MM/YYYY')
+                          : 'never'}
+                      </td>
+                      {/* Fixed-width buttons so every row's actions line up, and the two destructive
+                          ones grouped together apart from the benign one. */}
+                      <td className="text-end align-middle text-nowrap">
+                        <button
+                          type="button"
+                          className={`btn btn-sm rounded-0 me-2 ${
+                            expiryEdit?.addonId === a.addonId
+                              ? 'btn-secondary'
+                              : 'btn-outline-secondary'
+                          }`}
+                          style={addOnActionStyle}
+                          disabled={isLoading}
+                          title="Change or extend the expiry date"
+                          onClick={() =>
+                            expiryEdit?.addonId === a.addonId
+                              ? setExpiryEdit(null)
+                              : openExpiryEdit(a)
+                          }
+                        >
+                          <CIcon icon={cilCalendar} size="sm" className="me-1" />
+                          Date
+                        </button>
+                        <div
+                          className="btn-group btn-group-sm"
+                          role="group"
+                          aria-label={`Remove ${a.addonName}`}
+                        >
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger rounded-0"
+                            style={addOnActionStyle}
+                            disabled={isLoading || !a.onThisBranch}
+                            title={
+                              a.onThisBranch
+                                ? `Remove from branch ${data.branchCode} only`
+                                : 'This branch does not hold this add-on'
+                            }
+                            onClick={() => DeleteAddsOn(a.addonId, false)}
+                          >
+                            <CIcon icon={cilTrash} size="sm" className="me-1" />
+                            Branch
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-danger rounded-0"
+                            style={addOnActionStyle}
+                            disabled={isLoading}
+                            title="Remove from every branch"
+                            onClick={() => DeleteAddsOn(a.addonId, true)}
+                          >
+                            <CIcon icon={cilTrash} size="sm" className="me-1" />
+                            All
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* Expiry editor for an add-on already granted. Only ever moves dates on grants that
+                exist — it never adds the add-on to a branch that doesn't hold it. */}
+            {expiryEdit && (
+              <div className="border rounded-0 p-2 mb-3 bg-light">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span className="fw-bold" style={{ fontSize: 11 }}>
+                    Change expiry — {expiryEdit.addonName}
+                  </span>
+                  <span className="text-muted" style={{ fontSize: 10 }}>
+                    currently{' '}
+                    {expiryEdit.mixedExpiry
+                      ? `mixed across branches${
+                          expiryEdit.earliestExpiry
+                            ? `, earliest ${moment(expiryEdit.earliestExpiry).format('DD/MM/YYYY')}`
+                            : ''
+                        }`
+                      : expiryEdit.expiryDate
+                      ? moment(expiryEdit.expiryDate).format('DD/MM/YYYY')
+                      : 'never expires'}
+                  </span>
+                </div>
+                {/* All three controls on one line, each with a plain stacked label. Deliberately NOT
+                    the `divider` class used elsewhere: its full-width dotted leader is for labels
+                    sitting BESIDE a field, and it pushed these three out of alignment. */}
+                <div className="row g-2 align-items-end">
+                  <div className="col-md-4">
+                    <label htmlFor="extendDate" className="form-label mb-1 d-block">
+                      New expiry
+                    </label>
+                    <DatePicker
+                      id="extendDate"
+                      className="form-control form-control-sm rounded-0"
+                      // The datepicker's own wrapper is inline-block, so it ignores the column width
+                      // and sits narrower than its neighbours unless stretched.
+                      wrapperClassName="w-100"
+                      selected={extendDate}
+                      dateFormat="dd/MM/yyyy"
+                      peekNextMonth
+                      showMonthDropdown
+                      showYearDropdown
+                      dropdownMode="select"
+                      minDate={new Date()}
+                      placeholderText="pick a date"
+                      onChange={(date) => onExtendDate(date)}
+                    />
+                  </div>
+                  <div className="col-md-2">
+                    <label htmlFor="extendDays" className="form-label mb-1 d-block">
+                      or Days
+                    </label>
+                    <input
+                      id="extendDays"
+                      type="number"
+                      min={1}
+                      value={extendDays}
+                      placeholder="0"
+                      className="form-control form-control-sm rounded-0"
+                      onChange={onExtendDays}
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <label htmlFor="extendScope" className="form-label mb-1 d-block">
+                      Apply to
+                    </label>
+                    <select
+                      id="extendScope"
+                      className="form-select form-select-sm rounded-0"
+                      value={extendScope}
+                      onChange={(e) => setExtendScope(e.target.value)}
+                    >
+                      <option value="all">All branches holding it</option>
+                      <option value="branch">This branch only — {data.branchCode}</option>
+                    </select>
+                  </div>
+                  <div className="col-md-2 d-flex gap-1">
+                    <button
+                      type="button"
+                      className="btn btn-sm add-btn rounded-0 flex-fill"
+                      disabled={isLoading || (!extendDate && !(Number(extendDays) > 0))}
+                      onClick={SaveAddOnExpiry}
+                    >
+                      {isLoading ? (
+                        <span
+                          className="spinner-border spinner-border-sm"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
+                      ) : (
+                        'Save'
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm cancel-btn rounded-0"
+                      title="Cancel"
+                      onClick={() => setExpiryEdit(null)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2" style={{ fontSize: 10 }}>
+                  {Number(extendDays) > 0 ? (
+                    expiryEdit.mixedExpiry ? (
+                      <span className="text-body">
+                        Each branch moves forward{' '}
+                        <span className="fw-bold">{extendDays} day(s)</span> from its own expiry, so
+                        branches on different dates stay that way.
+                      </span>
+                    ) : (
+                      <span className="text-body">
+                        → new expiry{' '}
+                        <span className="fw-bold">{moment(extendDate).format('DD/MM/YYYY')}</span>
+                        <span className="text-muted">
+                          {' '}
+                          ({extendDays} day(s) from{' '}
+                          {extendBaseline(expiryEdit).isSame(moment().startOf('day'))
+                            ? 'today — the current expiry has already passed'
+                            : 'the current expiry'}
+                          )
+                        </span>
+                      </span>
+                    )
+                  ) : extendDate ? (
+                    <span className="text-body">
+                      → new expiry{' '}
+                      <span className="fw-bold">{moment(extendDate).format('DD/MM/YYYY')}</span>
+                    </span>
+                  ) : (
+                    <span className="text-muted">Pick a date or enter a number of days.</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <hr />
+            <label className="col-form-label divider fw-semibold p-0 mb-1">Grant Add Ons</label>
+            <div className="row mb-2">
               <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                 Add Ons
               </label>
@@ -2733,15 +3261,68 @@ const UpdateClient = () => {
                   className="rounded-0"
                   // hideSelectedList
                   options={addOns} // Options to display in the dropdown
-                  selectedValues={editFormData.AddOnsArray} // Preselected value to persist in dropdown
-                  onSelect={OnAddOnSelect} // Function will trigger on select event
-                  onRemove={OnAddOnRemove} // Function will trigger on remove event
+                  selectedValues={editFormData.AddOnsArray} // starts empty — see the Change handler
+                  onSelect={onAddOnPick}
+                  onRemove={onAddOnPick}
                   displayValue="addonName" // Property name to display in the dropdown options
                   showCheckbox
-                  // hideSelectedList={true}
-                  disablePreSelectedValues
-                  required
                 />
+              </div>
+            </div>
+            <div className="row mb-2">
+              <label className="col-md-3 col-form-label divider">Apply to</label>
+              <div className="col-md ps-1">
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="addOnScope"
+                    id="addOnScopeAll"
+                    checked={addOnScope === 'all'}
+                    onChange={() => setAddOnScope('all')}
+                  />
+                  <label className="form-check-label" htmlFor="addOnScopeAll">
+                    All {data.branchCount || 0} branch{data.branchCount === 1 ? '' : 'es'}
+                  </label>
+                </div>
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="addOnScope"
+                    id="addOnScopeBranch"
+                    checked={addOnScope === 'branch'}
+                    onChange={() => setAddOnScope('branch')}
+                  />
+                  <label className="form-check-label" htmlFor="addOnScopeBranch">
+                    This branch only — {data.branchCode} ({data.psBranchName})
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="row mb-2">
+              <label htmlFor="addOnExpiry" className="col-md-3 col-form-label divider">
+                Expires
+              </label>
+              <div className="col-md ps-1">
+                <DatePicker
+                  className="form-control form-control-sm rounded-0"
+                  wrapperClassName="w-100"
+                  selected={addOnExpiry}
+                  dateFormat="dd/MM/yyyy"
+                  peekNextMonth
+                  showMonthDropdown
+                  showYearDropdown
+                  dropdownMode="select"
+                  minDate={new Date()}
+                  placeholderText="never expires"
+                  isClearable
+                  onChange={(date) => setAddOnExpiry(date)}
+                />
+                <div className="form-text" style={{ fontSize: 11 }}>
+                  Leave blank to never expire. Once past, the add-on stops being licensed and the
+                  feature switches off — re-granting with a later date turns it back on.
+                </div>
               </div>
             </div>
             <div className="d-flex justify-content-end mt-3">
@@ -2749,7 +3330,11 @@ const UpdateClient = () => {
                 type="submit"
                 className="btn add-btn btn-sm rounded-0 me-1"
                 style={{ width: '4rem' }}
-                disabled={!editFormData.AddOnsArray}
+                disabled={
+                  isLoading ||
+                  !editFormData.selectedAdons ||
+                  editFormData.selectedAdons.length === 0
+                }
               >
                 {isLoading ? (
                   <>
@@ -2771,12 +3356,129 @@ const UpdateClient = () => {
                 onClick={() => {
                   setAddOnsModal(false)
                   setError('')
+                  setAddOnScope('all')
+                  setAddOnExpiry(null)
+                  setExpiryEdit(null)
                   setEditFormData({
                     ...editFormData,
                     queryAddOns: [],
                     AddOnsArray: [],
-                    selectedAdons: '',
+                    selectedAdons: [],
                   })
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </CModalBody>
+      </CModal>
+      {/* Is Active + Archived — branch level (this branch only) */}
+      <CModal alignment="center" visible={branchStatusModal} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Update Branch Status</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {error && (
+            <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
+              <span> {error} </span>
+            </div>
+          )}
+          <form autoComplete="off" onSubmit={SaveBranchStatus}>
+            <div className="row mb-2">
+              <label htmlFor="branchActiveEdit" className="col-md-3 col-form-label divider">
+                Is Active
+              </label>
+              <div className="col-md ps-1">
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={branchStatusForm.isActive}
+                    name="branchActiveEdit"
+                    id="branchActiveEdit"
+                    onChange={(e) =>
+                      setBranchStatusForm({ ...branchStatusForm, isActive: e.target.checked })
+                    }
+                  />
+                  <label
+                    className={
+                      branchStatusForm.isActive
+                        ? 'form-check-label text-success fw-bold'
+                        : 'form-check-label text-danger fw-bold'
+                    }
+                    htmlFor="branchActiveEdit"
+                  >
+                    {branchStatusForm.isActive ? 'Is Active' : 'Not Active'}
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div className="row mb-1">
+              <label htmlFor="branchArchivedEdit" className="col-md-3 col-form-label divider">
+                Archived
+              </label>
+              <div className="col-md ps-1">
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    checked={branchStatusForm.archived}
+                    name="branchArchivedEdit"
+                    id="branchArchivedEdit"
+                    onChange={(e) =>
+                      setBranchStatusForm({ ...branchStatusForm, archived: e.target.checked })
+                    }
+                  />
+                  <label
+                    className={
+                      branchStatusForm.archived
+                        ? 'form-check-label text-danger fw-bold'
+                        : 'form-check-label fw-bold'
+                    }
+                    htmlFor="branchArchivedEdit"
+                  >
+                    {branchStatusForm.archived ? 'Archived' : 'Not Archived'}
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div
+              className="alert alert-light border rounded-0 py-1 mb-2 mt-2"
+              style={{ fontSize: 11 }}
+            >
+              Applies to branch <strong>{data.branchCode}</strong> ({data.psBranchName}) only —
+              other branches are unaffected. Is Active also sets ENABLED on this branch in the
+              client&apos;s database. Archived is separate from Is Active.
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn add-btn btn-sm rounded-0 me-1"
+                style={{ width: '4rem' }}
+                disabled={
+                  isLoading ||
+                  (branchStatusForm.isActive === data.psActivated &&
+                    branchStatusForm.archived === data.archived)
+                }
+              >
+                {isLoading ? (
+                  <span
+                    className="spinner-border spinner-border-sm m-auto"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                ) : (
+                  'Edit'
+                )}
+              </button>
+              <button
+                type="button"
+                style={{ width: '4rem' }}
+                className="btn btn-sm cancel-btn float-end rounded-0"
+                onClick={() => {
+                  setBranchStatusModal(false)
+                  setError('')
                 }}
               >
                 Cancel

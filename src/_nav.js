@@ -32,6 +32,20 @@ const _nav = [
     icon: <span className="material-icons nav-icon">extension</span>,
   },
   {
+    component: CNavItem,
+    name: 'Branch Locations',
+    to: '/branch-locations',
+    module: MODULES.ViewBranchLocations,
+    icon: <span className="material-icons nav-icon">pin_drop</span>,
+  },
+  {
+    component: CNavItem,
+    name: 'Duplicate Branches',
+    to: '/duplicate-branches',
+    module: MODULES.ViewDuplicateBranches,
+    icon: <span className="material-icons nav-icon">content_copy</span>,
+  },
+  {
     component: CNavTitle,
     name: 'Infrastructure',
   },

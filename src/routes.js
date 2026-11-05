@@ -10,6 +10,8 @@ const Branches = React.lazy(() => import('./views/branches/branches'))
 const Servers = React.lazy(() => import('./views/servers/servers'))
 const Analytics = React.lazy(() => import('./views/analytics/analytics'))
 const Locations = React.lazy(() => import('./views/locations/locations'))
+const BranchLocations = React.lazy(() => import('./views/locations/branchLocations'))
+const DuplicateBranches = React.lazy(() => import('./views/clients/duplicateBranches'))
 const Emails = React.lazy(() => import('./views/emails/emails'))
 const UserLogs = React.lazy(() => import('./views/logs/userLogs'))
 const Approvals = React.lazy(() => import('./views/approvals/approvals'))
@@ -76,6 +78,22 @@ const routes = [
     element: Locations,
     exact: true,
     module: MODULES.ManageLocations,
+  },
+  {
+    path: '/branch-locations',
+    name: 'Branch Locations',
+    element: BranchLocations,
+    exact: true,
+    // Opening the screen needs View; editing needs ManageBranchLocations, checked inside it.
+    module: MODULES.ViewBranchLocations,
+  },
+  {
+    path: '/duplicate-branches',
+    name: 'Duplicate Branches',
+    element: DuplicateBranches,
+    exact: true,
+    // Viewing is read-only; deleting rows needs ResolveDuplicateBranches, checked inside.
+    module: MODULES.ViewDuplicateBranches,
   },
   { path: '/emails', name: 'Emails', element: Emails, exact: true, module: MODULES.ViewEmails },
   {

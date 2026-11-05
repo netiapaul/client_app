@@ -429,6 +429,60 @@ html.theme-dark {
     color: #fff;
   }
 
+  // Pager — the light rules use near-white greys that disappear on a dark surface.
+  .pager-btn {
+    color: $dk-muted !important;
+
+    &:hover:not(:disabled) {
+      color: $dk-accent !important;
+    }
+
+    &:disabled {
+      color: #4a515e !important;
+    }
+  }
+
+  .pager-range {
+    color: $dk-muted;
+  }
+
+  .pager-size {
+    color: $dk-muted !important;
+    background-color: transparent !important;
+
+    option {
+      background-color: $dk-surface-2;
+      color: $dk-text;
+    }
+  }
+
+  .filter-btn:hover:not(:disabled) {
+    background-color: $dk-accent !important;
+    color: #fff !important;
+  }
+
+  // Tabs (Update Client: Company Level / Branch Level). The light rules give the active tab a
+  // white face to sit it on top of the strip; on dark that has to become the card surface.
+  .nav-tabs {
+    border-bottom-color: $dk-border-2;
+
+    .nav-link {
+      color: $dk-muted;
+
+      &:hover,
+      &:focus {
+        color: $dk-accent;
+      }
+
+      &.active {
+        color: $dk-accent;
+        background-color: $dk-surface;
+        border-color: $dk-border-2;
+        border-bottom-color: $dk-surface;
+      }
+    }
+  }
+
   // react-datepicker
   .react-datepicker {
     background-color: $dk-surface;

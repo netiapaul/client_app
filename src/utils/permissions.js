@@ -17,4 +17,8 @@ export const MODULES = {
   ManageLocations: 14,
   ViewUserLogs: 15,
   ManageClientModules: 16,
+  ManageBranchLocations: 17,
+  ViewBranchLocations: 18,
+  ViewDuplicateBranches: 19,
+  ResolveDuplicateBranches: 20,
 }
