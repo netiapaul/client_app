@@ -9,8 +9,9 @@ const axios = require('axios')
  * Branch Locations — one place to see and fix every client branch's region/county/town.
  *
  * Replaces opening each client, then each of its branches, just to discover which ones still have
- * no location. The left list carries a located/total count per client (incomplete clients first, and
- * an "only incomplete" filter); the right pane edits that client's branches inline.
+ * no location. The left list carries a located/total count per client (incomplete clients first, an
+ * "only incomplete" filter and a cloud/desktop one); the right pane edits that client's branches
+ * inline.
  *
  * Edits are staged, not saved per keystroke: pick region → county → town on as many branches as you
  * like, then Save. Each branch is written centrally and mirrored onto its BRANCH row in the client's
@@ -32,6 +33,9 @@ const BranchLocations = () => {
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
   const [onlyMissing, setOnlyMissing] = useState(false)
+  // Cloud/desktop surface: '' both, 'true' cloud, 'false' desktop. A string so it maps onto a
+  // <select> directly, matching the dashboard's Client Type filter.
+  const [clientType, setClientType] = useState('')
   const [selected, setSelected] = useState(null) // the client whose branches are shown
 
   const [branches, setBranches] = useState([])
@@ -58,23 +62,33 @@ const BranchLocations = () => {
 
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Locations`
 
+  // The surface filter as the API takes it: a nullable bool, so "both" means sending nothing at all
+  // rather than an empty string (which a bool? parameter would reject).
+  const typeParam = useMemo(
+    () => (clientType === '' ? {} : { forCloud: clientType === 'true' }),
+    [clientType],
+  )
+
   // ---- loads ----
 
   const loadSummary = useCallback(async () => {
     try {
-      const r = await axios.get(`${api}/CoverageSummary`, { headers: authHeaders() })
+      const r = await axios.get(`${api}/CoverageSummary`, {
+        params: { ...typeParam },
+        headers: authHeaders(),
+      })
       setSummary(r.data)
     } catch (e) {
       /* the header stat is a nicety — never block the screen on it */
     }
-  }, [api, authHeaders])
+  }, [api, authHeaders, typeParam])
 
   const loadClients = useCallback(async () => {
     setLoadingClients(true)
     setError('')
     try {
       const r = await axios.get(`${api}/ClientCoverage`, {
-        params: { search: search || '', onlyMissing },
+        params: { search: search || '', onlyMissing, ...typeParam },
         headers: authHeaders(),
       })
       setClients(r.data ?? [])
@@ -83,7 +97,7 @@ const BranchLocations = () => {
     } finally {
       setLoadingClients(false)
     }
-  }, [api, authHeaders, search, onlyMissing])
+  }, [api, authHeaders, search, onlyMissing, typeParam])
 
   const loadRegions = useCallback(async () => {
     try {
@@ -131,7 +145,7 @@ const BranchLocations = () => {
       setEdits({})
       try {
         const r = await axios.get(`${api}/ClientBranches`, {
-          params: { cuscode },
+          params: { cuscode, ...typeParam },
           headers: authHeaders(),
         })
         const rows = r.data ?? []
@@ -150,20 +164,32 @@ const BranchLocations = () => {
         setLoadingBranches(false)
       }
     },
-    [api, authHeaders, loadCounties, loadTowns],
+    [api, authHeaders, loadCounties, loadTowns, typeParam],
   )
 
   useEffect(() => {
     loadRegions()
-    loadSummary()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // The header totals have to follow the surface filter, so this re-runs when it changes
+  // (loadSummary's identity only moves with it).
+  useEffect(() => {
+    loadSummary()
+  }, [loadSummary])
 
   // Re-query the client list on search / filter change, debounced so typing doesn't spam the API.
   useEffect(() => {
     const t = setTimeout(() => loadClients(), 250)
     return () => clearTimeout(t)
   }, [loadClients])
+
+  // Likewise the open client's branches: the rows on the right must be the ones its located/total
+  // count was computed from, otherwise the two panes disagree.
+  useEffect(() => {
+    if (selected?.cusCode) loadBranches(selected.cusCode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientType])
 
   useEffect(() => {
     if (error) {
@@ -278,6 +304,14 @@ const BranchLocations = () => {
     loadBranches(c.cusCode)
   }
 
+  // Switching surface reloads the branch list and so drops staged edits — ask first, exactly as
+  // picking a different client does.
+  const changeClientType = (v) => {
+    if (v === clientType) return
+    if (pendingIds.length > 0 && !window.confirm('Discard unsaved location changes?')) return
+    setClientType(v)
+  }
+
   // ---- render ----
 
   const coverageBadge = (c) => {
@@ -290,6 +324,30 @@ const BranchLocations = () => {
     )
   }
 
+  // Which surface a client's branches sit on. Same colours as the Duplicate Branches screen, so
+  // Cloud/Desktop/Mixed mean the same thing wherever they appear.
+  //
+  // "Mixed" = the customer holds BOTH licences: some of its branches are cloud rows and some are
+  // desktop rows. Read off the whole-client counts, not the filtered total, so the category still
+  // tells the truth while one surface is being worked on — a mixed client stays mixed under the
+  // Cloud filter, which is precisely when it is worth knowing it has desktop branches too.
+  // Returns null when the API sent no counts at all — an older build of it, say. Nothing is
+  // rendered in that case: inferring a category from absent fields is how every client ends up
+  // wearing the same badge, which looks like data and isn't.
+  const surfaceOf = (c) => {
+    if (c.cloudBranches == null && c.desktopBranches == null) return null
+    if (!c.cloudBranches) return { label: 'Desktop', cls: 'bg-dark' }
+    if (!c.desktopBranches) return { label: 'Cloud', cls: 'bg-info text-dark' }
+    return { label: 'Mixed', cls: 'bg-secondary' }
+  }
+
+  const surfaceTitle = (c) =>
+    c.cloudBranches && c.desktopBranches
+      ? `Holds both licences: ${c.cloudBranches} cloud and ${c.desktopBranches} desktop branch(es)`
+      : c.cloudBranches
+      ? `${c.cloudBranches} cloud branch(es)`
+      : `${c.desktopBranches ?? 0} desktop branch(es)`
+
   return (
     <>
       <hr className="my-2" />
@@ -300,6 +358,11 @@ const BranchLocations = () => {
             <span className="text-muted" style={{ fontSize: 11 }}>
               <span className="fw-bold text-body">{summary.branchesLocated}</span> of{' '}
               <span className="fw-bold text-body">{summary.branchesTotal}</span> branches located
+              {/* Said explicitly: the totals follow the surface filter, so without this the
+                  numbers would appear to drop for no visible reason. */}
+              {clientType !== '' && (
+                <span className="ms-1">({clientType === 'true' ? 'cloud' : 'desktop'} only)</span>
+              )}
               {summary.branchesMissing > 0 && (
                 <span className="text-danger fw-bold ms-2">
                   {summary.branchesMissing} still missing
@@ -322,13 +385,27 @@ const BranchLocations = () => {
         <div className="col-md-4">
           <div className="card rounded-0 h-100">
             <div className="card-body p-2">
-              <input
-                type="text"
-                className="form-control form-control-sm rounded-0 mb-2"
-                placeholder="Search client name or code…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              {/* Search and surface read as one bar; heights are pinned by .filter-control. */}
+              <div className="d-flex align-items-center gap-1 mb-2">
+                <input
+                  type="text"
+                  className="form-control form-control-sm rounded-0 filter-control flex-grow-1"
+                  placeholder="Search client name or code…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <select
+                  className="form-select form-select-sm rounded-0 filter-control"
+                  style={{ width: 110, flex: '0 0 110px' }}
+                  title="Cloud and desktop are separate licences for the same customer, with separate branches"
+                  value={clientType}
+                  onChange={(e) => changeClientType(e.target.value)}
+                >
+                  <option value="">Both</option>
+                  <option value="true">Cloud</option>
+                  <option value="false">Desktop</option>
+                </select>
+              </div>
               <div className="form-check mb-2">
                 <input
                   className="form-check-input"
@@ -348,7 +425,13 @@ const BranchLocations = () => {
                 </div>
               ) : clients.length === 0 ? (
                 <div className="text-muted text-center py-4" style={{ fontSize: 12 }}>
-                  {onlyMissing ? 'Every branch has a location.' : 'No clients match.'}
+                  {onlyMissing
+                    ? clientType === ''
+                      ? 'Every branch has a location.'
+                      : `Every ${
+                          clientType === 'true' ? 'cloud' : 'desktop'
+                        } branch has a location.`
+                    : 'No clients match.'}
                 </div>
               ) : (
                 <ul
@@ -401,7 +484,18 @@ const BranchLocations = () => {
                             : 'no database found'}
                         </span>
                       </span>
-                      {coverageBadge(c)}
+                      <span className="d-flex flex-column align-items-end gap-1">
+                        {coverageBadge(c)}
+                        {surfaceOf(c) && (
+                          <span
+                            className={`badge ${surfaceOf(c).cls}`}
+                            style={{ fontSize: 9 }}
+                            title={surfaceTitle(c)}
+                          >
+                            {surfaceOf(c).label}
+                          </span>
+                        )}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -477,6 +571,11 @@ const BranchLocations = () => {
                         <thead>
                           <tr>
                             <th style={{ width: '1%' }}>#</th>
+                            {/* A branch code is only unique within a surface — the same client can
+                                have a branch 1 on each — so the rows need telling apart here.
+                                Always shown: with a filter on, it is also what says which surface
+                                these rows are. */}
+                            <th style={{ width: '1%' }}>Type</th>
                             <th style={{ minWidth: 110 }}>Branch</th>
                             <th style={{ minWidth: 130 }}>Region</th>
                             <th style={{ minWidth: 130 }}>County</th>
@@ -490,6 +589,24 @@ const BranchLocations = () => {
                             return (
                               <tr key={b.id} className={dirty ? 'table-active' : ''}>
                                 <td className="align-middle">{b.branchCode}</td>
+                                {/* A dash, not "Desktop", when the row carries no flag — absent is
+                                    not the same as false, and guessing here mislabels every row. */}
+                                <td className="align-middle text-center">
+                                  {b.forCloud == null ? (
+                                    <span className="text-muted" title="Not reported by the API">
+                                      —
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={`badge ${
+                                        b.forCloud ? 'bg-info text-dark' : 'bg-dark'
+                                      }`}
+                                      style={{ fontSize: 9 }}
+                                    >
+                                      {b.forCloud ? 'Cloud' : 'Desktop'}
+                                    </span>
+                                  )}
+                                </td>
                                 <td className="align-middle">
                                   <span className="fw-bold">{b.branchName}</span>
                                   {!v.townId && (
@@ -538,7 +655,11 @@ const BranchLocations = () => {
                       </table>
                       {branches.length === 0 && (
                         <div className="text-muted text-center py-4" style={{ fontSize: 12 }}>
-                          This client has no branches.
+                          {clientType === ''
+                            ? 'This client has no branches.'
+                            : `This client has no ${
+                                clientType === 'true' ? 'cloud' : 'desktop'
+                              } branches — switch the filter to see its others.`}
                         </div>
                       )}
                     </div>
