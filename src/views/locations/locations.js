@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getToken } from '../../utils/session'
+import useConfirm from '../../components/useConfirm'
 
 const axios = require('axios')
 const BASE_URL = process.env.REACT_APP_URL_CONFIG
@@ -13,6 +14,9 @@ const readErr = (e) =>
   e?.response?.data?.message || e?.request?.response || `${e?.code}: ${e?.message}`
 
 const Locations = () => {
+  // Replaces window.confirm, which the browser prefixes with its own hostname and which
+  // cannot mark a destructive action. See useConfirm.
+  const [confirm, confirmDialog] = useConfirm()
   const [regions, setRegions] = useState([])
   const [counties, setCounties] = useState([])
   const [towns, setTowns] = useState([])
@@ -106,7 +110,12 @@ const Locations = () => {
     }
   }
   const renameRegion = async (r) => {
-    const name = window.prompt('Region name', r.name)
+    const name = await confirm({
+      title: `Rename region "${r.name}"`,
+      confirmText: 'Rename',
+      input: { label: 'Region name', value: r.name, maxLength: 120 },
+    })
+
     if (!name || name === r.name) return
     try {
       await axios.put(
@@ -120,7 +129,7 @@ const Locations = () => {
     }
   }
   const deleteRegion = async (r) => {
-    if (!window.confirm(`Delete region "${r.name}"?`)) return
+    if (!(await confirm(`Delete region "${r.name}"?`))) return
     try {
       await axios.delete(`${BASE_URL}/api/Locations/Region/${r.regionId}`, {
         headers: authHeaders(),
@@ -157,7 +166,12 @@ const Locations = () => {
     }
   }
   const renameCounty = async (c) => {
-    const name = window.prompt('County name', c.name)
+    const name = await confirm({
+      title: `Rename county "${c.name}"`,
+      confirmText: 'Rename',
+      input: { label: 'County name', value: c.name, maxLength: 120 },
+    })
+
     if (!name || name === c.name) return
     try {
       await axios.put(
@@ -171,7 +185,7 @@ const Locations = () => {
     }
   }
   const deleteCounty = async (c) => {
-    if (!window.confirm(`Delete county "${c.name}"?`)) return
+    if (!(await confirm(`Delete county "${c.name}"?`))) return
     try {
       await axios.delete(`${BASE_URL}/api/Locations/County/${c.countyId}`, {
         headers: authHeaders(),
@@ -202,7 +216,12 @@ const Locations = () => {
     }
   }
   const renameTown = async (t) => {
-    const name = window.prompt('Town name', t.name)
+    const name = await confirm({
+      title: `Rename town "${t.name}"`,
+      confirmText: 'Rename',
+      input: { label: 'Town name', value: t.name, maxLength: 120 },
+    })
+
     if (!name || name === t.name) return
     try {
       await axios.put(
@@ -216,7 +235,7 @@ const Locations = () => {
     }
   }
   const deleteTown = async (t) => {
-    if (!window.confirm(`Delete town "${t.name}"?`)) return
+    if (!(await confirm(`Delete town "${t.name}"?`))) return
     try {
       await axios.delete(`${BASE_URL}/api/Locations/Town/${t.townId}`, { headers: authHeaders() })
       loadTowns(selCounty.countyId)
@@ -285,6 +304,8 @@ const Locations = () => {
 
   return (
     <>
+      {confirmDialog}
+
       <hr className="my-2" />
       <div className="d-flex justify-content-between align-items-center">
         <h6 className="m-0">Locations — Regions, Counties &amp; Towns</h6>

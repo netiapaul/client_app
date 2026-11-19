@@ -7,7 +7,10 @@ import { CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from '@co
 import MaterialTable from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
-import './clientPicker.css'
+// This screen still renders its own inline copy of the picker rather than the shared component,
+// so it needs the stylesheet directly. The file moved to components/ when the picker was shared —
+// see ClientPicker.js for why it belongs with the component.
+import '../../components/ClientPicker.css'
 import SearchableSelect from '../../components/SearchableSelect'
 
 const axios = require('axios')

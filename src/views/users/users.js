@@ -4,6 +4,7 @@ import { MODULES } from '../../utils/permissions'
 import { toast } from 'react-toastify'
 import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
+import PasswordInput from '../../components/PasswordInput'
 // import Moment from 'react-moment'
 // import { Link } from 'react-router-dom'
 import Drawer from '@mui/material/Drawer'
@@ -512,11 +513,13 @@ const Users = () => {
                         )}
                       </label>
                       <div className="col-md">
-                        <input
-                          type="text"
+                        {/* Was type="text", which left a colleague's new password sitting in plain
+                            view on screen. Masked by default now, with a toggle for checking it. */}
+                        <PasswordInput
                           className="form-control form-control-sm rounded-0"
                           id="password"
                           name="password"
+                          autoComplete="new-password"
                           value={formData.password}
                           onChange={(e) =>
                             setFormData({

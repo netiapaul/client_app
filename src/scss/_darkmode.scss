@@ -1,4 +1,4 @@
-// ===========================================================================
+﻿// ===========================================================================
 // Dark mode
 // Toggled by adding `.theme-dark` to <html> (see components/ThemeToggle.js and
 // index.js which applies the persisted choice before first paint).
@@ -700,3 +700,2220 @@ html.theme-dark {
     }
   }
 }
+
+// Show/hide password toggle — readable on the dark form surfaces, and picking up the dark accent
+// on hover rather than the light-mode bronze.
+html.theme-dark .pw-field__btn {
+  color: $dk-muted;
+
+  &:hover:not(:disabled) {
+    color: $dk-accent;
+    background: rgba($dk-accent, .16);
+  }
+
+  &:focus-visible {
+    color: $dk-accent;
+    box-shadow: 0 0 0 2px rgba($dk-accent, .5);
+  }
+}
+
+// DataTable — the shared admin listing. Re-pointed through its own custom properties, so this is
+// the same handful of tokens rather than a copy of every rule. Mirrors what the .MuiTableCell-*
+// overrides above do for the material-table screens, so the two look alike until those are migrated.
+html.theme-dark .cb-dt {
+  --cb-dt-border: #{$dk-border};
+  --cb-dt-head-bg: #{$dk-surface-2};
+  --cb-dt-hover: #{$dk-surface-3};
+
+  color: $dk-text;
+
+  .cb-dt__table thead th {
+    color: $dk-text;
+    border-bottom-color: $dk-border;
+  }
+
+  th.is-sortable:hover {
+    background: $dk-surface-3;
+  }
+
+  .cb-dt__search {
+    background: $dk-surface-2;
+
+    input,
+    > .material-icons {
+      color: $dk-text;
+    }
+  }
+
+  .cb-dt__clear:hover {
+    color: #fff;
+  }
+
+  .cb-dt__state td,
+  .cb-dt__pager,
+  .cb-dt__empty-hint {
+    color: $dk-muted;
+  }
+
+  .cb-dt__empty-title {
+    color: $dk-text;
+  }
+
+  .cb-dt__size,
+  .cb-dt__pagebtn {
+    color: $dk-muted;
+    border-color: $dk-border-2;
+  }
+
+  .cb-dt__pagebtn:hover:not(:disabled) {
+    color: $dk-accent;
+    border-color: rgba($dk-accent, .5);
+  }
+}
+
+// Row actions. Only the NEUTRAL tone needs re-pointing: the coloured ones (primary / danger /
+// success / info) are already saturated enough to read on a dark surface, and dimming them would
+// lose the very thing the colour is carrying — what the button does.
+html.theme-dark .cb-act {
+  color: $dk-muted;
+  border-color: $dk-border-2;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    background: $dk-surface-3;
+    border-color: $dk-border-2;
+  }
+
+  &--primary {
+    color: $dk-accent;
+    border-color: rgba($dk-accent, .5);
+
+    &:hover:not(:disabled) {
+      color: #fff;
+      background: $dk-accent;
+      border-color: $dk-accent;
+    }
+  }
+}
+
+// Table row action icons. The light rule uses the bronze brand colour on hover, which does not
+// read against the dark surfaces — the dark accent does.
+html.theme-dark .cb-row-icon {
+  color: $dk-muted;
+  border-color: $dk-border-2;
+
+  &:hover:not(:disabled) {
+    color: $dk-accent;
+    background: rgba($dk-accent, .16);
+    border-color: rgba($dk-accent, .5);
+  }
+}
+
+/**** PORTAL DARK MODE ****
+ * Every portal surface is a CSS custom property on `.pt`, so dark mode is this one block of
+ * re-pointed tokens — no component rules repeated, and nothing to keep in step by hand. The dark
+ * values are the app's existing `$dk-*` family (see _darkmode.scss) so the portal and the admin
+ * screens are the same dark, not two.
+ *
+ * Note what changes shape rather than just shade: the rail goes DARKER than the page, because in
+ * dark mode a dark rail against a dark page would lose its edge entirely. The status tints become
+ * translucent washes over the dark surface instead of the pale solids used on white, and each
+ * foreground is lightened — the light-mode greens and reds fail contrast on a dark ground.
+ */
+html.theme-dark .pt {
+  --pt-bg: #{$dk-bg};
+  --pt-surface: #{$dk-surface};
+  --pt-soft: #{$dk-surface-2};
+  --pt-ink: #{$dk-text};
+  --pt-muted: #{$dk-muted};
+  --pt-dim: #8b94a3;
+  --pt-border: #{$dk-border};
+  --pt-track: #{$dk-surface-3};
+
+  // Darker than the page so the rail still has an edge.
+  --pt-rail: #10131a;
+  --pt-rail-active: #{$dk-surface-2};
+  --pt-rail-card: #{$dk-surface};
+  --pt-rail-border: #{$dk-border-2};
+  --pt-rail-text: #b6bfcd;
+  --pt-rail-avatar: #{$dk-surface-3};
+
+  // The brighter orange becomes the single accent: bronze on a dark ground goes muddy.
+  --pt-accent: #{$dk-accent};
+  --pt-accent-dk: #e07a2c;
+  --pt-accent-bright: #{$dk-accent};
+  --pt-accent-bg: #{rgba($primary-color, .16)};
+
+  --pt-green: #5fd389;
+  --pt-green-bg: #{rgba($success-color, .16)};
+  --pt-amber: #e8b84b;
+  --pt-amber-fg: #e8b84b;
+  --pt-amber-bg: #{rgba(#e0a800, .16)};
+  --pt-red: #{$danger-color};
+  --pt-red-fg: #f08a8a;
+  --pt-red-bg: #{rgba($danger-color, .16)};
+  --pt-indigo-fg: #86a6ff;
+  --pt-indigo-bg: #{rgba($edit-color, .2)};
+
+  --pt-on-dark: #{$dk-text};
+  --pt-on-dark-dim: #{$dk-muted};
+  --pt-ring-track: #{$dk-surface-3};
+
+  // The hero card is lighter in dark mode than the near-navy it sits on in light, so the arcs
+  // need a little more alpha to stay visible against it.
+  --pt-hero-ring-a: #{rgba($dk-accent, .2)};
+  --pt-hero-ring-b: #{rgba($phAMACore-color, .2)};
+  --pt-hero-ring-a-hover: #{rgba($dk-accent, .34)};
+  --pt-hero-ring-b-hover: #{rgba($phAMACore-color, .32)};
+  --pt-hero-glow: #{rgba($dk-accent, .16)};
+
+  --pt-note-bg: #{rgba($primary-color, .13)};
+  --pt-note-border: #{rgba($primary-color, .32)};
+  --pt-note-strong: #f0a461;
+  --pt-note-text: #d8ae85;
+  --pt-amber-border: #{rgba(#e0a800, .32)};
+  --pt-green-border: #{rgba($success-color, .34)};
+
+  // The dark hero/licence cards sit on an already-dark page, so they lift instead of recede:
+  // a touch lighter than the surface, with a visible border.
+  .pt-card--dark {
+    background: #1a1f28;
+    border: 1px solid $dk-border;
+  }
+
+  // White form controls would glare. These are inline styles on the components, so they are
+  // overridden here by element rather than by class.
+  select,
+  input {
+    color: $dk-text !important;
+    background: $dk-surface-2 !important;
+    border-color: $dk-border !important;
+  }
+
+  .pt-filters button[aria-pressed='true'] {
+    color: #fff;
+    background: $dk-accent;
+    border-color: $dk-accent;
+  }
+
+  .pt-sectionnav button {
+    color: $dk-muted;
+
+    &.active {
+      color: #fff;
+      background: $dk-accent;
+    }
+  }
+
+  .pt-lift:hover {
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .45);
+  }
+}
+
+/****
+  A provider's verbatim payload, on the payment-attempts screen.
+
+  Scrolls rather than growing: a Daraja callback is short but a card gateway's response is not, and
+  a modal that grows to fit one pushes its own buttons off the screen. Wraps on long tokens so a
+  60-character reference does not force a horizontal scrollbar across the whole dialog.
+****/
+.cb-pre {
+  max-height: 230px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--cb-ink, #2b3445);
+  background: var(--cb-soft, #f6f7f9);
+  border: 1px solid var(--cb-border, #e3e6ec);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+html[data-coreui-theme='dark'] .cb-pre {
+  color: #c9d2e0;
+  background: #1b2230;
+  border-color: #2b3344;
+}
+
+/**** Empty state ****/
+.cb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 12px;
+  font-size: var(--cb-fs-body);
+  text-align: center;
+  color: #8a94a6;
+
+  .material-icons {
+    font-size: 30px;
+    opacity: .6;
+  }
+}
+
+.container,
+.container-lg,
+.container-md,
+.container-sm,
+.container-xl {
+  max-width: 100% !important;
+}
+
+input:checked {
+  background-color: $phAMACore-color !important;
+  border-color: $phAMACore-color !important;
+}
+
+.company_text_color {
+  color: $phAMACore-color;
+}
+
+.logout {
+  font-size: 12px !important;
+}
+
+.logout:hover {
+  background-color: #F58B40 !important;
+  cursor: pointer !important;
+  color: white !important;
+
+}
+
+.accout {
+  font-size: 12px !important;
+}
+
+.accout:hover {
+  background-color: #C58C4f !important;
+  cursor: pointer !important;
+  color: white !important;
+
+}
+
+.inValid {
+  border: 1px solid $danger-color !important;
+}
+
+::marker {
+  display: none !important;
+}
+
+.form-control-sm,
+.form-select-sm {
+  font-size: 10px !important
+}
+
+// CoreUI gives .form-control-sm a min-height but gives .form-select-sm none, so an input and a
+// select sitting side by side are not the same height. It usually passes unnoticed, but this app
+// forces both to 10px and a <select> will not shrink its internal line box the way an <input>
+// does — so the two drift apart. Same formula as .form-control-sm, so they resolve identically.
+.form-select-sm {
+  min-height: calc(1.5em + 0.5rem + calc(var(--cui-border-width) * 2));
+}
+
+/**** Side-by-side filter controls ****
+ * Matching min-heights still leaves a <select> and an <input> a pixel or two apart, because the
+ * browser lays out a select's internal text box itself and ignores the line-height an input obeys.
+ * For controls that sit next to each other and must read as one row, stop negotiating: fix the
+ * box height outright and vertically centre the text in it. Applies to both element types, so
+ * whatever the browser would have chosen is overridden identically.
+ */
+.filter-control {
+  height: 26px !important;
+  min-height: 26px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 24px !important;
+}
+
+.auth-input,
+.auth-input-lg {
+  font-size: 12px !important;
+  padding: 14px 16px !important;
+}
+
+.auth-btn {
+  background-color: $phAMACore-color !important;
+  font-size: 14px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  color: white !important;
+}
+
+.form-select {
+  background-image: none !important;
+  padding-right: 0.5rem !important;
+  // padding: .375rem 2.25rem .375rem .25rem;
+}
+
+.filter-btn {
+  font-size: 10px !important;
+  color: $phAMACore-color !important;
+  // background-color: $phAMACore-color !important;
+  border: 1px solid $phAMACore-color !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25) !important;
+  border-color: gray !important;
+}
+
+.Active-r {
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background-color: $success-color;
+  margin: auto;
+
+}
+
+.not-active-r {
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  background-color: $danger-color;
+  margin: auto;
+}
+
+/**** Page Loader ****/
+.page-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 1020;
+  background-color: rgba(255, 255, 255, 0.6);
+  cursor: progress;
+}
+
+.page-loader__content {
+  position: sticky;
+  top: 40vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: $phAMACore-color;
+  font-size: 12px;
+  font-weight: 500;
+
+  .spinner-border {
+    color: $phAMACore-color !important;
+  }
+}
+
+/**** BUtton Style ****/
+.add-btn {
+  background-color: $success-color !important;
+  font-size: 10px !important;
+  border: 1px solid $success-color !important;
+  color: white !important;
+
+}
+
+.new-btn {
+  // background-color: #C58C4F !important;
+  font-size: 10px !important;
+  border: 1px solid $success-color !important;
+  color: $success-color !important;
+}
+
+.new-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid $success-color !important;
+  background-color: $success-color !important;
+  color: white !important;
+}
+
+.edit-btn {
+  // background-color: #C58C4F !important;
+  font-size: 10px !important;
+  border: 1px solid $edit-color !important;
+  color: $edit-color !important;
+}
+
+.edit-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid $edit-color !important;
+  background-color: $edit-color !important;
+  color: white !important;
+}
+
+.delete-btn {
+  font-size: 10px !important;
+  border: 1px solid $danger-color !important;
+  color: $danger-color !important;
+}
+
+.delete-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid $danger-color !important;
+  background-color: $danger-color !important;
+  color: white !important;
+}
+
+.delete-btn {
+  font-size: 10px !important;
+  border: 1px solid $danger-color !important;
+  color: $danger-color !important;
+}
+
+.cancel-btn {
+  background-color: white !important;
+  font-size: 10px !important;
+  border: 1px solid $success-color !important;
+  color: $success-color !important;
+
+}
+
+// .add-btn:hover {
+//   font-size: 10px !important;
+//   border: 1px solid $success-color !important;
+//   background-color: $success-color !important;
+//   color: white !important;
+// }
+
+/****Form Labels*****/
+@media only screen and (max-width: 767px) {
+  label.divider:after {
+    display: none;
+  }
+}
+
+// label.divider {
+//   font-size: 10px !important;
+// }
+.col-form-label,
+.form-label {
+  font-size: 10px !important;
+  font-weight: 500;
+  line-height: 1.2em;
+}
+
+.divider {
+  overflow: hidden;
+  /* font-size: 0.8em; */
+  font-size: 12px;
+  line-height: 1.2em;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.divider:after {
+  content: "";
+  vertical-align: middle;
+  display: inline-block;
+  width: 100%;
+  border-bottom: 2px dotted #ccc;
+  /* margin: 0 2% 0 -22%; */
+}
+
+.divider:after {
+  margin: 0 -22% 0 2%;
+}
+
+/**** CModal styles *****/
+
+.modal-title,
+.offcanvas-title {
+  color: $phAMACore-color;
+}
+
+.modal-content {
+  border-radius: 0 !important;
+}
+
+/**** Swal Modal UI styles *****/
+
+.swal-modal {
+  border-radius: 0rem !important;
+}
+
+.swal-button--cancel {
+  // color: #555;
+  background-color: #bfbfbf !important;
+}
+
+.swal-button {
+  // background-color: #7cd1f9;
+  color: #fff !important;
+  border: 1px solid !important;
+  // box-shadow: none;
+  border-radius: 0rem !important;
+  font-weight: 600 !important;
+  // font-size: 14px;
+  // padding: 10px 24px;
+  // margin: 0;
+  // cursor: pointer;
+}
+
+/**** Material Table UI styles *****/
+
+.MuiIconButton-root {
+
+  padding: 0rem !important;
+
+}
+
+.MuiTableCell-root {
+  padding: 0px !important;
+  padding-left: 5px !important;
+  padding-right: 5px !important;
+  font-size: 10px !important;
+  line-height: 2 !important;
+  border: 1px solid #dedede !important;
+
+}
+
+.MuiTableCell-head {
+  background-color: #f3f6f9 !important;
+  font-weight: bold !important;
+  border-bottom: 2px solid rgba(224, 224, 224, 1) !important;
+  line-height: 1 !important;
+  padding: 3px !important;
+
+}
+
+.MTableToolbar-highlight {
+  color: #ffffff;
+  background-color: rgb(255 255 255);
+}
+
+
+.MuiInput-underline:hover:not(.Mui-disabled):before {
+  border-bottom: none !important;
+}
+
+.MuiInput-underline:before {
+  content: none !important;
+}
+
+.MuiSvgIcon-fontSizeSmall {
+  font-size: 12px !important;
+}
+
+.MuiInputBase-root {
+  font-size: 12px !important;
+}
+
+.MuiPaper-elevation2 {
+  box-shadow: none !important;
+}
+
+.MuiToolbar-gutters {
+  padding: 0 !important;
+}
+
+.MuiToolbar-regular {
+  min-height: 45px !important;
+}
+
+/* Footer Style */
+#login-footer {
+  position: fixed !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+}
+
+.footer {
+  background: #fff !important;
+  padding: 10px 30px !important;
+  text-align: center !important;
+  -webkit-clip-path: polygon(1% 0, 99% 0, 100% 100%, 0% 100%) !important;
+  clip-path: polygon(1% 0, 99% 0, 100% 100%, 0% 100%) !important;
+  border-radius: 30px 30px 0 0 !important;
+
+  p {
+    margin: 0 !important;
+    color: #5a5151 !important;
+    text-align: center !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+
+    a {
+      color: $primary-color !important;
+
+      &:hover {
+        text-decoration: underline !important;
+      }
+    }
+  }
+}
+
+.bg-cover {
+  // background-image: url('https://landkit.goodthemes.co/assets/img/covers/cover-14.jpg');
+  background-image: url('../assets/images/login-cover.jpg');
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+.login_asset {
+  background-image: url('../assets/images/login-cover.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  // background-position: center;
+  // background-attachment: fixed;
+
+  // -webkit-transform: scaleX(-1);
+  // transform: scaleX(-1)
+}
+
+// .login_asset {
+//   background-image: url('../assets/images/auth-side-bg.png');
+//   // background-position: center;
+//   // background-attachment: fixed;
+//   background-size: cover;
+//   background-repeat: no-repeat;
+//   // rotate: 360deg;
+//   -webkit-transform: scaleX(-1);
+//   transform: scaleX(-1)
+// }
+
+// Sidebar section headings (CNavTitle entries in _nav.js).
+.sidebar-nav .nav-title {
+  color: $phAMACore-color !important;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  margin-top: 6px !important;
+  padding-top: 10px !important;
+  padding-bottom: 4px !important;
+}
+
+.sidebar-nav .nav-title:first-child {
+  margin-top: 0 !important;
+}
+
+/**** Sidebar sizing + collapsible groups (CNavGroup in _nav.js) ****
+ *
+ * SIZING is driven through CoreUI's own custom properties rather than by overriding its rules one
+ * by one. --cui-sidebar-nav-icon-width is load-bearing: it sets the icon column AND the indent of
+ * nested links (CoreUI pads them by exactly that much, then pulls their icon back by the same).
+ * Change it in one place and the whole tree stays aligned; override the rules individually and the
+ * children drift out of line the moment anything else moves.
+ *
+ * CoreUI ships 4rem of icon column and 0.84rem of vertical padding, sized for a 16rem sidebar with
+ * a handful of links. With six groups that expand, that is a menu that scrolls on a laptop.
+ *
+ * RESPONSIVE, and deliberately not "smaller everywhere": below the lg breakpoint the sidebar is an
+ * off-canvas overlay driven by touch, so rows there stay nearer a 40px tap target. The tightening
+ * applies to desktop, where the pointer is precise and the vertical space is the scarce thing.
+ *
+ * Everything is scoped to .sidebar / .sidebar-nav. The bare .nav-link rule further down this file
+ * is GLOBAL and already reaches the Update Client tabs; widening that blast radius would mean
+ * re-theming tabs every time the menu changes.
+ */
+.sidebar {
+  // Touch-first defaults; the desktop block below tightens them.
+  --cui-sidebar-nav-icon-width: 2.25rem;
+  --cui-sidebar-nav-link-padding-y: .55rem;
+  --cui-sidebar-nav-link-padding-x: .85rem;
+
+  --cb-nav-icon-size: 19px;
+  --cb-nav-font-size: 13.5px;
+  --cb-nav-sub-font-size: 13px;
+}
+
+.sidebar-nav {
+  font-size: var(--cb-nav-font-size);
+
+  // Material Icons default to 24px, which is what made the menu feel oversized. Sized from a
+  // variable so the breakpoints below move the icons with the rows instead of separately.
+  .nav-icon,
+  .nav-link > .material-icons {
+    font-size: var(--cb-nav-icon-size) !important;
+    width: var(--cb-nav-icon-size);
+    height: var(--cb-nav-icon-size);
+    line-height: 1;
+  }
+
+  .nav-link {
+    padding-top: var(--cui-sidebar-nav-link-padding-y) !important;
+    padding-bottom: var(--cui-sidebar-nav-link-padding-y) !important;
+  }
+
+  /* --- groups --- */
+
+  // CoreUI DIMS a group's label once it is open (--cui-sidebar-nav-group-toggle-show-color). That
+  // is backwards: the open group is the section being worked in, so it should read as the
+  // strongest thing in the sidebar, not the faintest.
+  .nav-group.show {
+    background: rgba(0, 0, 0, .18);
+
+    // Matches CoreUI's own selector specificity (0,3,0) and wins on order, so no !important.
+    > .nav-group-toggle {
+      color: $phAMACore-color;
+      font-weight: 600;
+    }
+  }
+
+  // A brand-coloured rule down the children says "these belong to the group above" far more
+  // clearly than CoreUI's flat dark wash. Aligned to the icon column so it tracks the variable.
+  .nav-group-items {
+    border-left: 2px solid rgba($phAMACore-color, .35);
+    margin-left: calc(var(--cui-sidebar-nav-icon-width) / 2);
+  }
+
+  .nav-group-items .nav-link {
+    font-size: var(--cb-nav-sub-font-size);
+  }
+
+  // The caret picks up the brand colour on hover, like the label beside it.
+  .nav-group-toggle:hover::after {
+    filter: sepia(1) saturate(4) hue-rotate(-18deg);
+  }
+
+  .nav-group-toggle::after {
+    flex: 0 10px;
+    height: 10px;
+  }
+}
+
+// Desktop: the pointer is precise and vertical space is the constraint, so tighten.
+@media (min-width: 992px) {
+  .sidebar {
+    --cui-sidebar-nav-icon-width: 2rem;
+    --cui-sidebar-nav-link-padding-y: .4rem;
+    --cb-nav-icon-size: 17px;
+    --cb-nav-font-size: 13px;
+    --cb-nav-sub-font-size: 12.5px;
+  }
+}
+
+// Short viewports — a 1366x768 laptop, or any window with the browser chrome eating the height.
+// Several groups open at once would otherwise scroll, which is the thing grouping was meant to fix.
+@media (min-width: 992px) and (max-height: 760px) {
+  .sidebar {
+    --cui-sidebar-nav-link-padding-y: .3rem;
+    --cb-nav-icon-size: 16px;
+    --cb-nav-font-size: 12.5px;
+    --cb-nav-sub-font-size: 12px;
+  }
+}
+
+/**** Rounded "pill" rows ****
+ * Rows read as cards with their own rounded highlight rather than full-bleed bars. The active row
+ * carries the brand colour; a group containing the active page keeps a quieter tint so the section
+ * you are in is still obvious once the group is collapsed.
+ */
+.sidebar-nav {
+  .nav-link {
+    margin: 1px 8px;
+    border-radius: 8px;
+    width: auto;
+  }
+
+  // The parent rule's hover effect is a rotated square pinned to the right edge, which pokes out of
+  // a rounded row and collides with the group caret. A plain tint is what the rounding wants.
+  .nav-link:hover::before,
+  .nav-link.active::before {
+    display: none !important;
+  }
+
+  .nav-link:hover {
+    background: rgba(255, 255, 255, .08);
+  }
+
+  .nav-link.active {
+    background: rgba($phAMACore-color, .16);
+    color: $phAMACore-color;
+    font-weight: 600;
+  }
+
+  // Group labels are the structure of the menu, so they read as headings rather than as links.
+  .nav-group-toggle {
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: .92em;
+  }
+}
+
+/**** Collapsed to the icon rail: groups open as FLY-OUT panels ****
+ *
+ * This is the behaviour in the reference design, and the reason AppSidebar uses `narrow` rather
+ * than CoreUI's `unfoldable`: unfoldable widens the entire sidebar on hover, shoving the page
+ * sideways whenever the pointer crosses the rail. Here the rail stays put and the group's children
+ * appear beside it.
+ *
+ * CoreUI hides .nav-group-items in narrow mode with height:0 / visibility:hidden / opacity:0 — all
+ * four have to be undone, not just display, or the panel is present but invisible.
+ */
+.sidebar.sidebar-narrow {
+  // The flyout escapes the rail, so nothing up the tree may clip it.
+  overflow: visible;
+
+  .sidebar-nav,
+  .simplebar-content-wrapper,
+  .simplebar-content,
+  .simplebar-mask {
+    overflow: visible !important;
+  }
+
+  .nav-item,
+  .nav-group {
+    position: relative;
+  }
+
+  .nav-link {
+    justify-content: center;
+    margin: 2px 6px;
+  }
+
+  // THE rail rule: no labels, so the icon is the only thing to centre.
+  //
+  // Without this the label is still in the flow — centring put the icon off the left edge and
+  // left a clipped word in its place ("MESSAGI", "RASTRUC"). Hidden rather than clipped, because
+  // clipping is what produced those fragments. The flyout panel re-shows it below; a plain link
+  // gets its name from the data-label tooltip instead.
+  .nav-link-text {
+    display: none;
+  }
+
+  // Icons centre in the rail; the caret and the child rule are clutter with no labels to mark.
+  .nav-group-toggle::after {
+    display: none;
+  }
+
+  .nav-group-items {
+    border-left: 0;
+    margin-left: 0;
+  }
+
+  // ---- the panel itself ----
+  // `.show` matters as much as `:hover`: CoreUI toggles it when the group is CLICKED, and the rail
+  // appears from 768px up — which includes tablets, where there is no hover at all. Hover-only
+  // would have left the collapsed menu impossible to open on touch.
+  .nav-group:hover > .nav-group-items,
+  .nav-group.show > .nav-group-items,
+  .nav-group:focus-within > .nav-group-items {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    z-index: 1032;
+
+    display: block;
+    height: auto !important;
+    min-width: 206px;
+    padding: 6px !important;
+    margin: 0 0 0 2px !important;
+
+    visibility: visible !important;
+    opacity: 1 !important;
+
+    background: $sidebar-color;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  }
+
+  // Inside the panel the labels are back, so rows look like rows again.
+  .nav-group:hover > .nav-group-items .nav-link,
+  .nav-group.show > .nav-group-items .nav-link,
+  .nav-group:focus-within > .nav-group-items .nav-link {
+    justify-content: flex-start;
+    white-space: nowrap;
+    padding-left: .7rem !important;
+    padding-right: 1rem !important;
+    margin: 1px 0;
+  }
+
+  // …including the label itself, which the rail rule above hid. The panel is the one place in a
+  // collapsed sidebar with room for words, and an unlabelled flyout would be a list of icons
+  // explaining a list of icons.
+  .nav-group:hover > .nav-group-items .nav-link-text,
+  .nav-group.show > .nav-group-items .nav-link-text,
+  .nav-group:focus-within > .nav-group-items .nav-link-text {
+    display: inline;
+  }
+
+  // A label for plain links too, which have no panel of their own to name them.
+  .nav-item > .nav-link {
+    position: relative;
+  }
+
+  // data-label rather than title: the native tooltip would appear alongside this one after its
+  // own delay, giving two labels for the same icon.
+  .nav-item > .nav-link:hover::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1032;
+    margin-left: 2px;
+    padding: 7px 12px;
+    white-space: nowrap;
+    font-size: 12.5px;
+    color: #fff;
+    background: $sidebar-color;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  }
+}
+
+// 767.98px, matching CoreUI's own breakpoint for the narrow rail — NOT the lg one. Below this the
+// sidebar is a full-width off-canvas overlay and the rail rules do not apply, so centring the icons
+// and hiding the carets would leave a wide panel of unlabelled glyphs.
+@media (max-width: 767.98px) {
+  .sidebar.sidebar-narrow {
+    .nav-link {
+      justify-content: flex-start;
+    }
+
+    // Below the rail breakpoint the sidebar is a full-width overlay, so the labels come back
+    // everywhere — hiding them here would leave a wide panel of unexplained glyphs.
+    .nav-link-text {
+      display: inline;
+    }
+
+    .nav-group-toggle::after {
+      display: block;
+    }
+
+    // Back to an inline accordion: there is no rail to fly out from at this width.
+    .nav-group.show > .nav-group-items {
+      position: static;
+      min-width: 0;
+      margin: 0 !important;
+      background: none;
+      box-shadow: none;
+    }
+
+    .nav-item > .nav-link:hover::after {
+      content: none;
+    }
+  }
+}
+
+.profile {
+  font-size: 12px !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: $phAMACore-color !important;
+  // color: #F58B40 !important;
+  font-weight: bold !important;
+}
+
+// .sidebar-nav .nav-icon {
+//   font-size: 1rem !important;
+//   color: $phAMACore-color !important;
+// }
+
+// .sidebar-nav .nav-item-icon {
+//   flex: 0 0 4rem;
+//   height: 1.25rem;
+//   font-size: 1rem !important;
+//   text-align: center;
+//   color: $phAMACore-color !important;
+//   // color: $primary-color;
+//   // fill: currentColor;
+//   transition: inherit;
+// }
+
+
+
+.nav-link {
+  // padding: 10px 15px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  color: #b4bcc8;
+  white-space: nowrap;
+  // border-bottom: 1px solid #34383e;
+  position: relative;
+  overflow: hidden;
+  transition: .0s;
+  -webkit-transition: .0s;
+
+  &:hover,
+  &:focus {
+    // background: #fff;
+    color: $phAMACore-color;
+    // color: $primary-color;
+  }
+
+  &:hover .icon,
+  &:focus .icon {
+    color: $sidebar-color;
+  }
+
+  &:hover::before {
+    content: '';
+    position: absolute;
+    right: -18px;
+    background: $phAMACore-color;
+    // background: $primary-color;
+    height: 15px;
+    width: 40px;
+    -webkit-transform: rotate(90deg);
+    transform: rotate(-45deg);
+    bottom: 0;
+  }
+}
+
+.nav-link.active {
+  // background: #fff;
+  // color: $sidebar-color;
+  color: $phAMACore-color;
+
+  &::before {
+    content: '';
+    position: absolute;
+    right: -18px;
+    background: $sidebar-color;
+    // background: $phAMACore-color;
+    height: 15px;
+    width: 40px;
+    -webkit-transform: rotate(90deg);
+    transform: rotate(-45deg);
+    bottom: 0;
+  }
+
+  .icon {
+    color: $sidebar-color;
+  }
+}
+
+/**** Pager ****
+ * Matches the pagination MaterialTable renders on the Licences listing — "N rows" selector, then
+ * first / prev / range / next / last — so a server-paged screen reads the same as a client-paged
+ * one. Borderless and quiet by default, picking up the phAMACore accent on hover.
+ */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.pager-btn {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 2px 6px !important;
+  line-height: 1;
+  color: #6c757d !important;
+  box-shadow: none !important;
+  transition: color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: $phAMACore-color !important;
+  }
+
+  // Flat grey rather than Bootstrap's 0.65 opacity, so "can't go further" reads as a state
+  // instead of a washed-out active control.
+  &:disabled {
+    opacity: 1;
+    color: #d3d7dd !important;
+  }
+}
+
+.pager-range {
+  font-size: 11px;
+  color: #6c757d;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.pager-size {
+  font-size: 11px !important;
+  width: auto;
+  padding: 2px 26px 2px 6px !important;
+  // Opt out of the .form-select-sm floor above — this one is a borderless inline control, not a
+  // form field that has to line up with an input.
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #6c757d !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+
+  &:focus {
+    color: $phAMACore-color !important;
+  }
+}
+
+// .filter-btn had no hover state at all, which is most of why these controls felt flat.
+.filter-btn:hover:not(:disabled) {
+  background-color: $phAMACore-color !important;
+  color: #fff !important;
+}
+
+/**** "How this works" hint ****
+ * A help panel that starts hidden still has to be discoverable. The button pulses a few times on
+ * arrival and then stops — enough to catch the eye without becoming permanent visual noise.
+ */
+@keyframes guide-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba($phAMACore-color, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba($phAMACore-color, 0);
+  }
+}
+
+.guide-hint {
+  animation: guide-pulse 1.4s ease-out 6;
+}
+
+// Honour a user's motion preference — a pulsing control is exactly what this setting is for.
+@media (prefers-reduced-motion: reduce) {
+  .guide-hint {
+    animation: none;
+    outline: 1px dashed $phAMACore-color;
+  }
+}
+
+/**** Tabs (Update Client: Company Level / Branch Level) ****
+ * CoreUI styles .nav-tabs .nav-link with the default primary BLUE, which outranks the plain
+ * .nav-link rule above (two classes vs one). These rules put the tabs back on the phAMACore
+ * accent and give the titles the weight they need to read as section headings.
+ */
+.nav-tabs {
+  border-bottom: 1px solid rgba($phAMACore-color, 0.4);
+
+  .nav-link {
+    color: #6c757d; // neutral grey for the inactive tab — never the default blue
+    font-weight: 600;
+    border: 1px solid transparent;
+    border-radius: 0;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+
+    // The sidebar's orange corner wedge is a navigation affordance; on a tab it reads as a
+    // stray clipped triangle, and the active border/colour already carry the state.
+    &::before,
+    &:hover::before {
+      content: none !important;
+    }
+
+    &:hover,
+    &:focus {
+      color: $phAMACore-color;
+      border-color: transparent;
+    }
+
+    &.active {
+      color: $phAMACore-color;
+      font-weight: 700;
+      background-color: #fff;
+      border-color: rgba($phAMACore-color, 0.4);
+      border-bottom-color: #fff; // sit the active tab on top of the strip
+    }
+  }
+}
+
+.searchWrapper {
+  border: 1px solid #ccc;
+  border-radius: 0rem !important;
+  min-height: 22px;
+  padding: 5px;
+  position: relative;
+}
+
+.chip {
+  align-items: center !important;
+  background: $phAMACore-color !important;
+  border-radius: 15px !important;
+  color: #fff !important;
+  display: inline-flex !important;
+  font-size: 10px !important;
+  line-height: 19px !important;
+  margin-bottom: 0rem !important;
+  margin-right: 5px !important;
+  padding: 4px 10px !important;
+}
+
+.css-6od3lo-MuiChip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 0rem !important;
+  padding-right: 0rem !important;
+  white-space: nowrap;
+}
+
+.update-btn {
+  background-color: #28A745 !important;
+  font-size: 10px !important;
+  color: white !important;
+}
+
+.reverse-btn {
+  font-size: 10px !important;
+  border: 1px solid #28A745 !important;
+  color: #28A745 !important;
+}
+
+.reverse-btn:hover {
+  font-size: 10px !important;
+  border: 1px solid #28A745 !important;
+  // background-color: #28A745;
+  // color: white !important;
+}
+
+.modal-header .btn-close {
+  display: none !important;
+}
+
+/**** Email status summary tiles ****/
+.email-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+
+  @media (max-width: 767px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  // The SMS screen has five states, not four: Failed and Rejected are counted apart because a
+  // rejection must not be retried (see SmsStatus). Five across on a wide screen, and the same
+  // two-up fallback below the breakpoint.
+  &--five {
+    grid-template-columns: repeat(5, 1fr);
+
+    @media (max-width: 1199px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    @media (max-width: 767px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+}
+
+.email-stat {
+  --accent: #2f3b52;
+  --tint: #eef1f6;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  // Set explicitly so these also work as a <button>, which some screens use for the real focus
+  // and keyboard behaviour instead of div + role="button". A button would otherwise centre its
+  // text and drop the inherited font.
+  text-align: left;
+  font: inherit;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e9edf2;
+  border-radius: 10px;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    opacity: .9;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(32, 43, 69, .12);
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
+  }
+
+  &.active {
+    border-color: var(--accent);
+    background: var(--tint);
+    box-shadow: inset 0 0 0 2px var(--accent), 0 6px 16px rgba(32, 43, 69, .10);
+  }
+
+  &.is-all {
+    --accent: #{$primary-color};
+    --tint: #fdf1e8;
+  }
+
+  &.is-sent {
+    --accent: #{$success-color};
+    --tint: #e8f7ee;
+  }
+
+  &.is-pending {
+    --accent: #e0a800;
+    --tint: #fdf6e3;
+  }
+
+  &.is-failed {
+    --accent: #{$danger-color};
+    --tint: #fdecec;
+  }
+
+  &__icon {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--tint);
+    color: var(--accent);
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+    min-width: 0;
+  }
+
+  &__value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #22304a;
+    letter-spacing: -.5px;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #8a94a6;
+    margin-top: 1px;
+  }
+
+  &__meta {
+    font-size: 10px;
+    color: #aab2c0;
+    margin-top: 2px;
+  }
+
+  // The Setup page's section tabs.
+  //
+  // Same tile, different hierarchy: the prominent element is a NAME rather than a count, so 26px
+  // is far too big — "Invoice details" at that size wraps inside the tile. The name takes a
+  // readable weight and the configured/not-configured line sits under it in the label slot.
+  &--setup {
+    .email-stat__value {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .email-stat__label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      // Long enough to wrap on a narrow tile, and wrapping is better than clipping a warning.
+      white-space: normal;
+    }
+  }
+
+  &__bar {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 8px;
+    height: 3px;
+    border-radius: 3px;
+    background: #eef1f5;
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width .35s ease;
+  }
+}
+
+/**** Server analytics (views/analytics) ****/
+// Surfaces/text come from the --an-* tokens so the whole page re-themes by swapping them
+// (dark values live in _darkmode.scss). Accents use the brand/status colours above.
+@property --pct {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.an-page {
+  --an-surface: #fff;
+  --an-surface-2: #f6f8fa;
+  --an-border: #e9edf2;
+  --an-text: #22304a;
+  --an-muted: #8a94a6;
+  --an-track: #eef1f5;
+  --an-shadow: 0 8px 20px rgba(32, 43, 69, .12);
+  color: var(--an-text);
+}
+
+.an-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--an-text);
+
+    .material-icons {
+      font-size: 22px;
+      color: $primary-color;
+    }
+  }
+
+  &__sub {
+    font-size: 11px;
+    color: var(--an-muted);
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+.an-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  font-size: 11px;
+  color: var(--an-muted);
+  background: var(--an-surface);
+  border: 1px solid var(--an-border);
+  border-radius: 999px;
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $success-color;
+    animation: an-pulse 2s infinite;
+  }
+
+  &.is-stale &__dot {
+    background: $danger-color;
+    animation: none;
+  }
+}
+
+@keyframes an-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba($success-color, .55);
+  }
+
+  70% {
+    box-shadow: 0 0 0 7px rgba($success-color, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba($success-color, 0);
+  }
+}
+
+// Refresh button: the ring around the icon fills up until the next auto-refresh.
+.an-refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px 4px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $primary-color;
+  background: var(--an-surface);
+  border: 1px solid $primary-color;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+
+  &__ring {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: conic-gradient($primary-color calc(var(--elapsed, 0) * 1%), rgba($primary-color, .18) 0);
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border-radius: 50%;
+      background: var(--an-surface);
+      transition: background .15s ease;
+    }
+  }
+
+  &__icon {
+    position: relative;
+    font-size: 16px !important;
+  }
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    background: $primary-color;
+    box-shadow: 0 4px 12px rgba($primary-color, .35);
+
+    .an-refresh__ring {
+      background: conic-gradient(#fff calc(var(--elapsed, 0) * 1%), rgba(#fff, .35) 0);
+
+      &::before {
+        background: $primary-color;
+      }
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($primary-color, .35);
+  }
+
+  &:disabled {
+    cursor: progress;
+  }
+
+  &.is-busy .an-refresh__icon {
+    animation: an-spin .8s linear infinite;
+  }
+}
+
+@keyframes an-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.an-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: $danger-color;
+  background: rgba($danger-color, .08);
+  border: 1px solid rgba($danger-color, .35);
+  border-radius: 8px;
+
+  .material-icons {
+    font-size: 18px;
+  }
+
+  &__close {
+    margin-left: auto;
+    padding: 0;
+    color: inherit;
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+}
+
+// Shared accent modifiers for KPI tiles and tags.
+.an-kpi,
+.an-tag {
+  --accent: #{$primary-color};
+
+  &.is-success {
+    --accent: #{$success-color};
+  }
+
+  &.is-danger {
+    --accent: #{$danger-color};
+  }
+
+  &.is-warning {
+    --accent: #e0a800;
+  }
+
+  &.is-info {
+    --accent: #{$edit-color};
+  }
+
+  &.is-bronze {
+    --accent: #{$phAMACore-color};
+  }
+
+  &.is-muted {
+    --accent: #{$gray-color};
+  }
+}
+
+.an-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+
+  @media (max-width: 991px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 479px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.an-kpi {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--an-surface);
+  border: 1px solid var(--an-border);
+  border-radius: 10px;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--accent);
+  }
+
+  &__icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-radius: 10px;
+
+    .material-icons {
+      font-size: 22px;
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.15;
+  }
+
+  &__value {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -.5px;
+    color: var(--an-text);
+  }
+
+  &__label {
+    margin-top: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--an-muted);
+  }
+
+  &__meta {
+    margin-top: 2px;
+    font-size: 10px;
+    color: var(--an-muted);
+  }
+}
+
+.an-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: 999px;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.an-panel {
+  height: 100%;
+  padding: 14px 16px;
+  background: var(--an-surface);
+  border: 1px solid var(--an-border);
+  border-radius: 10px;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--an-text);
+
+    .material-icons {
+      font-size: 18px;
+      color: $primary-color;
+    }
+  }
+
+  &__sub {
+    font-size: 10.5px;
+    color: var(--an-muted);
+  }
+
+  &__label {
+    margin-bottom: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--an-muted);
+  }
+}
+
+.an-seg {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--an-surface-2);
+  border: 1px solid var(--an-border);
+  border-radius: 999px;
+
+  button {
+    padding: 3px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--an-muted);
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+
+    &:hover {
+      color: var(--an-text);
+    }
+
+    &.active {
+      color: #fff;
+      background: $primary-color;
+      box-shadow: 0 2px 6px rgba($primary-color, .35);
+    }
+  }
+}
+
+.an-servers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.an-server {
+  padding: 14px 16px;
+  background: var(--an-surface);
+  border: 1px solid var(--an-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--an-shadow);
+    border-color: rgba($primary-color, .6);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba($primary-color, .35);
+  }
+
+  &.is-selected {
+    border-color: $primary-color;
+    box-shadow: inset 0 0 0 1px $primary-color, 0 6px 16px rgba($primary-color, .15);
+  }
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  &__name {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--an-text);
+  }
+
+  &__tags {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  &__gauges {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  &__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 10px;
+    font-size: 11px;
+    color: var(--an-muted);
+    border-top: 1px dashed var(--an-border);
+
+    strong {
+      color: var(--an-text);
+    }
+  }
+}
+
+.an-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+
+  &__ring {
+    --ring: #{$success-color};
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: conic-gradient(var(--ring) calc(var(--pct) * 1%), var(--an-track) 0);
+    transition: --pct .6s ease;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border-radius: 50%;
+      background: var(--an-surface);
+    }
+  }
+
+  &__value {
+    position: relative;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--an-text);
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--an-muted);
+  }
+
+  &__meta {
+    max-width: 100%;
+    font-size: 10px;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--an-muted);
+  }
+}
+
+.an-donut {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+
+  &__chart {
+    position: relative;
+    flex: 0 0 auto;
+    width: 170px;
+    height: 170px;
+    margin: 0 auto;
+  }
+
+  &--sm &__chart {
+    width: 120px;
+    height: 120px;
+  }
+
+  &__center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  &__total {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--an-text);
+  }
+
+  &--sm &__total {
+    font-size: 17px;
+  }
+
+  &__caption {
+    margin-top: 4px;
+    font-size: 9.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--an-muted);
+  }
+
+  &__legend {
+    display: flex;
+    flex: 1 1 150px;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--an-text);
+    }
+  }
+
+  &__swatch {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__val {
+    font-weight: 700;
+  }
+
+  &__pct {
+    width: 38px;
+    text-align: right;
+    color: var(--an-muted);
+  }
+}
+
+.an-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 36px 12px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--an-muted);
+
+  .material-icons {
+    font-size: 30px;
+    opacity: .6;
+  }
+}
+
+.an-table-wrap {
+  max-height: 380px;
+  overflow: auto;
+  margin: 0 -16px -14px;
+}
+
+.an-table {
+  --cui-table-bg: transparent;
+  --cui-table-color: var(--an-text);
+  --cui-table-border-color: var(--an-border);
+  margin: 0;
+  font-size: 11.5px;
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 8px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--an-muted);
+    background: var(--an-surface-2) !important;
+    border-bottom: 1px solid var(--an-border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 8px 10px;
+    color: var(--an-text);
+    border-color: var(--an-border);
+  }
+
+  th:first-child,
+  td:first-child {
+    padding-left: 16px;
+  }
+
+  th:last-child,
+  td:last-child {
+    padding-right: 16px;
+  }
+
+  &__muted {
+    color: var(--an-muted);
+  }
+}
+
+.an-ack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: $primary-color;
+  background: transparent;
+  border: 1px solid rgba($primary-color, .6);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+
+  .material-icons {
+    font-size: 13px;
+  }
+
+  &:hover {
+    color: #fff;
+    background: $primary-color;
+  }
+}
+
+/***** CUSTOM SHAPE STYLE *****/
+// @media (min-width: 1200px) {
+//   .w-cover {
+//     width: calc(100% + 50vw - 520px + 2.5rem);
+//   }
+// }
+
+// @media (min-width: 992px) {
+//   .w-cover {
+//     width: calc(100% + 50vw - 480px + 2.5rem);
+//   }
+// }
+
+// @media (min-width: 768px) {
+//   .w-cover {
+//     width: calc(100% + 50vw - 360px + 2.5rem);
+//   }
+// }
+
+// @media (min-width: 576px) {
+//   .w-cover {
+//     width: calc(100% + 50vw - 270px + 2.5rem);
+//   }
+// }
+
+// .bg-cover {
+//   background: no-repeat 50%/cover;
+// }
+
+// .shape:not([class*=shape-blur]) {
+//   overflow: hidden;
+// }
+
+// .shape-start {
+//   bottom: 0;
+//   left: 0;
+//   right: 0;
+//   top: 0;
+// }
+
+// .shape {
+//   pointer-events: none;
+//   position: absolute;
+// }
+
+// .shape:not([class*=shape-blur])>* {
+//   transform: scale(2);
+// }
+
+// .shape-fluid-y>* {
+//   height: 100%;
+//   width: auto;
+// }
+
+// .shape-start>* {
+//   bottom: inherit;
+//   left: inherit;
+//   position: inherit;
+//   top: inherit;
+//   transform-origin: center right;
+// }
+
+// .shape>* {
+//   display: block;
+// }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { getToken } from '../../utils/session'
+import useConfirm from '../../components/useConfirm'
 
 const axios = require('axios')
 const BASE_URL = process.env.REACT_APP_URL_CONFIG
@@ -14,6 +15,9 @@ const readErr = (e) =>
 
 // Google Authenticator (TOTP) enrollment + management, embedded in the user's profile.
 const TwoFactorSettings = () => {
+  // Replaces window.confirm / window.prompt — the browser prefixes those with its own
+  // hostname, cannot mark a destructive action, and cannot require an answer. See useConfirm.
+  const [confirm, confirmDialog] = useConfirm()
   const [enabled, setEnabled] = useState(false)
   const [recoveryRemaining, setRecoveryRemaining] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -85,9 +89,19 @@ const TwoFactorSettings = () => {
   }
 
   const disable = async () => {
-    const entered = window.prompt(
-      'Enter a current authenticator code (or a backup code) to turn 2FA off:',
-    )
+    const entered = await confirm({
+      title: 'Turn off two-step verification?',
+      body: 'Your account will be protected by its password alone.',
+      danger: true,
+      confirmText: 'Turn it off',
+      input: {
+        label: 'Authenticator code',
+        placeholder: '000000',
+        help: 'A current code from your app, or one of your backup codes.',
+        maxLength: 20,
+      },
+    })
+
     if (!entered) return
     setBusy(true)
     setError('')
@@ -108,9 +122,18 @@ const TwoFactorSettings = () => {
   }
 
   const regenerate = async () => {
-    const entered = window.prompt(
-      'Enter a current authenticator code to generate new backup codes:',
-    )
+    const entered = await confirm({
+      title: 'Generate new backup codes?',
+      body: 'Your existing backup codes stop working immediately.',
+      confirmText: 'Generate new codes',
+      input: {
+        label: 'Authenticator code',
+        placeholder: '000000',
+        help: 'A current code from your app.',
+        maxLength: 20,
+      },
+    })
+
     if (!entered) return
     setBusy(true)
     setError('')
@@ -138,6 +161,8 @@ const TwoFactorSettings = () => {
 
   return (
     <div className="card rounded-0">
+      {confirmDialog}
+
       <div className="card-header py-2 d-flex justify-content-between align-items-center">
         <span style={{ fontSize: 13, fontWeight: 600 }}>Two-Factor Authentication</span>
         <span

@@ -21,4 +21,14 @@ export const MODULES = {
   ViewBranchLocations: 18,
   ViewDuplicateBranches: 19,
   ResolveDuplicateBranches: 20,
+
+  // Billing, payments and the client portal. Viewing money and moving money are separate rights.
+  ViewBilling: 21,
+  ManageBilling: 22,
+  ViewPayments: 23,
+  RecordPayments: 24,
+  ManageClientPortalUsers: 25,
+
+  // 26/27 were ViewSms/ManageSms. SMS now uses ViewEmails/ManageSmtp — one right covers messaging
+  // setup, email and SMS alike. The numbers are not reused.
 }

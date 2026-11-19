@@ -23,6 +23,28 @@ import { logo } from 'src/assets/brand/logo'
 const AppHeader = () => {
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
+  const collapsed = useSelector((state) => state.sidebarUnfoldable)
+
+  /**
+   * The hamburger means different things at different widths, because the sidebar does.
+   *
+   * On desktop it COLLAPSES the sidebar to the icon rail — hiding it outright just leaves a blank
+   * column and no way back except the same button. On narrow screens the sidebar is an off-canvas
+   * overlay, so there the hamburger shows and hides it, which is the only sensible meaning there.
+   *
+   * The desktop choice is remembered: someone who works collapsed should not have to re-collapse
+   * it on every page load.
+   */
+  const toggleSidebar = () => {
+    const isDesktop = window.matchMedia('(min-width: 992px)').matches
+    if (isDesktop) {
+      const next = !collapsed
+      localStorage.setItem('sidebarCollapsed', next ? '1' : '0')
+      dispatch({ type: 'set', sidebarUnfoldable: next, sidebarShow: true })
+    } else {
+      dispatch({ type: 'set', sidebarShow: !sidebarShow })
+    }
+  }
 
   return (
     <>
@@ -30,7 +52,9 @@ const AppHeader = () => {
         <CContainer fluid>
           <CHeaderToggler
             className="ps-1"
-            onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
+            aria-label="Toggle the menu"
+            aria-expanded={!collapsed}
+            onClick={toggleSidebar}
           >
             <CIcon icon={cilMenu} size="lg" />
           </CHeaderToggler>

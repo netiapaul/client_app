@@ -1,21 +1,13 @@
 import React, { useState } from 'react'
-
-// Applies the theme to <html> and persists the choice.
-const applyTheme = (dark) => {
-  document.documentElement.classList.toggle('theme-dark', dark)
-  localStorage.setItem('theme', dark ? 'dark' : 'light')
-}
+import { isDark, toggleDark } from '../utils/theme'
 
 // Header button that toggles light/dark mode. The choice is remembered across sessions
-// and applied before first paint in index.js.
+// and applied before first paint in index.js. The mechanism itself lives in utils/theme,
+// shared with the client portal's own toggle.
 const ThemeToggle = () => {
-  const [dark, setDark] = useState(() => document.documentElement.classList.contains('theme-dark'))
+  const [dark, setDark] = useState(isDark)
 
-  const toggle = () => {
-    const next = !dark
-    setDark(next)
-    applyTheme(next)
-  }
+  const toggle = () => setDark(toggleDark())
 
   return (
     <button

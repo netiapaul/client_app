@@ -963,18 +963,59 @@ const UpdateClient = () => {
 
   // Days -> date. Shown as a preview; when the add-on has mixed expiries across branches the days
   // value is what gets sent, so each branch moves forward from its own date.
+  //
+  // Zero and negatives are ignored rather than previewed: the server refuses them, and quietly
+  // showing a date BEHIND the current expiry for a typed "-5" would suggest it was a thing that
+  // could be saved.
   const onExtendDays = (e) => {
     const value = e.target.value
     setExtendDays(value)
-    setExtendDate(value ? extendBaseline(expiryEdit).add(Number(value), 'days').toDate() : null)
+
+    const days = Number(value)
+    setExtendDate(
+      value && Number.isFinite(days) && days > 0
+        ? extendBaseline(expiryEdit).add(days, 'days').toDate()
+        : null,
+    )
+  }
+
+  /**
+   * How many licensed days a chosen date would REMOVE, or 0 when it adds or changes nothing.
+   *
+   * Worth saying out loud: pulling an expiry back is legitimate — correcting a date entered wrong
+   * — but it also switches a feature off sooner than the client currently expects, and the only
+   * other thing on screen is a bare date that looks the same either way.
+   */
+  const shortensBy = () => {
+    if (!extendDate || !expiryEdit) return 0
+
+    const current = expiryEdit.expiryDate ?? expiryEdit.earliestExpiry
+    if (!current) return 0 // "never expires" — any date is a reduction, but of nothing countable
+
+    const lost = moment(current).startOf('day').diff(moment(extendDate).startOf('day'), 'days')
+    return lost > 0 ? lost : 0
   }
 
   // Date -> days, counted from the same baseline so the two boxes agree.
+  //
+  // Only when the date is actually an EXTENSION. Days means "add this many to the current expiry"
+  // — the server refuses anything that is not greater than zero — so a date on or before the
+  // baseline has no day count to show. It used to display the negative difference: picking
+  // 15 Nov against a current expiry of 4 Dec put "-19" in a box whose only legal values are
+  // positive, which reads as a broken screen and could not have been saved from.
+  //
+  // Pulling an expiry BACK is still perfectly allowed; it just travels as a date, which is a
+  // complete instruction on its own.
   const onExtendDate = (date) => {
     setExtendDate(date)
-    setExtendDays(
-      date ? String(moment(date).startOf('day').diff(extendBaseline(expiryEdit), 'days')) : '',
-    )
+
+    if (!date) {
+      setExtendDays('')
+      return
+    }
+
+    const days = moment(date).startOf('day').diff(extendBaseline(expiryEdit), 'days')
+    setExtendDays(days > 0 ? String(days) : '')
   }
 
   const SaveAddOnExpiry = async (e) => {
@@ -3241,6 +3282,15 @@ const UpdateClient = () => {
                     <span className="text-body">
                       → new expiry{' '}
                       <span className="fw-bold">{moment(extendDate).format('DD/MM/YYYY')}</span>
+                      {/* Pulling a date back is allowed, but it ends the add-on sooner than the
+                          client currently has — and the line above looks identical either way. */}
+                      {shortensBy() > 0 && (
+                        <span className="text-danger">
+                          {' '}
+                          — {shortensBy()} day(s) EARLIER than now, so {expiryEdit.addonName} stops
+                          sooner
+                        </span>
+                      )}
                     </span>
                   ) : (
                     <span className="text-muted">Pick a date or enter a number of days.</span>

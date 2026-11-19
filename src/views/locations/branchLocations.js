@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { getToken, hasModule } from '../../utils/session'
 import { MODULES } from '../../utils/permissions'
+import useConfirm from '../../components/useConfirm'
 import { toast } from 'react-toastify'
 import SearchableSelect from '../../components/SearchableSelect'
 const axios = require('axios')
@@ -19,6 +20,9 @@ const axios = require('axios')
  * authoritative and the push can be retried.
  */
 const BranchLocations = () => {
+  // Replaces window.confirm / window.prompt — the browser prefixes those with its own
+  // hostname, cannot mark a destructive action, and cannot require an answer. See useConfirm.
+  const [confirm, confirmDialog] = useConfirm()
   // The screen itself is gated by ViewBranchLocations on the route/nav; editing is a separate
   // right. Without it the pickers are read-only and the save actions are gone — the server
   // enforces the same split, so this is convenience, not the control.
@@ -298,17 +302,32 @@ const BranchLocations = () => {
     }
   }
 
-  const selectClient = (c) => {
-    if (pendingIds.length > 0 && !window.confirm('Discard unsaved location changes?')) return
+  /**
+   * Ask before throwing away staged edits. Both places that drop them — picking a different
+   * client and switching surface — ask the same question, so it is written once.
+   */
+  const discardStaged = () =>
+    confirm({
+      title: 'Discard unsaved location changes?',
+      body: `${pendingIds.length} branch(es) have edits that have not been pushed.`,
+      danger: true,
+      confirmText: 'Discard them',
+      cancelText: 'Keep editing',
+    })
+
+  // async because the confirmation is a modal rather than a blocking browser dialog. An async
+  // event handler is fine in React — nothing downstream awaits it.
+  const selectClient = async (c) => {
+    if (pendingIds.length > 0 && !(await discardStaged())) return
     setSelected(c)
     loadBranches(c.cusCode)
   }
 
   // Switching surface reloads the branch list and so drops staged edits — ask first, exactly as
   // picking a different client does.
-  const changeClientType = (v) => {
+  const changeClientType = async (v) => {
     if (v === clientType) return
-    if (pendingIds.length > 0 && !window.confirm('Discard unsaved location changes?')) return
+    if (pendingIds.length > 0 && !(await discardStaged())) return
     setClientType(v)
   }
 
@@ -350,6 +369,8 @@ const BranchLocations = () => {
 
   return (
     <>
+      {confirmDialog}
+
       <hr className="my-2" />
       <div className="container-fluid bg-light p-0">
         <div className="d-flex justify-content-between align-items-center">

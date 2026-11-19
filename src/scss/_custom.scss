@@ -4,15 +4,11 @@ body {
   font-family: "Poppins", sans-serif !important;
 }
 
-.container,
-.container-lg,
-.container-md,
-.container-sm,
-.container-xl {
-  max-width: 100% !important;
-}
-
 /* Default color & font Variables */
+// Declared here, at the top, because Sass resolves variables in source order: the rules below use
+// $phAMACore-color and $danger-color, and a declaration further down the file would simply be an
+// "Undefined variable" error. They were previously declared mid-file, which worked only because
+// nothing above them referenced one.
 $body-font-family: 'Nunito Sans',
 sans-serif;
 $body-bg-color: #eef5f9;
@@ -31,1389 +27,1696 @@ $success-color: #2eb85c;
 $sidebar-color: #F58B40;
 $phAMACore-color: #c58c4f;
 
-
-input:checked {
-  background-color: $phAMACore-color !important;
-  border-color: $phAMACore-color !important;
-}
-
-.company_text_color {
-  color: $phAMACore-color;
-}
-
-.logout {
-  font-size: 12px !important;
-}
-
-.logout:hover {
-  background-color: #F58B40 !important;
-  cursor: pointer !important;
-  color: white !important;
-
-}
-
-.accout {
-  font-size: 12px !important;
-}
-
-.accout:hover {
-  background-color: #C58C4f !important;
-  cursor: pointer !important;
-  color: white !important;
-
-}
-
-.inValid {
-  border: 1px solid $danger-color !important;
-}
-
-::marker {
-  display: none !important;
-}
-
-.form-control-sm,
-.form-select-sm {
-  font-size: 10px !important
-}
-
-// CoreUI gives .form-control-sm a min-height but gives .form-select-sm none, so an input and a
-// select sitting side by side are not the same height. It usually passes unnoticed, but this app
-// forces both to 10px and a <select> will not shrink its internal line box the way an <input>
-// does — so the two drift apart. Same formula as .form-control-sm, so they resolve identically.
-.form-select-sm {
-  min-height: calc(1.5em + 0.5rem + calc(var(--cui-border-width) * 2));
-}
-
-/**** Side-by-side filter controls ****
- * Matching min-heights still leaves a <select> and an <input> a pixel or two apart, because the
- * browser lays out a select's internal text box itself and ignores the line-height an input obeys.
- * For controls that sit next to each other and must read as one row, stop negotiating: fix the
- * box height outright and vertically centre the text in it. Applies to both element types, so
- * whatever the browser would have chosen is overridden identically.
+/**** Type scale ****
+ * One source of truth for text size. The app had grown a spread of inline `fontSize: 10|11|12|13`
+ * literals plus a handful of one-off rules (10.5px, 11.5px), so the same kind of text was a
+ * different size depending on which screen you were on and nothing could be adjusted in one place.
+ *
+ * Five steps, each with a job. Use the utility class — or var(--cb-fs-*) inside a component's own
+ * rules — in place of an inline fontSize. Changing a step here changes it everywhere.
+ *
+ *   page     page/screen title
+ *   section  card, panel and modal headings
+ *   body     ordinary text, form controls, buttons
+ *   table    table cells and dense list rows
+ *   meta     field labels, badges, captions, helper text
+ *
+ * The values match what the majority of the app already renders, so adopting the class on an
+ * existing screen is a no-op visually — which is what makes the retro-fit safe to do gradually
+ * rather than as one sweeping change.
  */
-.filter-control {
-  height: 26px !important;
-  min-height: 26px !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  line-height: 24px !important;
+:root {
+  --cb-fs-page: 18px;
+  --cb-fs-section: 13px;
+  --cb-fs-body: 12px;
+  --cb-fs-table: 11px;
+  --cb-fs-meta: 10px;
+
+  // Line heights paired with the steps above: tighter as the text gets smaller, so dense tables
+  // stay dense without the labels under them colliding.
+  --cb-lh-tight: 1.2;
+  --cb-lh-normal: 1.45;
 }
 
-.auth-input,
-.auth-input-lg {
-  font-size: 12px !important;
-  padding: 14px 16px !important;
-}
-
-.auth-btn {
-  background-color: $phAMACore-color !important;
-  font-size: 14px !important;
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-  color: white !important;
-}
-
-.form-select {
-  background-image: none !important;
-  padding-right: 0.5rem !important;
-  // padding: .375rem 2.25rem .375rem .25rem;
-}
-
-.filter-btn {
-  font-size: 10px !important;
-  color: $phAMACore-color !important;
-  // background-color: $phAMACore-color !important;
-  border: 1px solid $phAMACore-color !important;
-}
-
-.form-control:focus,
-.form-select:focus {
-  box-shadow: 0 0 0 0.25rem rgba(255, 255, 255, 0.25) !important;
-  border-color: gray !important;
-}
-
-.Active-r {
-  height: 10px;
-  width: 10px;
-  border-radius: 50%;
-  background-color: $success-color;
-  margin: auto;
-
-}
-
-.not-active-r {
-  height: 10px;
-  width: 10px;
-  border-radius: 50%;
-  background-color: $danger-color;
-  margin: auto;
-}
-
-/**** Page Loader ****/
-.page-loader {
-  position: absolute;
-  inset: 0;
-  z-index: 1020;
-  background-color: rgba(255, 255, 255, 0.6);
-  cursor: progress;
-}
-
-.page-loader__content {
-  position: sticky;
-  top: 40vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  color: $phAMACore-color;
-  font-size: 12px;
-  font-weight: 500;
-
-  .spinner-border {
-    color: $phAMACore-color !important;
-  }
-}
-
-/**** BUtton Style ****/
-.add-btn {
-  background-color: $success-color !important;
-  font-size: 10px !important;
-  border: 1px solid $success-color !important;
-  color: white !important;
-
-}
-
-.new-btn {
-  // background-color: #C58C4F !important;
-  font-size: 10px !important;
-  border: 1px solid $success-color !important;
-  color: $success-color !important;
-}
-
-.new-btn:hover {
-  font-size: 10px !important;
-  border: 1px solid $success-color !important;
-  background-color: $success-color !important;
-  color: white !important;
-}
-
-.edit-btn {
-  // background-color: #C58C4F !important;
-  font-size: 10px !important;
-  border: 1px solid $edit-color !important;
-  color: $edit-color !important;
-}
-
-.edit-btn:hover {
-  font-size: 10px !important;
-  border: 1px solid $edit-color !important;
-  background-color: $edit-color !important;
-  color: white !important;
-}
-
-.delete-btn {
-  font-size: 10px !important;
-  border: 1px solid $danger-color !important;
-  color: $danger-color !important;
-}
-
-.delete-btn:hover {
-  font-size: 10px !important;
-  border: 1px solid $danger-color !important;
-  background-color: $danger-color !important;
-  color: white !important;
-}
-
-.delete-btn {
-  font-size: 10px !important;
-  border: 1px solid $danger-color !important;
-  color: $danger-color !important;
-}
-
-.cancel-btn {
-  background-color: white !important;
-  font-size: 10px !important;
-  border: 1px solid $success-color !important;
-  color: $success-color !important;
-
-}
-
-// .add-btn:hover {
-//   font-size: 10px !important;
-//   border: 1px solid $success-color !important;
-//   background-color: $success-color !important;
-//   color: white !important;
-// }
-
-/****Form Labels*****/
-@media only screen and (max-width: 767px) {
-  label.divider:after {
-    display: none;
-  }
-}
-
-// label.divider {
-//   font-size: 10px !important;
-// }
-.col-form-label,
-.form-label {
-  font-size: 10px !important;
-  font-weight: 500;
-  line-height: 1.2em;
-}
-
-.divider {
-  overflow: hidden;
-  /* font-size: 0.8em; */
-  font-size: 12px;
-  line-height: 1.2em;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-.divider:after {
-  content: "";
-  vertical-align: middle;
-  display: inline-block;
-  width: 100%;
-  border-bottom: 2px dotted #ccc;
-  /* margin: 0 2% 0 -22%; */
-}
-
-.divider:after {
-  margin: 0 -22% 0 2%;
-}
-
-/**** CModal styles *****/
-
-.modal-title,
-.offcanvas-title {
-  color: $phAMACore-color;
-}
-
-.modal-content {
-  border-radius: 0 !important;
-}
-
-/**** Swal Modal UI styles *****/
-
-.swal-modal {
-  border-radius: 0rem !important;
-}
-
-.swal-button--cancel {
-  // color: #555;
-  background-color: #bfbfbf !important;
-}
-
-.swal-button {
-  // background-color: #7cd1f9;
-  color: #fff !important;
-  border: 1px solid !important;
-  // box-shadow: none;
-  border-radius: 0rem !important;
-  font-weight: 600 !important;
-  // font-size: 14px;
-  // padding: 10px 24px;
-  // margin: 0;
-  // cursor: pointer;
-}
-
-/**** Material Table UI styles *****/
-
-.MuiIconButton-root {
-
-  padding: 0rem !important;
-
-}
-
-.MuiTableCell-root {
-  padding: 0px !important;
-  padding-left: 5px !important;
-  padding-right: 5px !important;
-  font-size: 10px !important;
-  line-height: 2 !important;
-  border: 1px solid #dedede !important;
-
-}
-
-.MuiTableCell-head {
-  background-color: #f3f6f9 !important;
-  font-weight: bold !important;
-  border-bottom: 2px solid rgba(224, 224, 224, 1) !important;
-  line-height: 1 !important;
-  padding: 3px !important;
-
-}
-
-.MTableToolbar-highlight {
-  color: #ffffff;
-  background-color: rgb(255 255 255);
-}
-
-
-.MuiInput-underline:hover:not(.Mui-disabled):before {
-  border-bottom: none !important;
-}
-
-.MuiInput-underline:before {
-  content: none !important;
-}
-
-.MuiSvgIcon-fontSizeSmall {
-  font-size: 12px !important;
-}
-
-.MuiInputBase-root {
-  font-size: 12px !important;
-}
-
-.MuiPaper-elevation2 {
-  box-shadow: none !important;
-}
-
-.MuiToolbar-gutters {
-  padding: 0 !important;
-}
-
-.MuiToolbar-regular {
-  min-height: 45px !important;
-}
-
-/* Footer Style */
-#login-footer {
-  position: fixed !important;
-  left: 0 !important;
-  bottom: 0 !important;
-  width: 100% !important;
-}
-
-.footer {
-  background: #fff !important;
-  padding: 10px 30px !important;
-  text-align: center !important;
-  -webkit-clip-path: polygon(1% 0, 99% 0, 100% 100%, 0% 100%) !important;
-  clip-path: polygon(1% 0, 99% 0, 100% 100%, 0% 100%) !important;
-  border-radius: 30px 30px 0 0 !important;
-
-  p {
-    margin: 0 !important;
-    color: #5a5151 !important;
-    text-align: center !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-
-    a {
-      color: $primary-color !important;
-
-      &:hover {
-        text-decoration: underline !important;
-      }
-    }
-  }
-}
-
-.bg-cover {
-  // background-image: url('https://landkit.goodthemes.co/assets/img/covers/cover-14.jpg');
-  background-image: url('../assets/images/login-cover.jpg');
-  background-repeat: no-repeat !important;
-  background-size: cover !important;
-  background-position: center !important;
-}
-
-.login_asset {
-  background-image: url('../assets/images/login-cover.jpg');
-  background-size: cover;
-  background-repeat: no-repeat;
-  // background-position: center;
-  // background-attachment: fixed;
-
-  // -webkit-transform: scaleX(-1);
-  // transform: scaleX(-1)
-}
-
-// .login_asset {
-//   background-image: url('../assets/images/auth-side-bg.png');
-//   // background-position: center;
-//   // background-attachment: fixed;
-//   background-size: cover;
-//   background-repeat: no-repeat;
-//   // rotate: 360deg;
-//   -webkit-transform: scaleX(-1);
-//   transform: scaleX(-1)
-// }
-
-// Sidebar section headings (CNavTitle entries in _nav.js).
-.sidebar-nav .nav-title {
-  color: $phAMACore-color !important;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  margin-top: 6px !important;
-  padding-top: 10px !important;
-  padding-bottom: 4px !important;
-}
-
-.sidebar-nav .nav-title:first-child {
-  margin-top: 0 !important;
-}
-
-.profile {
-  font-size: 12px !important;
-  background-color: transparent !important;
-  border: none !important;
-  color: $phAMACore-color !important;
-  // color: #F58B40 !important;
-  font-weight: bold !important;
-}
-
-// .sidebar-nav .nav-icon {
-//   font-size: 1rem !important;
-//   color: $phAMACore-color !important;
-// }
-
-// .sidebar-nav .nav-item-icon {
-//   flex: 0 0 4rem;
-//   height: 1.25rem;
-//   font-size: 1rem !important;
-//   text-align: center;
-//   color: $phAMACore-color !important;
-//   // color: $primary-color;
-//   // fill: currentColor;
-//   transition: inherit;
-// }
-
-
-
-.nav-link {
-  // padding: 10px 15px !important;
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-  color: #b4bcc8;
-  white-space: nowrap;
-  // border-bottom: 1px solid #34383e;
+.cb-fs-page    { font-size: var(--cb-fs-page) !important;    line-height: var(--cb-lh-tight); }
+.cb-fs-section { font-size: var(--cb-fs-section) !important; line-height: var(--cb-lh-tight); }
+.cb-fs-body    { font-size: var(--cb-fs-body) !important;    line-height: var(--cb-lh-normal); }
+.cb-fs-table   { font-size: var(--cb-fs-table) !important;   line-height: var(--cb-lh-normal); }
+.cb-fs-meta    { font-size: var(--cb-fs-meta) !important;    line-height: var(--cb-lh-tight); }
+
+/**** Password field with show/hide ****
+ * Wraps any password input (see components/PasswordInput.js). The toggle sits inside the field, so
+ * the input needs room for it — and `padding-right` is !important because several callers set
+ * `padding` inline (the portal forms) or via an !important rule (.auth-input-lg on the login page),
+ * either of which would otherwise put the text under the button. `.pw-field input` outranks those
+ * on specificity, so this is the one declaration that reliably wins.
+ */
+.pw-field {
   position: relative;
-  overflow: hidden;
-  transition: .0s;
-  -webkit-transition: .0s;
+  display: block;
 
-  &:hover,
-  &:focus {
-    // background: #fff;
-    color: $phAMACore-color;
-    // color: $primary-color;
+  input {
+    padding-right: 38px !important;
   }
 
-  &:hover .icon,
-  &:focus .icon {
-    color: $sidebar-color;
-  }
-
-  &:hover::before {
-    content: '';
+  &__btn {
     position: absolute;
-    right: -18px;
-    background: $phAMACore-color;
-    // background: $primary-color;
-    height: 15px;
-    width: 40px;
-    -webkit-transform: rotate(90deg);
-    transform: rotate(-45deg);
-    bottom: 0;
-  }
-}
-
-.nav-link.active {
-  // background: #fff;
-  // color: $sidebar-color;
-  color: $phAMACore-color;
-
-  &::before {
-    content: '';
-    position: absolute;
-    right: -18px;
-    background: $sidebar-color;
-    // background: $phAMACore-color;
-    height: 15px;
-    width: 40px;
-    -webkit-transform: rotate(90deg);
-    transform: rotate(-45deg);
-    bottom: 0;
-  }
-
-  .icon {
-    color: $sidebar-color;
-  }
-}
-
-/**** Pager ****
- * Matches the pagination MaterialTable renders on the Licences listing — "N rows" selector, then
- * first / prev / range / next / last — so a server-paged screen reads the same as a client-paged
- * one. Borderless and quiet by default, picking up the phAMACore accent on hover.
- */
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
-}
-
-.pager-btn {
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  padding: 2px 6px !important;
-  line-height: 1;
-  color: #6c757d !important;
-  box-shadow: none !important;
-  transition: color 0.15s ease;
-
-  &:hover:not(:disabled) {
-    color: $phAMACore-color !important;
-  }
-
-  // Flat grey rather than Bootstrap's 0.65 opacity, so "can't go further" reads as a state
-  // instead of a washed-out active control.
-  &:disabled {
-    opacity: 1;
-    color: #d3d7dd !important;
-  }
-}
-
-.pager-range {
-  font-size: 11px;
-  color: #6c757d;
-  padding: 0 10px;
-  white-space: nowrap;
-}
-
-.pager-size {
-  font-size: 11px !important;
-  width: auto;
-  padding: 2px 26px 2px 6px !important;
-  // Opt out of the .form-select-sm floor above — this one is a borderless inline control, not a
-  // form field that has to line up with an input.
-  min-height: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  color: #6c757d !important;
-  background-color: transparent !important;
-  box-shadow: none !important;
-
-  &:focus {
-    color: $phAMACore-color !important;
-  }
-}
-
-// .filter-btn had no hover state at all, which is most of why these controls felt flat.
-.filter-btn:hover:not(:disabled) {
-  background-color: $phAMACore-color !important;
-  color: #fff !important;
-}
-
-/**** "How this works" hint ****
- * A help panel that starts hidden still has to be discoverable. The button pulses a few times on
- * arrival and then stops — enough to catch the eye without becoming permanent visual noise.
- */
-@keyframes guide-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba($phAMACore-color, 0.55);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba($phAMACore-color, 0);
-  }
-}
-
-.guide-hint {
-  animation: guide-pulse 1.4s ease-out 6;
-}
-
-// Honour a user's motion preference — a pulsing control is exactly what this setting is for.
-@media (prefers-reduced-motion: reduce) {
-  .guide-hint {
-    animation: none;
-    outline: 1px dashed $phAMACore-color;
-  }
-}
-
-/**** Tabs (Update Client: Company Level / Branch Level) ****
- * CoreUI styles .nav-tabs .nav-link with the default primary BLUE, which outranks the plain
- * .nav-link rule above (two classes vs one). These rules put the tabs back on the phAMACore
- * accent and give the titles the weight they need to read as section headings.
- */
-.nav-tabs {
-  border-bottom: 1px solid rgba($phAMACore-color, 0.4);
-
-  .nav-link {
-    color: #6c757d; // neutral grey for the inactive tab — never the default blue
-    font-weight: 600;
-    border: 1px solid transparent;
-    border-radius: 0;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
-
-    // The sidebar's orange corner wedge is a navigation affordance; on a tab it reads as a
-    // stray clipped triangle, and the active border/colour already carry the state.
-    &::before,
-    &:hover::before {
-      content: none !important;
-    }
-
-    &:hover,
-    &:focus {
-      color: $phAMACore-color;
-      border-color: transparent;
-    }
-
-    &.active {
-      color: $phAMACore-color;
-      font-weight: 700;
-      background-color: #fff;
-      border-color: rgba($phAMACore-color, 0.4);
-      border-bottom-color: #fff; // sit the active tab on top of the strip
-    }
-  }
-}
-
-.searchWrapper {
-  border: 1px solid #ccc;
-  border-radius: 0rem !important;
-  min-height: 22px;
-  padding: 5px;
-  position: relative;
-}
-
-.chip {
-  align-items: center !important;
-  background: $phAMACore-color !important;
-  border-radius: 15px !important;
-  color: #fff !important;
-  display: inline-flex !important;
-  font-size: 10px !important;
-  line-height: 19px !important;
-  margin-bottom: 0rem !important;
-  margin-right: 5px !important;
-  padding: 4px 10px !important;
-}
-
-.css-6od3lo-MuiChip-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-left: 0rem !important;
-  padding-right: 0rem !important;
-  white-space: nowrap;
-}
-
-.update-btn {
-  background-color: #28A745 !important;
-  font-size: 10px !important;
-  color: white !important;
-}
-
-.reverse-btn {
-  font-size: 10px !important;
-  border: 1px solid #28A745 !important;
-  color: #28A745 !important;
-}
-
-.reverse-btn:hover {
-  font-size: 10px !important;
-  border: 1px solid #28A745 !important;
-  // background-color: #28A745;
-  // color: white !important;
-}
-
-.modal-header .btn-close {
-  display: none !important;
-}
-
-/**** Email status summary tiles ****/
-.email-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 14px;
-
-  @media (max-width: 767px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.email-stat {
-  --accent: #2f3b52;
-  --tint: #eef1f6;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px 16px;
-  background: #fff;
-  border: 1px solid #e9edf2;
-  border-radius: 10px;
-  cursor: pointer;
-  overflow: hidden;
-  user-select: none;
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: var(--accent);
-    opacity: .9;
-  }
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(32, 43, 69, .12);
-    border-color: var(--accent);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--accent);
-  }
-
-  &.active {
-    border-color: var(--accent);
-    background: var(--tint);
-    box-shadow: inset 0 0 0 2px var(--accent), 0 6px 16px rgba(32, 43, 69, .10);
-  }
-
-  &.is-all {
-    --accent: #{$primary-color};
-    --tint: #fdf1e8;
-  }
-
-  &.is-sent {
-    --accent: #{$success-color};
-    --tint: #e8f7ee;
-  }
-
-  &.is-pending {
-    --accent: #e0a800;
-    --tint: #fdf6e3;
-  }
-
-  &.is-failed {
-    --accent: #{$danger-color};
-    --tint: #fdecec;
-  }
-
-  &__icon {
-    flex: 0 0 auto;
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--tint);
-    color: var(--accent);
-  }
-
-  &__body {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.15;
-    min-width: 0;
-  }
-
-  &__value {
-    font-size: 26px;
-    font-weight: 700;
-    color: #22304a;
-    letter-spacing: -.5px;
-  }
-
-  &__label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
+    width: 30px;
+    height: 30px;
+    padding: 0;
     color: #8a94a6;
-    margin-top: 1px;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: color .15s ease, background .15s ease;
+
+    .material-icons {
+      font-size: 18px;
+    }
+
+    &:hover:not(:disabled) {
+      color: $phAMACore-color;
+      background: rgba($phAMACore-color, .12);
+    }
+
+    &:focus-visible {
+      outline: none;
+      color: $phAMACore-color;
+      box-shadow: 0 0 0 2px rgba($phAMACore-color, .45);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+    }
+  }
+}
+
+/**** Amount field with an inline currency prefix ****
+ * The code sits inside the box rather than in the label, so the figure is never read without its
+ * currency beside it. Same padding trick as .pw-field: callers may set padding inline or with
+ * !important, and `.money-field input` outranks both.
+ */
+.money-field {
+  position: relative;
+  display: block;
+
+  input {
+    padding-left: 42px !important;
+    // Tabular figures keep the digits on a fixed pitch, so the number doesn't jitter sideways as
+    // separators appear and disappear while typing.
+    font-variant-numeric: tabular-nums;
   }
 
-  &__meta {
-    font-size: 10px;
-    color: #aab2c0;
-    margin-top: 2px;
-  }
-
-  &__bar {
+  &__ccy {
     position: absolute;
-    left: 16px;
-    right: 16px;
-    bottom: 8px;
-    height: 3px;
-    border-radius: 3px;
-    background: #eef1f5;
-    overflow: hidden;
-  }
-
-  &__bar-fill {
-    display: block;
-    height: 100%;
-    border-radius: 3px;
-    background: var(--accent);
-    transition: width .35s ease;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    font-size: var(--cb-fs-meta);
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: #8a94a6;
+    pointer-events: none;
   }
 }
 
-/**** Server analytics (views/analytics) ****/
-// Surfaces/text come from the --an-* tokens so the whole page re-themes by swapping them
-// (dark values live in _darkmode.scss). Accents use the brand/status colours above.
-@property --pct {
-  syntax: '<number>';
-  inherits: false;
-  initial-value: 0;
-}
-
-.an-page {
-  --an-surface: #fff;
-  --an-surface-2: #f6f8fa;
-  --an-border: #e9edf2;
-  --an-text: #22304a;
-  --an-muted: #8a94a6;
-  --an-track: #eef1f5;
-  --an-shadow: 0 8px 20px rgba(32, 43, 69, .12);
-  color: var(--an-text);
-}
-
-.an-header {
+/**** Page header ****
+ * The title/summary strip every screen opens with, which each one had been assembling by hand out
+ * of an h6, a couple of <hr>s and an inline font size.
+ */
+.cb-page-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e9edf2;
 
   &__title {
     display: flex;
     align-items: center;
     gap: 8px;
     margin: 0;
-    font-size: 18px;
+    font-size: var(--cb-fs-page);
     font-weight: 700;
-    color: var(--an-text);
+    color: #22304a;
 
     .material-icons {
       font-size: 22px;
-      color: $primary-color;
+      color: $phAMACore-color;
     }
   }
 
   &__sub {
-    font-size: 11px;
-    color: var(--an-muted);
+    font-size: var(--cb-fs-table);
+    color: #8a94a6;
   }
 
   &__actions {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
 }
 
-.an-live {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 11px;
-  font-size: 11px;
-  color: var(--an-muted);
-  background: var(--an-surface);
-  border: 1px solid var(--an-border);
-  border-radius: 999px;
+/**** Card + dense table ****
+ * A table that stays readable on a phone: the wrapper scrolls horizontally rather than letting the
+ * columns crush, and the header sticks so the meaning of a column survives a long list.
+ */
+.cb-card {
+  background: #fff;
+  border: 1px solid #e9edf2;
+  border-radius: 10px;
 
-  &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: $success-color;
-    animation: an-pulse 2s infinite;
-  }
-
-  &.is-stale &__dot {
-    background: $danger-color;
-    animation: none;
+  &__body {
+    padding: 12px;
   }
 }
 
-@keyframes an-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba($success-color, .55);
+.cb-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cb-table {
+  --cui-table-bg: transparent;
+  margin: 0;
+  font-size: var(--cb-fs-table);
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 8px 10px;
+    font-size: var(--cb-fs-meta);
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #8a94a6;
+    background: #f6f8fa !important;
+    border-bottom: 1px solid #e9edf2;
+    white-space: nowrap;
   }
 
-  70% {
-    box-shadow: 0 0 0 7px rgba($success-color, 0);
-  }
-
-  100% {
-    box-shadow: 0 0 0 0 rgba($success-color, 0);
+  td {
+    padding: 8px 10px;
+    vertical-align: middle;
+    border-color: #e9edf2;
   }
 }
 
-// Refresh button: the ring around the icon fills up until the next auto-refresh.
-.an-refresh {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 14px 4px 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: $primary-color;
-  background: var(--an-surface);
-  border: 1px solid $primary-color;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+/**** DataTable — the one admin listing table ****
+ * Measurements taken from the dashboard's material-table, whose look comes from the MUI overrides
+ * in _darkmode.scss (.MuiTableCell-root / -head): a dense bordered grid, 10px cells with
+ * line-height 2, a #f3f6f9 header at 3px padding, a 45px toolbar and a 12px search box.
+ *
+ * Reproduced here on plain markup so every screen can share it without material-table — see the
+ * note in components/DataTable.js for why that library is not being spread further.
+ */
+.cb-dt {
+  --cb-dt-border: #dedede;
+  --cb-dt-head-bg: #f3f6f9;
+  --cb-dt-font: 10px;
+  --cb-dt-line: 2;
+  --cb-dt-hover: #f6f8fa;
 
-  &__ring {
-    position: relative;
+  &__toolbar {
     display: flex;
     align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    min-height: 45px; // .MuiToolbar-regular
+  }
+
+  &__tools {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  // The toolbar search: a grey field with the magnifier inside, as material-table renders it.
+  &__search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 220px;
+    max-width: 420px;
+    padding: 3px 8px;
+    background: #e5e5e5; // tableOptions.searchFieldStyle
+    border-radius: 3px;
+
+    > .material-icons {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      font-size: 12px; // .MuiInputBase-root
+      color: inherit;
+      background: transparent;
+      border: 0;
+      outline: none;
+    }
+  }
+
+  &__clear {
+    display: inline-flex;
+    padding: 0;
+    color: #6b7280;
+    background: none;
+    border: 0;
+    cursor: pointer;
+
+    .material-icons {
+      font-size: 14px;
+    }
+
+    &:hover {
+      color: #22304a;
+    }
+  }
+
+  &__wrap {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--cb-dt-font);
+
+    th,
+    td {
+      // .MuiTableCell-root: a full grid, not just horizontal rules.
+      border: 1px solid var(--cb-dt-border);
+    }
+
+    td {
+      padding: 0 5px;
+      line-height: var(--cb-dt-line);
+      vertical-align: middle;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 3px 5px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: left;
+      background: var(--cb-dt-head-bg);
+      border-bottom: 2px solid rgba(224, 224, 224, 1);
+      white-space: nowrap;
+    }
+  }
+
+  &__th {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  // Header icons are a cue, not decoration — kept small and quiet so the label still leads.
+  &__thicon {
+    font-size: 13px;
+    opacity: .55;
+  }
+
+  th.is-sortable {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: darken(#f3f6f9, 3%);
+    }
+  }
+
+  &__sort {
+    font-size: 12px;
+    transition: opacity .15s ease;
+
+    // The unsorted arrow only appears on hover, so a row of arrows does not compete with the
+    // headings themselves.
+    &[data-dir='none'] {
+      opacity: 0;
+    }
+  }
+
+  th.is-sortable:hover &__sort[data-dir='none'] {
+    opacity: .35;
+  }
+
+  tbody tr:hover {
+    background: var(--cb-dt-hover);
+  }
+
+  tbody tr[role='button'] {
+    cursor: pointer;
+  }
+
+  &__actions {
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  /* --- states --- */
+  &__state td {
+    padding: 26px 10px !important;
+    text-align: center;
+    color: #6b7280;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  &__empty {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+
+    > .material-icons {
+      font-size: 30px;
+      opacity: .35;
+    }
+  }
+
+  &__empty-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #22304a;
+  }
+
+  &__empty-hint {
+    font-size: 11px;
+  }
+
+  &__spin {
+    font-size: 16px;
+    margin-right: 6px;
+    vertical-align: -3px;
+    animation: cb-dt-spin 1s linear infinite;
+  }
+
+  /* --- pager --- */
+  &__pager {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--cb-dt-border);
+    font-size: 11px;
+    color: #6b7280;
+  }
+
+  &__size {
+    font-size: 11px;
+    padding: 2px 4px;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--cb-dt-border);
+    border-radius: 4px;
+  }
+
+  &__range {
+    margin-left: auto;
+  }
+
+  &__pagebtn {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: conic-gradient($primary-color calc(var(--elapsed, 0) * 1%), rgba($primary-color, .18) 0);
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    color: #6b7280;
+    background: transparent;
+    border: 1px solid var(--cb-dt-border);
+    border-radius: 4px;
+    cursor: pointer;
 
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 2px;
-      border-radius: 50%;
-      background: var(--an-surface);
-      transition: background .15s ease;
+    .material-icons {
+      font-size: 15px;
     }
-  }
 
-  &__icon {
-    position: relative;
-    font-size: 16px !important;
-  }
-
-  &:hover:not(:disabled) {
-    color: #fff;
-    background: $primary-color;
-    box-shadow: 0 4px 12px rgba($primary-color, .35);
-
-    .an-refresh__ring {
-      background: conic-gradient(#fff calc(var(--elapsed, 0) * 1%), rgba(#fff, .35) 0);
-
-      &::before {
-        background: $primary-color;
-      }
+    &:hover:not(:disabled) {
+      color: $phAMACore-color;
+      border-color: rgba($phAMACore-color, .45);
     }
-  }
 
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba($primary-color, .35);
-  }
-
-  &:disabled {
-    cursor: progress;
-  }
-
-  &.is-busy .an-refresh__icon {
-    animation: an-spin .8s linear infinite;
+    &:disabled {
+      opacity: .35;
+      cursor: not-allowed;
+    }
   }
 }
 
-@keyframes an-spin {
+@keyframes cb-dt-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.an-error {
+// The 10px grid is for a pointer and a wide screen. On a phone it is unreadable, and the grid has
+// to scroll sideways rather than crush every column — so the type comes up and the cells breathe.
+@media (max-width: 767.98px) {
+  .cb-dt {
+    --cb-dt-font: 12px;
+    --cb-dt-line: 1.7;
+
+    &__table {
+      min-width: 640px;
+    }
+
+    &__tools {
+      margin-left: 0;
+    }
+  }
+}
+
+/**** Row actions ****
+ * One shape for every action in a listing row: a square outline icon button, colour-coded by what
+ * it does. Taken from StewardPOS's `.tw-acts` — a right-aligned flex row, 0.3rem gap, 8px radius,
+ * icon-only with the label in the tooltip.
+ *
+ * The problem it fixes: rows were mixing two tiny bare icons with a bordered text button, so three
+ * controls of three different shapes sat in one cell. Uniform squares read as a set, and the colour
+ * carries the meaning — grey for a neutral read, bronze for the main action, red for destruction.
+ */
+.cb-acts {
+  display: flex;
+  gap: .3rem;
+  justify-content: flex-end;
+
+  // NOT wrap, which is what the original rule used. The actions column is sized to shrink
+  // (width: 1%), so a wrapping flex row collapses to its narrowest and stacks every button on its
+  // own line — three buttons became three rows, and the table row grew to match. nowrap forces
+  // them side by side and the column widens to fit, which is what width:1% means in a table.
+  flex-wrap: nowrap;
+}
+
+.cb-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 .42rem;
+  font-size: .72rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #6b7280;
+  background: transparent;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color .15s ease, background-color .15s ease, border-color .15s ease;
+
+  .material-icons {
+    font-size: 15px;
+  }
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    background: #6b7280;
+    border-color: #6b7280;
+  }
+
+  &:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+  }
+
+  // Tones. Outline at rest, filled on hover — the same idea as Bootstrap's btn-outline-*, but
+  // sized for a dense row rather than a form.
+  @each $name, $colour in (
+    primary: $phAMACore-color,
+    success: #198754,
+    danger: #dc3545,
+    info: #0d6efd
+  ) {
+    &--#{$name} {
+      color: $colour;
+      border-color: rgba($colour, .55);
+
+      &:hover:not(:disabled) {
+        color: #fff;
+        background: $colour;
+        border-color: $colour;
+      }
+    }
+  }
+}
+
+/**** Row action icon button ****
+ * A square icon button for a table's action column. Text buttons are fine when there are one or
+ * two; once a row carries download, preview, issue and cancel they start to crowd out the data the
+ * row exists to show. The label moves to the tooltip and aria-label so nothing is lost.
+ */
+.cb-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #6b7280;
+  background: transparent;
+  border: 1px solid #e0e5ec;
+  border-radius: 6px;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+
+  .material-icons {
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  &:hover:not(:disabled) {
+    color: $phAMACore-color;
+    background: rgba($phAMACore-color, .08);
+    border-color: rgba($phAMACore-color, .45);
+  }
+
+  &:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+  }
+}
+
+/**** Company chips (portal user's linked companies) ****/
+.cb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 8px;
+  font-size: var(--cb-fs-meta);
+  font-weight: 600;
+  line-height: 1.6;
+  color: #22304a;
+  background: #eef1f6;
+  border: 1px solid #e0e5ec;
+  border-radius: 999px;
+
+  &__code {
+    color: #8a94a6;
+    font-weight: 500;
+  }
+
+  // A link to a cus code with no client behind it — a renamed or mistyped grant.
+  &.is-missing {
+    color: $danger-color;
+    background: rgba($danger-color, .08);
+    border-color: rgba($danger-color, .35);
+  }
+
+  &.is-primary {
+    color: #fff;
+    background: $phAMACore-color;
+    border-color: $phAMACore-color;
+
+    .cb-chip__code {
+      color: rgba(#fff, .75);
+    }
+  }
+}
+
+/**** CLIENT PORTAL ****
+ * Implements the Phase 1 portal designs: a dark navigation rail against a light workspace, mint as
+ * the action colour, generous rounded cards.
+ *
+ * Two deliberate departures from the comp:
+ *
+ *  1. FONTS. The comp sets Inter for text and Plus Jakarta Sans for display. Both are dropped for
+ *     Poppins, the app's own face — a customer-facing portal that renders in a different typeface
+ *     from the product it belongs to reads as a different product. Weight carries the display
+ *     hierarchy instead (700/800), which is what Jakarta was doing there anyway.
+ *  2. SIZES. The portal gets its OWN scale, larger than the admin `--cb-fs-*` steps. Those are
+ *     tuned for dense operator tables at 10–12px; a customer reading a licence date on a phone is a
+ *     different job. One family, two scales, each documented — rather than one scale forced to do
+ *     both.
+ */
+.pt {
+  // Surfaces and text
+  --pt-bg: #{$body-bg-color};
+  --pt-surface: #ffffff;
+  --pt-soft: #f6f8fa;
+  --pt-ink: #22304a;
+  --pt-muted: #5b6577;
+  --pt-dim: #93a0b5;
+  --pt-border: #e4e8f0;
+  --pt-track: #eef1f6;
+
+  // The rail. #2f3b52 is the dark this app already uses for dark surfaces (the email stat tiles,
+  // the analytics header, the outbound email templates) — the comp's near-black navy was swapped
+  // for it so the portal reads as the same product as the back office.
+  --pt-rail: #2f3b52;
+  --pt-rail-active: #3d4a63;
+  --pt-rail-card: #273143;
+  --pt-rail-border: #44526d;
+  --pt-rail-text: #c2cad8;
+  --pt-rail-avatar: #44526d;
+
+  // Accents — the house palette, not the comp's emerald. Two accents, deliberately:
+  // $phAMACore-color is the brand bronze and carries actions on LIGHT ground; $primary-color is
+  // the brighter orange and carries them on the dark rail and hero, where bronze goes muddy.
+  // They are not interchangeable — each is chosen for the ground it sits on.
+  --pt-accent: #{$phAMACore-color};
+  --pt-accent-dk: #a9743c;
+  --pt-accent-bright: #{$primary-color};
+  --pt-accent-bg: #fbf2e8;
+
+  // Status colours, matching the admin screens so a state means one thing in both halves of the
+  // product. Each has a readable foreground and a tint for its chip.
+  --pt-green: #1d7a42;
+  --pt-green-bg: #e8f7ee;
+  --pt-amber: #e0a800;
+  --pt-amber-fg: #8a6100;
+  --pt-amber-bg: #fdf6e3;
+  --pt-red: #{$danger-color};
+  --pt-red-fg: #a32a2a;
+  --pt-red-bg: #fdecec;
+  --pt-indigo-fg: #{$edit-color};
+  --pt-indigo-bg: #e9efff;
+
+  // On dark ground (rail, hero, licence cards): text, and the three status brights. Tokenised
+  // rather than written into the components, so dark mode re-points them in one place.
+  --pt-on-dark: #ffffff;
+  --pt-on-dark-dim: #93a0b5;
+  --pt-ok-bright: #6cd99a;
+  --pt-warn-bright: #f2c66a;
+  --pt-bad-bright: #f3a3a3;
+  --pt-ring-track: #44526d;
+
+  // Hero decoration, in the brand oranges. Two tints rather than one so the arcs read as separate
+  // shapes; the -hover pair is what they brighten to.
+  --pt-hero-ring-a: #{rgba($primary-color, .17)};
+  --pt-hero-ring-b: #{rgba($phAMACore-color, .15)};
+  --pt-hero-ring-a-hover: #{rgba($primary-color, .3)};
+  --pt-hero-ring-b-hover: #{rgba($phAMACore-color, .26)};
+  --pt-hero-glow: #{rgba($primary-color, .14)};
+
+  // Info banner tints
+  --pt-note-bg: #fbf2e8;
+  --pt-note-border: #ecd9bf;
+  --pt-note-strong: #7a4f1c;
+  --pt-note-text: #8a5f28;
+  --pt-amber-border: #f0dca8;
+  --pt-green-border: #bde5cd;
+
+  // Portal type scale
+  --pt-fs-hero: 44px;
+  --pt-fs-display: 28px;
+  --pt-fs-h2: 20px;
+  --pt-fs-h3: 18px;
+  --pt-fs-stat: 26px;
+  --pt-fs-body: 14px;
+  --pt-fs-sm: 13px;
+  --pt-fs-xs: 12px;
+
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+  background: var(--pt-bg);
+  color: var(--pt-ink);
+  font-size: var(--pt-fs-body);
+}
+
+/* --- Navigation rail ---
+ * Sticky and its own scroll container. Without this the rail is just a tall flex item in normal
+ * flow, so on a long page (the company detail runs well past one screen) the navigation scrolls
+ * off the top and a customer has to scroll all the way back up to go anywhere.
+ *
+ * align-self: flex-start is what makes `position: sticky` do anything here — a stretched flex item
+ * is already as tall as the row, so it has no room to stick within.
+ */
+.pt-rail {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 1030;
+  flex: 1 1 248px;
+  max-width: 272px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 26px 18px;
+  background: var(--pt-rail);
+  color: #e6eaf2;
+  scrollbar-width: thin;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 8px;
+  }
+
+  // Sits at the end of the brand row and only appears on hover of the rail, so it is there when
+  // wanted without being a permanent button competing with the navigation.
+  &__collapse {
+    margin-left: auto;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    color: var(--pt-rail-text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s ease, background-color .15s ease, color .15s ease;
+
+    .material-icons {
+      font-size: 18px;
+    }
+
+    &:hover {
+      color: #fff;
+      background: var(--pt-rail-active);
+      border-color: var(--pt-rail-border);
+    }
+
+    &:focus-visible {
+      opacity: 1;
+      outline: 2px solid var(--pt-accent-dark, #fff);
+      outline-offset: 1px;
+    }
+  }
+
+  &:hover &__collapse {
+    opacity: 1;
+  }
+
+  &__mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    flex: none;
+    font-size: var(--pt-fs-h3);
+    font-weight: 800;
+    color: var(--pt-rail);
+    background: var(--pt-accent-bright);
+    border-radius: 11px;
+  }
+
+  &__name {
+    display: block;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+
+  &__tag {
+    display: block;
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-dim);
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__foot {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: auto;
+  }
+
+  &__help {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: var(--pt-rail-card);
+    border: 1px solid var(--pt-rail-border);
+    border-radius: 14px;
+
+    strong {
+      font-size: var(--pt-fs-body);
+      font-weight: 600;
+      color: #fff;
+    }
+
+    span {
+      font-size: var(--pt-fs-sm);
+      line-height: 1.5;
+      color: #a3afc2;
+    }
+  }
+
+  &__me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 6px;
+    min-width: 0;
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    font-size: var(--pt-fs-sm);
+    font-weight: 700;
+    color: #fff;
+    background: var(--pt-rail-avatar);
+    border-radius: 999px;
+  }
+}
+
+.pt-navlink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  font-size: var(--pt-fs-body);
+  font-weight: 500;
+  color: var(--pt-rail-text);
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: 10px;
+  transition: background .15s ease, color .15s ease;
+
+  .material-icons {
+    font-size: 19px;
+  }
+
+  &:hover {
+    color: #fff;
+    background: #162033;
+  }
+
+  // The mint spine is what marks the current page; colour alone is too quiet on this ground.
+  &.active {
+    font-weight: 600;
+    color: #fff;
+    background: var(--pt-rail-active);
+    box-shadow: inset 3px 0 0 var(--pt-accent-bright);
+  }
+
+  &__badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--pt-rail);
+    background: var(--pt-amber);
+    border-radius: 999px;
+  }
+}
+
+/* --- Forced password change: a gate, not a page ------------------------------
+ * Shown INSTEAD of the portal while an admin-issued temporary password is still in place. It is
+ * deliberately shaped like the sign-in page rather than the portal: a single centred card on the
+ * page background, no rail, no navigation, no support card.
+ *
+ * The reason is honesty. Every portal endpoint is refused until the change is done, so a shell
+ * around this screen is furniture for doors that will not open — and it reads as "you are signed
+ * in and browsing" when the account cannot do anything yet.
+ */
+.pt-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px 16px;
+  background: var(--pt-bg);
+
+  &__card {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  &__name {
+    display: block;
+    font-size: var(--pt-fs-body);
+    font-weight: 700;
+    color: var(--pt-ink);
+  }
+
+  &__tag {
+    display: block;
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-muted);
+  }
+
+  // The hero and card inside PortalPassword are sized for the main column; here they are the whole
+  // page, so the max-widths it sets are released.
+  .pt-head,
+  .pt-note,
+  .pt-card {
+    max-width: none !important;
+  }
+
+  .pt-head {
+    margin-bottom: 14px;
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-muted);
+  }
+
+  // Sign out stays: on a screen with no navigation it is the only legitimate way off.
+  &__out {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    font-size: var(--pt-fs-xs);
+    font-weight: 600;
+    color: var(--pt-muted);
+    background: transparent;
+    border: 1px solid var(--pt-border);
+    border-radius: 8px;
+    cursor: pointer;
+
+    .material-icons {
+      font-size: 15px;
+    }
+
+    &:hover {
+      color: var(--pt-ink);
+      background: var(--pt-soft);
+    }
+  }
+}
+
+/* --- Collapsed rail ---------------------------------------------------------
+ * The icon-rail state, matching what the staff sidebar does: the column narrows to its icons and
+ * the label pops out beside whichever one is hovered.
+ *
+ * Simpler than the admin side because the portal's nav is FLAT — there are no groups, so nothing
+ * needs a fly-out panel of children; a label is the whole job.
+ *
+ * Only below 900px does this stop applying: there the rail is already a horizontal strip across
+ * the top, which has no width to reclaim, and touch has no hover to reveal a label with.
+ */
+.pt-rail--narrow {
+  flex-basis: 76px;
+  max-width: 76px;
+  padding-left: 10px;
+  padding-right: 10px;
+
+  // Must be `visible` on BOTH axes: a box with overflow-y:auto computes overflow-x:visible as
+  // auto, so the expanded .pt-rail's vertical scrolling would clip every hover label at the rail's
+  // edge. Safe here because collapsing drops the labels and the support card — the icons alone are
+  // nowhere near a viewport tall.
+  overflow: visible;
+
+  .pt-rail__name,
+  .pt-rail__tag,
+  .pt-rail__help,
+  .pt-navlink__badge {
+    display: none;
+  }
+
+  .pt-rail__brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  // The collapse button stays reachable when there is no brand text to sit beside.
+  .pt-rail__collapse {
+    margin-left: 0;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+
+  .pt-rail__me {
+    justify-content: center;
+
+    // The name and email have nowhere to go at this width; the avatar still says who is signed in.
+    > span:not(.pt-rail__avatar) {
+      display: none;
+    }
+  }
+
+  .pt-navlink {
+    position: relative;
+    justify-content: center;
+    padding: 11px 0;
+    gap: 0;
+    // Hides the label text node while keeping the icon, without needing a wrapper element around
+    // every label in the markup.
+    font-size: 0;
+
+    .material-icons {
+      font-size: 21px;
+    }
+
+    // The label, shown beside the icon on hover. data-label rather than title, or the browser's
+    // own tooltip appears alongside it after its delay.
+    &:hover::after {
+      content: attr(data-label);
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1031;
+      margin-left: 6px;
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #fff;
+      background: var(--pt-rail-card);
+      border: 1px solid var(--pt-rail-border);
+      border-radius: 8px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .4);
+    }
+  }
+}
+
+/* --- Compact icon button (rail footer: theme, sign out) ---
+ * These were reusing .pt-navlink, which is sized for a full-width nav row — 11px padding, a 12px
+ * gap and a 19px icon. For a pair of icon-only buttons that reads as two oversized blocks next to
+ * the user's name. This is a 28px square with a 16px glyph: a control, not a nav item.
+ */
+.pt-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--pt-rail-text);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease;
+
+  .material-icons {
+    font-size: 16px;
+  }
+
+  // Sits on the dark rail, so the hover lift is white rather than the page accent.
+  &:hover {
+    color: #fff;
+    background: rgba(#fff, .14);
+  }
+
+  &:focus-visible {
+    outline: none;
+    color: #fff;
+    box-shadow: 0 0 0 2px rgba(#fff, .4);
+  }
+}
+
+/* --- Workspace --- */
+.pt-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 30px 36px 52px;
+}
+
+.pt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  &__eyebrow {
+    display: block;
+    font-size: var(--pt-fs-sm);
+    font-weight: 500;
+    color: var(--pt-muted);
+  }
+
+  h1 {
+    margin: 4px 0 0;
+    font-size: var(--pt-fs-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+}
+
+.pt-crumb {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
-  padding: 9px 12px;
-  font-size: 12px;
-  color: $danger-color;
-  background: rgba($danger-color, .08);
-  border: 1px solid rgba($danger-color, .35);
-  border-radius: 8px;
+  font-size: var(--pt-fs-sm);
+  color: var(--pt-muted);
+
+  button {
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    color: var(--pt-accent);
+    background: none;
+    border: 0;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--pt-accent-dk);
+      text-decoration: underline;
+    }
+  }
+}
+
+/* --- Cards --- */
+.pt-card {
+  box-sizing: border-box;
+  padding: 22px;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04);
+
+  &--dark {
+    position: relative;
+    overflow: hidden;
+    color: #fff;
+    background: var(--pt-rail);
+    border-color: transparent;
+    border-radius: 22px;
+    padding: 26px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--pt-fs-h3);
+    font-weight: 700;
+  }
+}
+
+.pt-lift {
+  transition: transform .18s ease, box-shadow .18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 34px rgba(11, 18, 32, .10);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(197, 140, 79, .4);
+  }
+}
+
+/* --- Dark hero ---
+ * Decorative rings bled off the card, as in the comp — but in the brand oranges, not the comp's
+ * emerald. Those two rgba values were the last hardcoded leftovers of the original palette, which
+ * is why the card kept reading teal after everything around it had been rebranded.
+ */
+.pt-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: transform .25s ease, box-shadow .25s ease;
+
+  // A warm brand glow in the top-right corner, faded up on hover. Behind the content, which all
+  // carries position: relative, and ignored by the pointer so it can't swallow a click.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(420px circle at 88% 0%, var(--pt-hero-glow), transparent 70%);
+    opacity: 0;
+    transition: opacity .35s ease;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 44px rgba(11, 18, 32, .30);
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+
+  &__ring {
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    transition: transform .6s cubic-bezier(.22, .61, .36, 1), border-color .4s ease;
+
+    &--a {
+      right: -60px;
+      top: -80px;
+      width: 280px;
+      height: 280px;
+      border: 48px solid var(--pt-hero-ring-a);
+    }
+
+    &--b {
+      right: 90px;
+      bottom: -110px;
+      width: 200px;
+      height: 200px;
+      border: 28px solid var(--pt-hero-ring-b);
+    }
+  }
+
+  // The rings drift apart and brighten on hover — the card's only motion, slow enough to read as
+  // depth rather than as something demanding attention.
+  &:hover &__ring--a {
+    transform: translate(-14px, 14px) scale(1.06);
+    border-color: var(--pt-hero-ring-a-hover);
+  }
+
+  &:hover &__ring--b {
+    transform: translate(10px, -16px) scale(1.1);
+    border-color: var(--pt-hero-ring-b-hover);
+  }
+
+  &__label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--pt-fs-xs);
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--pt-dim);
+  }
+
+  &__value {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: var(--pt-fs-hero);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+
+  &__unit {
+    font-size: var(--pt-fs-h2);
+    font-weight: 600;
+    color: #a3afc2;
+  }
+
+  &__facts {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 28px;
+  }
+
+  &__fact {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    span:first-child {
+      font-size: var(--pt-fs-xs);
+      color: var(--pt-dim);
+    }
+
+    span:last-child {
+      font-size: 15px;
+      font-weight: 600;
+    }
+  }
+
+  &__actions {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+/* --- Buttons --- */
+.pt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 46px;
+  padding: 0 20px;
+  font: inherit;
+  font-size: var(--pt-fs-body);
+  font-weight: 600;
+  color: var(--pt-ink);
+  text-decoration: none;
+  white-space: nowrap;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 12px;
+  cursor: pointer;
 
   .material-icons {
     font-size: 18px;
   }
 
-  &__close {
-    margin-left: auto;
-    padding: 0;
-    color: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
+  &:hover:not(:disabled) {
+    background: var(--pt-soft);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+  }
+
+  // The brand bronze, not the status green: green here would read as "this is a success", and
+  // green is reserved for a licence being healthy.
+  &--primary {
+    color: #fff;
+    background: var(--pt-accent);
+    border-color: var(--pt-accent);
+
+    &:hover:not(:disabled) {
+      background: var(--pt-accent-dk);
+      border-color: var(--pt-accent-dk);
+    }
+  }
+
+  // The primary action on dark ground. Uses the brighter orange, since the bronze goes muddy
+  // against navy.
+  &--accent {
+    height: 50px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    background: var(--pt-accent-bright);
+    border-color: var(--pt-accent-bright);
+    border-radius: 14px;
+    transition: background .18s ease, border-color .18s ease, transform .18s ease,
+      box-shadow .18s ease;
+
+    &:hover:not(:disabled) {
+      background: #e07a2c;
+      border-color: #e07a2c;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba($primary-color, .4);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    // A flat, quiet treatment rather than the shared 55% opacity, which over orange on navy came
+    // out a muddy brown that read as broken rather than as not-yet-available.
+    &:disabled {
+      color: rgba(#fff, .75);
+      background: rgba($primary-color, .22);
+      border-color: rgba($primary-color, .3);
+      opacity: 1;
+    }
+  }
+
+  &--ghost-dark {
+    height: 50px;
+    color: #fff;
+    background: var(--pt-rail-active);
+    border-color: var(--pt-rail-border);
+    border-radius: 14px;
+    transition: background .18s ease, border-color .18s ease, transform .18s ease;
+
+    &:hover:not(:disabled) {
+      background: #46587a;
+      border-color: var(--pt-accent-bright);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
   }
 }
 
-// Shared accent modifiers for KPI tiles and tags.
-.an-kpi,
-.an-tag {
-  --accent: #{$primary-color};
-
-  &.is-success {
-    --accent: #{$success-color};
+// Honour a reduced-motion preference: the lifts and the ring drift are decoration, and this is
+// exactly the setting that asks for decoration to hold still.
+@media (prefers-reduced-motion: reduce) {
+  .pt-hero,
+  .pt-hero__ring,
+  .pt-btn,
+  .pt-lift,
+  .pt-company {
+    transition: none !important;
   }
 
-  &.is-danger {
-    --accent: #{$danger-color};
-  }
-
-  &.is-warning {
-    --accent: #e0a800;
-  }
-
-  &.is-info {
-    --accent: #{$edit-color};
-  }
-
-  &.is-bronze {
-    --accent: #{$phAMACore-color};
-  }
-
-  &.is-muted {
-    --accent: #{$gray-color};
+  .pt-hero:hover,
+  .pt-hero:hover .pt-hero__ring,
+  .pt-btn:hover,
+  .pt-lift:hover {
+    transform: none !important;
   }
 }
 
-.an-kpis {
+/* --- Stat tiles --- */
+.pt-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 14px;
-
-  @media (max-width: 991px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 479px) {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.an-kpi {
-  position: relative;
+.pt-stat {
+  --tint-bg: var(--pt-green-bg);
+  --tint-fg: var(--pt-green);
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
-  padding: 14px 16px;
-  background: var(--an-surface);
-  border: 1px solid var(--an-border);
-  border-radius: 10px;
-  overflow: hidden;
+  padding: 18px;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04);
 
-  &::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: var(--accent);
-  }
+  &.is-amber  { --tint-bg: var(--pt-amber-bg); --tint-fg: var(--pt-amber-fg); }
+  &.is-red    { --tint-bg: var(--pt-red-bg);   --tint-fg: var(--pt-red-fg); }
+  &.is-indigo { --tint-bg: var(--pt-indigo-bg); --tint-fg: var(--pt-indigo-fg); }
 
   &__icon {
-    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 14%, transparent);
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    color: var(--tint-fg);
+    background: var(--tint-bg);
+    border-radius: 11px;
 
     .material-icons {
-      font-size: 22px;
+      font-size: 20px;
     }
-  }
-
-  &__body {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    line-height: 1.15;
   }
 
   &__value {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -.5px;
-    color: var(--an-text);
+    display: block;
+    font-size: var(--pt-fs-stat);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
 
   &__label {
+    display: block;
     margin-top: 2px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--an-muted);
-  }
-
-  &__meta {
-    margin-top: 2px;
-    font-size: 10px;
-    color: var(--an-muted);
+    font-size: var(--pt-fs-sm);
+    color: var(--pt-muted);
   }
 }
 
-.an-tag {
+/* --- Status pill --- */
+.pt-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1.5;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: var(--pt-fs-xs);
+  font-weight: 700;
   white-space: nowrap;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
   border-radius: 999px;
 
-  &__dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
+  &.is-active       { color: var(--pt-green);    background: var(--pt-green-bg); }
+  &.is-expiringsoon { color: var(--pt-amber-fg); background: var(--pt-amber-bg); }
+  &.is-expired      { color: var(--pt-red-fg);   background: var(--pt-red-bg); }
+  &.is-inactive,
+  &.is-unknown      { color: var(--pt-muted);    background: var(--pt-track); }
+}
+
+/* --- Company identity tile --- */
+.pt-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 13px;
+  // Identity tint, not a status: the three variants exist so neighbouring company cards are
+  // distinguishable, which is why none of them is the green that means "licence healthy".
+  color: var(--pt-accent);
+  background: var(--pt-accent-bg);
+
+  &.is-indigo { color: var(--pt-indigo-fg); background: var(--pt-indigo-bg); }
+  &.is-amber  { color: var(--pt-amber-fg);  background: var(--pt-amber-bg); }
+
+  &--lg {
+    width: 62px;
+    height: 62px;
+    font-size: 21px;
+    border-radius: 18px;
   }
 }
 
-.an-panel {
-  height: 100%;
-  padding: 14px 16px;
-  background: var(--an-surface);
-  border: 1px solid var(--an-border);
-  border-radius: 10px;
-
-  &__head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  &__title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--an-text);
-
-    .material-icons {
-      font-size: 18px;
-      color: $primary-color;
-    }
-  }
-
-  &__sub {
-    font-size: 10.5px;
-    color: var(--an-muted);
-  }
-
-  &__label {
-    margin-bottom: 6px;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--an-muted);
-  }
-}
-
-.an-seg {
-  display: inline-flex;
-  padding: 3px;
-  background: var(--an-surface-2);
-  border: 1px solid var(--an-border);
-  border-radius: 999px;
-
-  button {
-    padding: 3px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--an-muted);
-    background: transparent;
-    border: 0;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background .15s ease, color .15s ease;
-
-    &:hover {
-      color: var(--an-text);
-    }
-
-    &.active {
-      color: #fff;
-      background: $primary-color;
-      box-shadow: 0 2px 6px rgba($primary-color, .35);
-    }
-  }
-}
-
-.an-servers {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.an-server {
-  padding: 14px 16px;
-  background: var(--an-surface);
-  border: 1px solid var(--an-border);
-  border-radius: 10px;
+/* --- Company card --- */
+.pt-company {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 22px;
+  text-align: left;
+  color: var(--pt-ink);
+  text-decoration: none;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(11, 18, 32, .04);
   cursor: pointer;
-  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--an-shadow);
-    border-color: rgba($primary-color, .6);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba($primary-color, .35);
-  }
-
-  &.is-selected {
-    border-color: $primary-color;
-    box-shadow: inset 0 0 0 1px $primary-color, 0 6px 16px rgba($primary-color, .15);
-  }
-
-  &__head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-  }
 
   &__name {
-    min-width: 0;
-    overflow: hidden;
-    font-size: 13px;
+    display: block;
+    font-size: 15px;
     font-weight: 700;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--an-text);
   }
 
-  &__tags {
-    display: flex;
-    flex: 0 0 auto;
-    gap: 5px;
-  }
-
-  &__gauges {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+  &__code {
+    display: block;
+    font-size: var(--pt-fs-xs);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--pt-muted);
   }
 
   &__foot {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--pt-border);
+  }
+
+  &__metric {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 12px;
-    padding-top: 10px;
-    font-size: 11px;
-    color: var(--an-muted);
-    border-top: 1px dashed var(--an-border);
+    flex-direction: column;
+    gap: 2px;
 
     strong {
-      color: var(--an-text);
+      font-size: var(--pt-fs-h3);
+      font-weight: 700;
+    }
+
+    span {
+      font-size: var(--pt-fs-xs);
+      color: var(--pt-muted);
     }
   }
 }
 
-.an-gauge {
+/* --- Expiry meter --- */
+.pt-meter {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
+  gap: 7px;
 
-  &__ring {
-    --ring: #{$success-color};
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: conic-gradient(var(--ring) calc(var(--pct) * 1%), var(--an-track) 0);
-    transition: --pct .6s ease;
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: var(--pt-fs-sm);
 
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 7px;
-      border-radius: 50%;
-      background: var(--an-surface);
+    span:first-child {
+      color: var(--pt-muted);
+    }
+
+    span:last-child {
+      font-weight: 600;
     }
   }
 
-  &__value {
-    position: relative;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--an-text);
+  &__track {
+    height: 8px;
+    overflow: hidden;
+    background: var(--pt-track);
+    border-radius: 999px;
   }
 
-  &__label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--an-muted);
+  &__fill {
+    display: block;
+    height: 100%;
+    background: var(--pt-green);
+    border-radius: 999px;
+
+    &.is-amber { background: var(--pt-amber); }
+    &.is-red   { background: var(--pt-red); }
   }
 
-  &__meta {
-    max-width: 100%;
-    font-size: 10px;
-    line-height: 1.2;
-    text-align: center;
-    color: var(--an-muted);
+  &__note {
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-muted);
   }
 }
 
-.an-donut {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 18px;
-
-  &__chart {
-    position: relative;
-    flex: 0 0 auto;
-    width: 170px;
-    height: 170px;
-    margin: 0 auto;
-  }
-
-  &--sm &__chart {
-    width: 120px;
-    height: 120px;
-  }
+/* --- Days-remaining ring (company detail) --- */
+.pt-ring {
+  position: relative;
+  flex: none;
+  width: 150px;
+  height: 150px;
 
   &__center {
     position: absolute;
@@ -1422,224 +1725,628 @@ input:checked {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    pointer-events: none;
+
+    strong {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    span {
+      font-size: var(--pt-fs-xs);
+      color: var(--pt-dim);
+    }
+  }
+}
+
+/* --- Filter pills --- */
+.pt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 16px;
+    font: inherit;
+    font-size: var(--pt-fs-body);
+    font-weight: 600;
+    color: var(--pt-muted);
+    background: var(--pt-surface);
+    border: 1px solid var(--pt-border);
+    border-radius: 999px;
+    cursor: pointer;
+
+    span {
+      font-size: var(--pt-fs-xs);
+      opacity: .8;
+    }
+
+    &:hover {
+      color: var(--pt-ink);
+    }
+
+    &[aria-pressed='true'] {
+      color: #fff;
+      background: var(--pt-ink);
+      border-color: var(--pt-ink);
+    }
+  }
+}
+
+/* --- Pager for the portal listings ---
+ * Count on the left, controls on the right; wraps to two rows on a phone rather than squeezing,
+ * because "1-20 of 340" is the half somebody reads and the arrows are the half they tap.
+ *
+ * Rendered only when there is more than one page. A pager showing "Page 1 of 1" is furniture that
+ * teaches people to ignore the place where paging appears.
+ */
+.pt-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+
+  &__count {
+    font-size: var(--pt-fs-sm);
+    color: var(--pt-muted);
   }
 
-  &__total {
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--an-text);
+  &__buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
   }
 
-  &--sm &__total {
-    font-size: 17px;
+  // Tabular figures so the page number does not jump sideways as it changes width.
+  &__page {
+    min-width: 108px;
+    font-size: var(--pt-fs-sm);
+    font-weight: 600;
+    color: var(--pt-ink);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* A compact pt-btn, for the pager and the Clear control — 46px next to a 38px filter pill reads
+ * as a different kind of thing, which these are not. */
+.pt-btn--sm {
+  height: 38px;
+  gap: 6px;
+  padding: 0 12px;
+  font-size: var(--pt-fs-sm);
+  border-radius: 10px;
+
+  .material-icons {
+    font-size: 16px;
+  }
+}
+
+/* --- Section tabs (anchors on company detail) ---
+ * Sticky too, so jumping between sections stays possible once the page has scrolled. Sits under
+ * the rail's z-index: on a phone the rail is a bar across the top and this must pass beneath it.
+ */
+.pt-sectionnav {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 6px;
+  overflow-x: auto;
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(32, 43, 69, .08);
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
   }
 
-  &__caption {
-    margin-top: 4px;
-    font-size: 9.5px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--an-muted);
+  button {
+    padding: 9px 16px;
+    font: inherit;
+    font-size: var(--pt-fs-body);
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    background: none;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--pt-soft);
+    }
+
+    &.active {
+      color: #fff;
+      background: var(--pt-ink);
+    }
+  }
+}
+
+/* --- Scroll anchor ---
+ * A section the section-nav jumps to. Without the offset the heading lands underneath the sticky
+ * nav that was just used to get there, so the reader arrives mid-section with no title in sight.
+ * The allowance is larger on a phone, where the rail itself is a sticky bar across the top.
+ */
+.pt-anchor {
+  scroll-margin-top: 72px;
+
+  @media (max-width: 900px) {
+    scroll-margin-top: 136px;
+  }
+}
+
+/* --- Add-on rows ---
+ * A list, not chips. An add-on has four facts worth seeing — what it is, how many branches hold it,
+ * when it lapses and whether any already have — and a chip can only carry its name before the
+ * expiry disappears into a tooltip nobody opens.
+ */
+.pt-addons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 10px;
+}
+
+.pt-addon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--pt-soft);
+  border: 1px solid var(--pt-border);
+  border-radius: 14px;
+
+  // A lapsed grant is the one case worth colouring the whole row for.
+  &.is-lapsed {
+    background: var(--pt-red-bg);
+    border-color: var(--pt-red-bg);
   }
 
-  &__legend {
+  &__icon {
     display: flex;
-    flex: 1 1 150px;
-    flex-direction: column;
-    gap: 7px;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    color: var(--pt-amber-fg);
+    background: var(--pt-amber-bg);
+    border-radius: 10px;
 
-    li {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11.5px;
-      color: var(--an-text);
+    .material-icons {
+      font-size: 18px;
     }
   }
 
-  &__swatch {
-    flex: 0 0 auto;
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
+  &__body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__name {
+    display: block;
+    font-size: var(--pt-fs-body);
+    font-weight: 700;
+  }
+
+  &__meta {
+    display: block;
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-muted);
+  }
+
+  &__expiry {
+    flex: none;
+    text-align: right;
+
+    strong {
+      display: block;
+      font-size: var(--pt-fs-sm);
+      font-weight: 700;
+    }
+
+    span {
+      display: block;
+      font-size: var(--pt-fs-xs);
+      color: var(--pt-muted);
+    }
+  }
+}
+
+/* --- Module accordion ---
+ * A package can carry eighty-odd sub-modules. Printed out they are several screens of text that
+ * nobody reads; collapsed to one row per module with a count, the whole package fits on one screen
+ * and the detail is one click away where it is actually wanted.
+ */
+.pt-mods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 8px;
+  align-items: start;
+}
+
+.pt-mod {
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 12px;
+  overflow: hidden;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 13px;
+    font: inherit;
+    font-size: var(--pt-fs-body);
+    font-weight: 600;
+    color: var(--pt-ink);
+    text-align: left;
+    background: none;
+    border: 0;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--pt-soft);
+    }
+
+    .material-icons {
+      font-size: 18px;
+      color: var(--pt-muted);
+      transition: transform .18s ease;
+    }
   }
 
   &__name {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
-  &__val {
+  &__count {
+    flex: none;
+    padding: 1px 8px;
+    font-size: var(--pt-fs-xs);
     font-weight: 700;
+    color: var(--pt-indigo-fg);
+    background: var(--pt-indigo-bg);
+    border-radius: 999px;
   }
 
-  &__pct {
-    width: 38px;
-    text-align: right;
-    color: var(--an-muted);
+  &.is-open {
+    border-color: var(--pt-accent);
+
+    .pt-mod__head .material-icons {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 2px 13px 13px;
+  }
+
+  &__sub {
+    padding: 3px 9px;
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-muted);
+    background: var(--pt-track);
+    border-radius: 999px;
   }
 }
 
-.an-empty {
-  display: flex;
-  flex-direction: column;
+/* --- Tag chips (modules, add-ons) --- */
+.pt-tag {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 36px 12px;
-  font-size: 12px;
-  text-align: center;
-  color: var(--an-muted);
+  padding: 6px 12px;
+  font-size: var(--pt-fs-sm);
+  font-weight: 500;
+  color: var(--pt-indigo-fg);
+  background: var(--pt-indigo-bg);
+  border-radius: 999px;
 
-  .material-icons {
-    font-size: 30px;
-    opacity: .6;
+  &--addon {
+    color: var(--pt-amber-fg);
+    background: var(--pt-amber-bg);
+  }
+
+  &--muted {
+    color: var(--pt-muted);
+    background: var(--pt-track);
   }
 }
 
-.an-table-wrap {
-  max-height: 380px;
-  overflow: auto;
-  margin: 0 -16px -14px;
+.pt-taglabel {
+  font-size: var(--pt-fs-xs);
+  font-weight: 600;
+  color: var(--pt-muted);
 }
 
-.an-table {
-  --cui-table-bg: transparent;
-  --cui-table-color: var(--an-text);
-  --cui-table-border-color: var(--an-border);
-  margin: 0;
-  font-size: 11.5px;
+/* --- Soft info banner --- */
+.pt-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 15px 18px;
+  background: var(--pt-note-bg);
+  border: 1px solid var(--pt-note-border);
+  border-radius: 16px;
 
-  thead th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    padding: 8px 10px;
-    font-size: 10px;
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    color: #fff;
+    background: var(--pt-accent);
+    border-radius: 10px;
+
+    .material-icons {
+      font-size: 20px;
+      line-height: 1;
+    }
+  }
+
+  strong {
+    display: block;
+    font-size: var(--pt-fs-body);
+    font-weight: 600;
+    color: var(--pt-note-strong);
+  }
+
+  // TEXT spans only — explicitly not the icon tile, which is also a <span>.
+  //
+  // This was plain `span`, and `.pt-note span` (0,1,1) outranks `.pt-note__icon` (0,1,0), so the
+  // text rule was winning over the tile's own styles: `display: block` replaced its `display: flex`
+  // (which quietly made align-items/justify-content do nothing, leaving the glyph in the top-left
+  // corner) and the body colour replaced its white.
+  //
+  // Excluding the icon is the fix. Raising the tile's specificity instead would have papered over
+  // a rule that should never have matched it, and the next element added inside the banner would
+  // have hit the same trap.
+  span:not(.pt-note__icon):not(.material-icons) {
+    display: block;
+    font-size: var(--pt-fs-sm);
+    line-height: 1.5;
+    color: var(--pt-note-text);
+  }
+
+  &--amber {
+    background: var(--pt-amber-bg);
+    border-color: var(--pt-amber-border);
+
+    .pt-note__icon { background: var(--pt-amber-fg); }
+    strong { color: var(--pt-amber-fg); }
+
+    // Same exclusion as above: without it this repaints the white glyph in the amber text colour.
+    span:not(.pt-note__icon):not(.material-icons) { color: var(--pt-amber-fg); }
+  }
+
+  // Something worked. Distinct from --amber because a payment confirmation and a warning must not
+  // look the same — a customer scanning the page should know which one they are reading.
+  &--green {
+    background: var(--pt-green-bg);
+    border-color: var(--pt-green-border);
+
+    .pt-note__icon { background: var(--pt-green); }
+    strong { color: var(--pt-green); }
+    span:not(.pt-note__icon):not(.material-icons) { color: var(--pt-green); }
+  }
+}
+
+/* --- Soft metric tiles (detail grids) --- */
+.pt-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: 12px;
+}
+
+.pt-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  background: var(--pt-soft);
+  border-radius: 14px;
+
+  &__k {
+    font-size: var(--pt-fs-xs);
+    color: var(--pt-muted);
+  }
+
+  &__v {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  &__note {
+    font-size: var(--pt-fs-xs);
+    font-weight: 600;
+    color: var(--pt-muted);
+  }
+
+  // A tile that is a <button> — the payment-method chooser.
+  //
+  // The base tile is a <div>, so it never needed the resets a button does: a UA button brings its
+  // own border, its own centred text and its own font, all of which break the tile's look. Doing it
+  // here rather than inline keeps the selected/disabled states in CSS where they can use the
+  // portal's tokens.
+  &--pick {
+    width: 100%;
+    font: inherit;
+    text-align: left;
+    border: 1px solid var(--pt-border);
+    cursor: pointer;
+    transition: border-color .12s ease, box-shadow .12s ease;
+
+    &:hover:not(:disabled) { border-color: var(--pt-accent); }
+
+    &.is-on {
+      border-color: var(--pt-accent);
+      box-shadow: inset 0 0 0 1px var(--pt-accent);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: .6;
+    }
+  }
+}
+
+/* --- Data table --- */
+.pt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--pt-fs-body);
+
+  th {
+    padding: 10px 12px;
+    font-size: var(--pt-fs-xs);
     font-weight: 700;
-    letter-spacing: .06em;
+    letter-spacing: .05em;
     text-transform: uppercase;
-    color: var(--an-muted);
-    background: var(--an-surface-2) !important;
-    border-bottom: 1px solid var(--an-border);
+    color: var(--pt-muted);
+    text-align: left;
     white-space: nowrap;
+    border-bottom: 1px solid var(--pt-border);
   }
 
   td {
-    padding: 8px 10px;
-    color: var(--an-text);
-    border-color: var(--an-border);
+    padding: 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--pt-track);
   }
 
-  th:first-child,
-  td:first-child {
-    padding-left: 16px;
-  }
-
-  th:last-child,
-  td:last-child {
-    padding-right: 16px;
-  }
-
-  &__muted {
-    color: var(--an-muted);
+  tbody tr:hover {
+    background: var(--pt-soft);
   }
 }
 
-.an-ack {
-  display: inline-flex;
+.pt-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --- Empty / loading --- */
+.pt-empty {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: $primary-color;
-  background: transparent;
-  border: 1px solid rgba($primary-color, .6);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background .15s ease, color .15s ease;
+  gap: 8px;
+  padding: 44px 16px;
+  font-size: var(--pt-fs-body);
+  text-align: center;
+  color: var(--pt-muted);
 
   .material-icons {
-    font-size: 13px;
-  }
-
-  &:hover {
-    color: #fff;
-    background: $primary-color;
+    font-size: 32px;
+    opacity: .55;
   }
 }
 
-/***** CUSTOM SHAPE STYLE *****/
-// @media (min-width: 1200px) {
-//   .w-cover {
-//     width: calc(100% + 50vw - 520px + 2.5rem);
-//   }
-// }
+/* --- Phone and tablet ---
+ * The rail becomes a horizontal strip across the top: on a phone a 272px column leaves nothing for
+ * the content. The support card and the signed-in footer are dropped rather than stacked, since
+ * neither is why anyone opened the portal on their phone.
+ */
+@media (max-width: 900px) {
+  // The collapsed state is meaningless here — the rail is already a horizontal strip with no
+  // width to reclaim, and touch has no hover to reveal a label with. Everything that collapsing
+  // hid comes back, so a phone never inherits a desktop choice that leaves it with bare icons.
+  .pt-rail--narrow {
+    .pt-rail__name,
+    .pt-rail__tag,
+    .pt-navlink__badge {
+      display: revert;
+    }
 
-// @media (min-width: 992px) {
-//   .w-cover {
-//     width: calc(100% + 50vw - 480px + 2.5rem);
-//   }
-// }
+    .pt-navlink {
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 11px 12px;
+      font-size: var(--pt-fs-body);
 
-// @media (min-width: 768px) {
-//   .w-cover {
-//     width: calc(100% + 50vw - 360px + 2.5rem);
-//   }
-// }
+      &:hover::after {
+        content: none;
+      }
+    }
 
-// @media (min-width: 576px) {
-//   .w-cover {
-//     width: calc(100% + 50vw - 270px + 2.5rem);
-//   }
-// }
+    .pt-rail__collapse {
+      display: none;
+    }
 
-// .bg-cover {
-//   background: no-repeat 50%/cover;
-// }
+    .pt-rail__brand {
+      justify-content: flex-start;
+    }
+  }
 
-// .shape:not([class*=shape-blur]) {
-//   overflow: hidden;
-// }
+  .pt-rail {
+    flex-basis: 100%;
+    max-width: none;
+    gap: 14px;
+    padding: 14px;
+    // Back to content height and still stuck to the top: as a bar it must not claim the whole
+    // viewport, but it does need to stay put while the page scrolls.
+    height: auto;
+    overflow-y: visible;
 
-// .shape-start {
-//   bottom: 0;
-//   left: 0;
-//   right: 0;
-//   top: 0;
-// }
+    &__nav {
+      flex-direction: row;
+      overflow-x: auto;
+      scrollbar-width: none;
 
-// .shape {
-//   pointer-events: none;
-//   position: absolute;
-// }
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
 
-// .shape:not([class*=shape-blur])>* {
-//   transform: scale(2);
-// }
+    &__foot {
+      display: none;
+    }
+  }
 
-// .shape-fluid-y>* {
-//   height: 100%;
-//   width: auto;
-// }
+  .pt-main {
+    padding: 20px 16px 40px;
+  }
 
-// .shape-start>* {
-//   bottom: inherit;
-//   left: inherit;
-//   position: inherit;
-//   top: inherit;
-//   transform-origin: center right;
-// }
+  .pt {
+    --pt-fs-hero: 34px;
+    --pt-fs-display: 23px;
+    --pt-fs-stat: 22px;
+  }
 
-// .shape>* {
-//   display: block;
-// }
+  .pt-company__foot {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  // The rail is already a sticky bar across the top here; a second sticky strip under it would
+  // need to know the bar's exact height, which varies with the nav. Let this one scroll instead.
+  .pt-sectionnav {
+    position: static;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .pt-stats {
+    grid-template-columns: 1fr;
+  }
+}

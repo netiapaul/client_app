@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { setSession } from '../../utils/session'
 import { useNavigate } from 'react-router-dom'
 import { loginRequest, loginTwoFactorRequest } from '../../utils/requests'
+import PasswordInput from '../../components/PasswordInput'
 import { toast } from 'react-toastify'
 // const axios = require('axios')
 import CompanyRight from '../../assets/images/corebase.png'
@@ -29,13 +30,25 @@ function Login() {
   // Store the token + redirect once we have a real access token (shared by both login steps).
   const completeLogin = (res) => {
     const modules = res.modules || []
+    // One login page, two audiences. The server says which this is via `portal` — it is never
+    // inferred from an empty module list, because a staff user whose access groups aren't
+    // configured yet also has none and must not be dropped into a customer's portal.
+    const portal = res.portal === true
     setSession({
       token: res.accessToken,
       id: res.id,
       name: res.name,
       canApprove: res.canApprove,
       modules,
+      portal,
+      primaryCusCode: res.primaryCusCode,
     })
+
+    if (portal) {
+      navigate('/portal', { replace: true })
+      return
+    }
+
     // Land on the dashboard if they can view clients; otherwise send them to their profile
     // (always accessible) so a user without client access doesn't hit a permission wall.
     const landing = modules.includes(1) ? '/dashboard' : '/profile'
@@ -261,13 +274,13 @@ function Login() {
                       <label htmlFor="password" className="form-label">
                         Password
                       </label>
-                      <input
-                        type="password"
+                      <PasswordInput
                         className="form-control auth-input auth-input-lg"
                         id="password"
                         name="password"
                         value={data.password}
                         placeholder="Enter your password"
+                        autoComplete="current-password"
                         onChange={handleChange('password')}
                         required
                       />

@@ -16,6 +16,10 @@ const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
 
 // Pages
 const Login = React.lazy(() => import('./views/Auth/login'))
+// The client portal is mounted outside DefaultLayout on purpose: that layout is the staff shell
+// (admin sidebar, module-gated nav, breadcrumbs) and a customer must never be served it. The portal
+// has its own shell and owns everything under /portal.
+const PortalLayout = React.lazy(() => import('./layout/PortalLayout'))
 // const Login = React.lazy(() => import('./views/pages/login/Login'))
 // const Register = React.lazy(() => import('./views/pages/register/Register'))
 // const Page404 = React.lazy(() => import('./views/pages/page404/Page404'))
@@ -29,6 +33,7 @@ class App extends Component {
           <Suspense fallback={loading}>
             <Routes>
               <Route exact path="/" name="Login Page" element={<Login />} />
+              <Route path="/portal/*" name="Client Portal" element={<PortalLayout />} />
               {/* <Route exact path="/register" name="Register Page" element={<Register />} />
               <Route exact path="/404" name="Page 404" element={<Page404 />} />
               <Route exact path="/500" name="Page 500" element={<Page500 />} /> */}

@@ -1,15 +1,22 @@
 import React from 'react'
-import { CNavItem, CNavTitle } from '@coreui/react'
+import { CNavGroup, CNavItem } from '@coreui/react'
 import { MODULES } from './utils/permissions'
 
-// Each item carries the module code required to see it. AppSidebarNav hides items the user
-// lacks. Items with no `module` are always shown. (Admins receive every module code at login.)
-// CNavTitle entries are section headings; a heading is hidden when none of its items are visible.
+/**
+ * The sidebar.
+ *
+ * Grouped rather than one long list: the menu had grown to fourteen links under five headings,
+ * which is more than anyone scans. Collapsing them into a handful of groups means the sidebar
+ * fits without scrolling and a page is found by category rather than by reading every entry.
+ *
+ * Each item carries the module code required to see it, and AppSidebarNav prunes what the user
+ * lacks — INCLUDING groups whose children all disappear, so nobody gets an empty expandable row.
+ * Items with no `module` are always shown. (Admins receive every module code at login.)
+ *
+ * Licenses stays top-level deliberately: it is the landing page and the most-visited screen, and
+ * burying the thing people came for behind a click is a poor trade for tidiness.
+ */
 const _nav = [
-  {
-    component: CNavTitle,
-    name: 'Clients',
-  },
   {
     component: CNavItem,
     name: 'Licenses',
@@ -18,95 +25,202 @@ const _nav = [
     icon: <span className="material-icons nav-icon">home</span>,
   },
   {
-    component: CNavItem,
-    name: 'Approvals',
-    to: '/approvals',
-    module: MODULES.ViewApprovals,
-    icon: <span className="material-icons nav-icon">verified</span>,
+    component: CNavGroup,
+    name: 'Clients',
+    icon: <span className="material-icons nav-icon">apartment</span>,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Approvals',
+        to: '/approvals',
+        module: MODULES.ViewApprovals,
+        icon: <span className="material-icons nav-icon">verified</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Client Access Modules',
+        to: '/client/access-modules',
+        module: MODULES.ManageClientModules,
+        icon: <span className="material-icons nav-icon">extension</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Branch Locations',
+        to: '/branch-locations',
+        module: MODULES.ViewBranchLocations,
+        icon: <span className="material-icons nav-icon">pin_drop</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Duplicate Branches',
+        to: '/duplicate-branches',
+        module: MODULES.ViewDuplicateBranches,
+        icon: <span className="material-icons nav-icon">content_copy</span>,
+      },
+    ],
   },
   {
-    component: CNavItem,
-    name: 'Client Access Modules',
-    to: '/client/access-modules',
-    module: MODULES.ManageClientModules,
-    icon: <span className="material-icons nav-icon">extension</span>,
+    component: CNavGroup,
+    name: 'Billing',
+    icon: <span className="material-icons nav-icon">receipt_long</span>,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Billing Profiles',
+        to: '/billing-profiles',
+        module: MODULES.ViewBilling,
+        icon: <span className="material-icons nav-icon">payments</span>,
+      },
+      {
+        // Next to Billing Profiles on purpose: that sets the per-company subscription rate and
+        // this sets the add-on list price. Same job, same person, so they belong together rather
+        // than one of them being filed under Setup with the credentials.
+        component: CNavItem,
+        name: 'Add-on Pricing',
+        to: '/addon-pricing',
+        module: MODULES.ViewBilling,
+        icon: <span className="material-icons nav-icon">extension</span>,
+      },
+      {
+        // With the other two pricing screens rather than under Setup, for the same reason: this
+        // is what we CHARGE for a thing, decided by the same person who sets the subscription
+        // rate and the add-on list price.
+        component: CNavItem,
+        name: 'Billable Items',
+        to: '/billable-items',
+        module: MODULES.ViewBilling,
+        icon: <span className="material-icons nav-icon">sell</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Proforma Invoices',
+        to: '/invoices',
+        module: MODULES.ViewBilling,
+        icon: <span className="material-icons nav-icon">description</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Payments',
+        to: '/payments',
+        module: MODULES.ViewPayments,
+        icon: <span className="material-icons nav-icon">account_balance_wallet</span>,
+      },
+      {
+        // Directly under Payments, because it is the other half of the same question. The ledger
+        // holds money that arrived; this holds every attempt at it, which is where "the customer
+        // says they paid" gets answered.
+        component: CNavItem,
+        name: 'Transactions',
+        to: '/payment-attempts',
+        module: MODULES.ViewPayments,
+        icon: <span className="material-icons nav-icon">swap_horiz</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Portal Users',
+        to: '/portal-users',
+        module: MODULES.ManageClientPortalUsers,
+        icon: <span className="material-icons nav-icon">groups</span>,
+      },
+    ],
   },
   {
-    component: CNavItem,
-    name: 'Branch Locations',
-    to: '/branch-locations',
-    module: MODULES.ViewBranchLocations,
-    icon: <span className="material-icons nav-icon">pin_drop</span>,
+    // Named to match the access-control group: one right (ManageSmtp) covers both channels.
+    component: CNavGroup,
+    name: 'Messaging',
+    icon: <span className="material-icons nav-icon">forum</span>,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Emails',
+        to: '/emails',
+        module: MODULES.ViewEmails,
+        icon: <span className="material-icons nav-icon">email</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'SMS',
+        to: '/sms',
+        module: MODULES.ViewEmails,
+        icon: <span className="material-icons nav-icon">sms</span>,
+      },
+    ],
   },
   {
-    component: CNavItem,
-    name: 'Duplicate Branches',
-    to: '/duplicate-branches',
-    module: MODULES.ViewDuplicateBranches,
-    icon: <span className="material-icons nav-icon">content_copy</span>,
-  },
-  {
-    component: CNavTitle,
+    component: CNavGroup,
     name: 'Infrastructure',
+    icon: <span className="material-icons nav-icon">lan</span>,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Servers',
+        to: '/servers',
+        module: MODULES.ManageServers,
+        icon: <span className="material-icons nav-icon">dns</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Analytics',
+        to: '/analytics',
+        module: MODULES.ManageServers,
+        icon: <span className="material-icons nav-icon">insights</span>,
+      },
+      {
+        // Maintenance of the region/county/town catalog — infrastructure, not a client screen.
+        component: CNavItem,
+        name: 'Locations',
+        to: '/locations',
+        module: MODULES.ManageLocations,
+        icon: <span className="material-icons nav-icon">place</span>,
+      },
+    ],
   },
   {
-    component: CNavItem,
-    name: 'Servers',
-    to: '/servers',
-    module: MODULES.ManageServers,
-    icon: <span className="material-icons nav-icon">dns</span>,
-  },
-  {
-    component: CNavItem,
-    name: 'Analytics',
-    to: '/analytics',
-    module: MODULES.ManageServers,
-    icon: <span className="material-icons nav-icon">insights</span>,
-    badge: { color: 'info', text: 'NEW' },
-  },
-  {
-    component: CNavTitle,
+    component: CNavGroup,
     name: 'Users & Security',
+    icon: <span className="material-icons nav-icon">security</span>,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Users',
+        to: '/users',
+        module: MODULES.ViewUsers,
+        icon: <span className="material-icons nav-icon">group</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'Access Control',
+        to: '/access-control',
+        module: MODULES.ManageAccessControl,
+        icon: <span className="material-icons nav-icon">admin_panel_settings</span>,
+      },
+      {
+        component: CNavItem,
+        name: 'User Logs',
+        to: '/user-logs',
+        module: MODULES.ViewUserLogs,
+        icon: <span className="material-icons nav-icon">history</span>,
+      },
+    ],
   },
   {
+    // One entry for every integration and letterhead setting, rather than four panels buried in
+    // the screens they relate to. `modules` is ANY-OF: the page is made of independently-gated
+    // sections, so someone who can set up the mail server but not take money still belongs here
+    // — they will simply see fewer tabs.
+    //
+    // Last on purpose. It is the least-visited screen in the app and the only one nobody opens
+    // twice in a day.
     component: CNavItem,
-    name: 'Users',
-    to: '/users',
-    module: MODULES.ViewUsers,
-    icon: <span className="material-icons nav-icon">group</span>,
-  },
-  {
-    component: CNavItem,
-    name: 'Access Control',
-    to: '/access-control',
-    module: MODULES.ManageAccessControl,
-    icon: <span className="material-icons nav-icon">admin_panel_settings</span>,
-    badge: { color: 'info', text: 'NEW' },
-  },
-  {
-    component: CNavItem,
-    name: 'User Logs',
-    to: '/user-logs',
-    module: MODULES.ViewUserLogs,
-    icon: <span className="material-icons nav-icon">history</span>,
-  },
-  {
-    component: CNavTitle,
-    name: 'Settings',
-  },
-  {
-    component: CNavItem,
-    name: 'Emails',
-    to: '/emails',
-    module: MODULES.ViewEmails,
-    icon: <span className="material-icons nav-icon">email</span>,
-  },
-  {
-    component: CNavItem,
-    name: 'Locations',
-    to: '/locations',
-    module: MODULES.ManageLocations,
-    icon: <span className="material-icons nav-icon">place</span>,
+    name: 'Setup',
+    to: '/setup',
+    modules: [
+      MODULES.ManageSmtp,
+      MODULES.RecordPayments,
+      MODULES.ViewBilling,
+      MODULES.ManageBilling,
+    ],
+    icon: <span className="material-icons nav-icon">settings</span>,
   },
 ]
 

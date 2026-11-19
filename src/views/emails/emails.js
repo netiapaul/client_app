@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { getToken } from '../../utils/session'
 import moment from 'moment'
 
@@ -105,92 +106,10 @@ const Emails = () => {
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // SMTP settings panel
-  const emptySmtp = {
-    host: '',
-    port: 587,
-    username: '',
-    password: '',
-    fromName: '',
-    fromAddress: '',
-    supportEmail: '',
-    bccAddresses: '',
-    useSsl: true,
-    ignoreSslErrors: false,
-    throttleDelayMs: 0,
-    enabled: true,
-  }
-  const [smtpOpen, setSmtpOpen] = useState(false)
-  const [smtp, setSmtp] = useState(emptySmtp)
-  const [smtpPasswordSet, setSmtpPasswordSet] = useState(false)
-  const [smtpSaving, setSmtpSaving] = useState(false)
-
   const err = (e) => setError(readErr(e))
   const flash = (m) => {
     setMsg(m)
     setTimeout(() => setMsg(''), 5000)
-  }
-
-  const openSmtp = async () => {
-    setError('')
-    setSmtpOpen(true)
-    try {
-      const r = await axios.get(`${BASE_URL}/api/Email/SmtpConfig`, { headers: authHeaders() })
-      if (r.data?.exists) {
-        setSmtp({
-          host: r.data.host ?? '',
-          port: r.data.port ?? 587,
-          username: r.data.username ?? '',
-          password: '', // never returned; blank = keep existing
-          fromName: r.data.fromName ?? '',
-          fromAddress: r.data.fromAddress ?? '',
-          supportEmail: r.data.supportEmail ?? '',
-          bccAddresses: r.data.bccAddresses ?? '',
-          useSsl: !!r.data.useSsl,
-          ignoreSslErrors: !!r.data.ignoreSslErrors,
-          throttleDelayMs: r.data.throttleDelayMs ?? 0,
-          enabled: !!r.data.enabled,
-        })
-        setSmtpPasswordSet(!!r.data.passwordSet)
-      } else {
-        setSmtp(emptySmtp)
-        setSmtpPasswordSet(false)
-      }
-    } catch (e) {
-      err(e)
-    }
-  }
-
-  const saveSmtp = async () => {
-    setSmtpSaving(true)
-    setError('')
-    try {
-      await axios.put(
-        `${BASE_URL}/api/Email/SmtpConfig`,
-        {
-          host: smtp.host,
-          port: Number(smtp.port) || 587,
-          username: smtp.username,
-          password: smtp.password, // blank = backend keeps existing
-          fromName: smtp.fromName,
-          fromAddress: smtp.fromAddress,
-          supportEmail: smtp.supportEmail,
-          bccAddresses: smtp.bccAddresses,
-          useSsl: smtp.useSsl,
-          ignoreSslErrors: smtp.ignoreSslErrors,
-          throttleDelayMs: Number(smtp.throttleDelayMs) || 0,
-          enabled: smtp.enabled,
-        },
-        { headers: authHeaders() },
-      )
-      flash('SMTP settings saved.')
-      setSmtpOpen(false)
-      await load()
-    } catch (e) {
-      err(e)
-    } finally {
-      setSmtpSaving(false)
-    }
   }
 
   const load = useCallback(async () => {
@@ -342,186 +261,20 @@ const Emails = () => {
           >
             Resend Failed ({summary.failed})
           </button>
-          <button
-            className="btn btn-sm cancel-btn rounded-0"
-            onClick={() => (smtpOpen ? setSmtpOpen(false) : openSmtp())}
-            type="button"
-          >
+          {/* The server settings live under Setup now — configuration is a once-in-a-while job
+              and this screen is read every day. A link rather than a panel, so anyone who came
+              here looking for it still finds it. */}
+          <Link to="/setup?s=email" className="btn btn-sm cancel-btn rounded-0">
             SMTP Settings
-          </button>
+          </Link>
         </div>
       </div>
       <hr className="my-2" />
 
-      {smtpOpen && (
-        <div className="card rounded-0 mb-2">
-          <div className="card-header py-2" style={{ fontSize: 13, fontWeight: 600 }}>
-            SMTP Settings
-          </div>
-          <div className="card-body">
-            <div className="row g-2" style={{ fontSize: 12 }}>
-              <div className="col-md-6">
-                <label className="form-label mb-0">Host</label>
-                <input
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.host}
-                  onChange={(e) => setSmtp({ ...smtp, host: e.target.value })}
-                  placeholder="mail.example.com"
-                />
-              </div>
-              <div className="col-md-2">
-                <label className="form-label mb-0">Port</label>
-                <input
-                  type="number"
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.port}
-                  onChange={(e) => setSmtp({ ...smtp, port: e.target.value })}
-                  placeholder="465 / 587"
-                />
-              </div>
-              <div className="col-md-4">
-                <label className="form-label mb-0">Throttle (ms between sends)</label>
-                <input
-                  type="number"
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.throttleDelayMs}
-                  onChange={(e) => setSmtp({ ...smtp, throttleDelayMs: e.target.value })}
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label mb-0">Username</label>
-                <input
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.username}
-                  onChange={(e) => setSmtp({ ...smtp, username: e.target.value })}
-                  autoComplete="off"
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label mb-0">
-                  Password{' '}
-                  {smtpPasswordSet && (
-                    <span className="text-muted" style={{ fontSize: 10 }}>
-                      (set — leave blank to keep)
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.password}
-                  onChange={(e) => setSmtp({ ...smtp, password: e.target.value })}
-                  placeholder={smtpPasswordSet ? '••••••••' : ''}
-                  autoComplete="new-password"
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label mb-0">From name</label>
-                <input
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.fromName}
-                  onChange={(e) => setSmtp({ ...smtp, fromName: e.target.value })}
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label mb-0">From address</label>
-                <input
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.fromAddress}
-                  onChange={(e) => setSmtp({ ...smtp, fromAddress: e.target.value })}
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label mb-0">
-                  Support email{' '}
-                  <span className="text-muted" style={{ fontSize: 10 }}>
-                    (new-client notifications)
-                  </span>
-                </label>
-                <input
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.supportEmail}
-                  onChange={(e) => setSmtp({ ...smtp, supportEmail: e.target.value })}
-                />
-              </div>
-              <div className="col-md-12">
-                <label className="form-label mb-0">
-                  BCC addresses{' '}
-                  <span className="text-muted" style={{ fontSize: 10 }}>
-                    (copied on every outbound email — separate with commas or semicolons)
-                  </span>
-                </label>
-                <input
-                  className="form-control form-control-sm rounded-0"
-                  value={smtp.bccAddresses}
-                  onChange={(e) => setSmtp({ ...smtp, bccAddresses: e.target.value })}
-                  placeholder="admin@corebase.co.ke; records@corebase.co.ke"
-                />
-              </div>
-              <div className="col-md-12 d-flex gap-3 mt-1">
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="smtpUseSsl"
-                    checked={smtp.useSsl}
-                    onChange={(e) => setSmtp({ ...smtp, useSsl: e.target.checked })}
-                  />
-                  <label className="form-check-label" htmlFor="smtpUseSsl">
-                    Use SSL/TLS (port 465 = implicit, 587 = STARTTLS)
-                  </label>
-                </div>
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="smtpIgnoreSsl"
-                    checked={smtp.ignoreSslErrors}
-                    onChange={(e) => setSmtp({ ...smtp, ignoreSslErrors: e.target.checked })}
-                  />
-                  <label className="form-check-label" htmlFor="smtpIgnoreSsl">
-                    Ignore SSL certificate errors
-                  </label>
-                </div>
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="smtpEnabled"
-                    checked={smtp.enabled}
-                    onChange={(e) => setSmtp({ ...smtp, enabled: e.target.checked })}
-                  />
-                  <label className="form-check-label" htmlFor="smtpEnabled">
-                    Enabled
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div className="d-flex gap-2 mt-3">
-              <button
-                className="btn btn-sm add-btn rounded-0"
-                onClick={saveSmtp}
-                disabled={smtpSaving}
-                type="button"
-              >
-                {smtpSaving ? 'Saving…' : 'Save Settings'}
-              </button>
-              <button
-                className="btn btn-sm cancel-btn rounded-0"
-                onClick={() => setSmtpOpen(false)}
-                type="button"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {!configured && (
         <div className="alert alert-warning rounded-0 p-2" role="alert" style={{ fontSize: 12 }}>
-          SMTP is not configured. Click <strong>SMTP Settings</strong> to set it. New emails are
-          stored as <strong>Failed</strong> until it is configured — once set up, use{' '}
+          SMTP is not configured — set it up under <Link to="/setup?s=email">Setup</Link>. New
+          emails are stored as <strong>Failed</strong> until it is configured; once set up, use{' '}
           <strong>Resend Failed</strong> to send them.
         </div>
       )}

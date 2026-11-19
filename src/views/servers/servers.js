@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { getToken } from '../../utils/session'
+import useConfirm from '../../components/useConfirm'
 import {
   CModal,
   CModalHeader,
@@ -67,6 +68,9 @@ const emptyForm = {
 }
 
 const Servers = () => {
+  // Replaces window.confirm, which the browser prefixes with its own hostname and which
+  // cannot mark a destructive action. See useConfirm.
+  const [confirm, confirmDialog] = useConfirm()
   const [servers, setServers] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -185,7 +189,7 @@ const Servers = () => {
   }
 
   const deleteServer = async (id, name) => {
-    if (!window.confirm(`Delete server "${name}"?`)) return
+    if (!(await confirm(`Delete server "${name}"?`))) return
     try {
       await axios.delete(`${BASE_URL}/api/Provisioning/Server/${id}`, { headers: authHeaders() })
       getServers()
@@ -220,6 +224,8 @@ const Servers = () => {
 
   return (
     <>
+      {confirmDialog}
+
       <hr className="my-2" />
       <div className="d-flex justify-content-between align-items-center">
         <h6 className="m-0">Servers</h6>

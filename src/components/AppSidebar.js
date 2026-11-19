@@ -23,7 +23,11 @@ const AppSidebar = () => {
   return (
     <CSidebar
       position="fixed"
-      unfoldable={unfoldable}
+      // `narrow`, not `unfoldable`. Unfoldable widens the WHOLE sidebar on hover, which shoves the
+      // page content sideways every time the pointer crosses the rail. Narrow keeps the rail put
+      // and the groups open as fly-out panels beside it (see _darkmode.scss), so the collapsed
+      // menu is usable without the layout moving under you.
+      narrow={unfoldable}
       visible={sidebarShow}
       onVisibleChange={(visible) => {
         dispatch({ type: 'set', sidebarShow: visible })
