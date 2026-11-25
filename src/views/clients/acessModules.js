@@ -3,7 +3,6 @@ import { getToken } from '../../utils/session'
 import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
-// const axios = require('axios')
 
 function AcessModules() {
   const [error, setError] = useState('')
@@ -11,7 +10,6 @@ function AcessModules() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCreatePackageModal, setIsCreatePackageModal] = useState(false)
   const [packages, setPackages] = useState([])
-  // const [clients, setClients] = useState([])
   const [packageID, setPackageID] = useState('')
   const [packagecode, setPackageCode] = useState('')
   const [selectedPackages, setSelectedPackages] = useState([])
@@ -30,10 +28,9 @@ function AcessModules() {
     setPackageCode('')
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -62,10 +59,9 @@ function AcessModules() {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Packages/PackagesDetails?id=${id}`,
         {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -74,7 +70,6 @@ function AcessModules() {
       if (response.ok) {
         const result = await response.json()
         setPackageDetails(result)
-        // setPackageRowId('')
         setIsLoading(false)
       } else {
         const result = await response.json()
@@ -84,7 +79,6 @@ function AcessModules() {
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
-      // setError(error)
     }
   }
   const DeletePackages = async () => {
@@ -118,7 +112,6 @@ function AcessModules() {
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
-      // setError(error)
     }
   }
   const handleSubmitPackaged = (e) => {
@@ -132,14 +125,13 @@ function AcessModules() {
       let response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Packages/CreatePackages`,
         {
-          method: 'POST', // *GET, POST, PUT, DELETE, etc.
+          method: 'POST',
           headers: {
             Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            // id: 0,
             packageNum: packageformData.packageNum,
             description: packageformData.description,
             isActive: packageformData.isActive,
@@ -166,7 +158,6 @@ function AcessModules() {
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
-      // setError(error)
     }
   }
   const AddModules = async () => {
@@ -174,14 +165,13 @@ function AcessModules() {
     setError('')
     try {
       let response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Packages/AddModules`, {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // id: 0,
           packagecode: packagecode,
           moduleCodes: modulesToAssign,
         }),
@@ -205,7 +195,6 @@ function AcessModules() {
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
-      // setError(error)
     }
   }
   const RemoveModules = async () => {
@@ -213,14 +202,13 @@ function AcessModules() {
     setError('')
     try {
       let response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Packages/RemoveModules`, {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          // id: 0,
           packagecode: packagecode,
           moduleCodes: modulesToRemove,
         }),
@@ -244,40 +232,10 @@ function AcessModules() {
     } catch (error) {
       setIsLoading(false)
       setError('An error occured processing your current request!')
-      // setError(error)
     }
   }
 
-  // const getClients = async () => {
-  //   setIsLoading(true)
-  //   setError('')
-  //   try {
-  //     const response = await axios.get(
-  //       `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClients`,
-  //       {
-  //         params: { forcloundch: 'true' },
-  //         headers: {
-  //           Authorization: `Bearer ${getToken()}`,
-  //           // Authorization: `Bearer ${getToken()}`,
-  //           Accept: 'application/json',
-  //           'Content-Type': 'application/json',
-  //         },
-  //       },
-  //     )
-  //     setClients(response.data)
-  //     setIsLoading(false)
-  //   } catch (error) {
-  //     console.log(error)
-  //     setError(`${error?.code}: ${error?.message}`)
-  //     setIsLoading(false)
-  //   }
-  //   return setTimeout(() => {
-  //     setError('')
-  //   }, 8000)
-  // }
-
   useEffect(() => {
-    // getClients()
     GetPackages()
     setPackageDetails([])
     setModulesToAssign([])
@@ -303,75 +261,6 @@ function AcessModules() {
         </div>
       )}
       <div className="row">
-        {/* <div className="col-md">
-          <div className="card rounded-0 h-100">
-            <div className="card-body">
-              <MaterialTable
-                columns={[
-                  {
-                    title: '#',
-                    field: 'counter',
-                    sorting: false,
-                    render: (rowData) => rowData.tableData.id + 1,
-                    cellStyle: {
-                      width: '1%',
-                      textAlign: 'center',
-                    },
-                  },
-                  {
-                    title: 'CustomerID',
-                    field: 'psCusCode',
-                    cellStyle: {
-                      width: '10%',
-                    },
-                  },
-                  {
-                    title: 'CustomerName',
-                    field: 'psCompanyName',
-                    cellStyle: {
-                      minWidth: 180,
-                    },
-                  },
-                  {
-                    title: 'Branch',
-                    field: 'psBranchName',
-                    cellStyle: {
-                      minWidth: 120,
-                    },
-                  },
-
-                  {
-                    title: 'Active',
-                    field: 'psActivated',
-                    render: (rowData) => (
-                      <div
-                        className={rowData.psActivated === '1' ? 'Active-r' : 'not-active-r'}
-                      ></div>
-                    ),
-                    cellStyle: {
-                      width: '1%',
-                    },
-                  },
-                ]}
-                icons={tableIcons}
-                options={{
-                  ...tableOptions,
-                  search: true,
-                  paging: false,
-                  sorting: true,
-                  maxBodyHeight: 200,
-                  overflowY: 'auto',
-                  // rowStyle: (rowData) => ({
-                  //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-                  // }),
-                }}
-                isLoading={isLoading}
-                data={clients}
-                title=""
-              />
-            </div>
-          </div>
-        </div> */}
         <div className="col-md-3">
           <div className="card rounded-0 h-100">
             <div className="card-body">
@@ -544,7 +433,6 @@ function AcessModules() {
                 isLoading={isLoading}
                 data={packageDetails?.assignedModulesList}
                 title=""
-                // title="Assigned Modules"
               />
             </div>
           </div>
@@ -621,7 +509,6 @@ function AcessModules() {
                 }}
                 isLoading={isLoading}
                 data={packageDetails?.unAssignedModulesList}
-                // title="Un-Assigned Modules"
                 title=""
               />
             </div>
@@ -651,7 +538,6 @@ function AcessModules() {
                   id="packageNum"
                   value={packageformData.packageNum}
                   className="form-control form-control-sm rounded-0"
-                  // required
                   disabled
                   onChange={(e) =>
                     setPackageFormData({ ...packageformData, packageNum: e.target.value })
@@ -703,7 +589,6 @@ function AcessModules() {
                 className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setIsCreatePackageModal(false)
-                  // setError('')
                   setPackageFormData({
                     packageNum: '',
                     description: '',

@@ -5,8 +5,7 @@ import moment from 'moment'
 
 const axios = require('axios')
 
-// Approvers' in-app view of pending change requests (create client / add branch / expiry / modules).
-// Approve/Cancel call the same tokenised endpoints the email links use.
+// Approvers' in-app view of pending change requests.
 const Approvals = () => {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)

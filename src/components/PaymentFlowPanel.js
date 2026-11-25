@@ -1,19 +1,11 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import PropTypes from 'prop-types'
-import { formatMoney as money } from '../utils/money'
+import { formatMoney as money, parseAmount } from '../utils/money'
+import { getToken } from '../utils/session'
+import MoneyInput from './MoneyInput'
+const axios = require('axios')
 
-/**
- * The step-by-step payment flow, in the admin screens' idiom.
- *
- * Renders whatever `usePaymentCheckout` is holding and nothing more — the method tiles, the form
- * the SERVER described, the scripted-outcome picker, and then the live state of the attempt as it
- * runs. No field, failure code or waiting message is written here; all of it comes from the
- * catalogue, which is what makes a new payment method a backend-only change.
- *
- * The portal renders the same hook with its own markup rather than reusing this, because the two
- * apps have different design systems and bridging them would need a class-mapping layer larger
- * than the markup it saved.
- */
+/** The step-by-step payment flow, in the admin screens' idiom. */
 const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
   const {
     loading,
@@ -39,9 +31,7 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
     reset,
   } = flow
 
-  // Tell the parent once, at the moment an attempt finishes, so the ledger and the totals behind
-  // this panel refresh. Guarded on the session reference: polling re-renders constantly, and
-  // firing on every render with a finished state would reload the page in a loop.
+  // Tell the parent once, at the moment an attempt finishes.
   const settled = useRef(null)
 
   useEffect(() => {
@@ -52,10 +42,51 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
     if (state.isSuccess && onSettled) onSettled()
   }, [state, onSettled])
 
+  // The slip attached to the payment this attempt produced.
+  const [attached, setAttached] = useState(null)
+  const [docBusy, setDocBusy] = useState(false)
+  const [docError, setDocError] = useState('')
+
+  useEffect(() => {
+    if (!state) {
+      setAttached(null)
+      setDocError('')
+    }
+  }, [state])
+
+  /** Attach the paperwork to the payment that was just recorded. */
+  const attach = async (file, input) => {
+    if (!file || !state?.paymentId) return
+
+    setDocBusy(true)
+    setDocError('')
+    try {
+      const body = new FormData()
+      body.append('file', file)
+
+      // Content-Type left OFF deliberately.
+      const r = await axios.post(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Payments/${state.paymentId}/Document`,
+        body,
+        { headers: { Authorization: `Bearer ${getToken()}`, Accept: 'application/json' } },
+      )
+      setAttached(r.data?.name ?? file.name)
+      if (onSettled) onSettled()
+    } catch (e) {
+      setDocError(
+        e?.response?.data?.message ||
+          'That file could not be attached. The payment is recorded — you can add it from the payment itself.',
+      )
+    } finally {
+      setDocBusy(false)
+      // Cleared so choosing the SAME file again still fires onChange after a failure.
+      if (input) input.value = ''
+    }
+  }
+
   if (loading) return <div className="cb-fs-meta text-muted py-2">Loading payment methods…</div>
 
-  // A live gateway is usable even with simulation off — switching M-PESA on is exactly the case
-  // where the panel must keep working while the simulator is switched off.
+  // A live gateway is usable even with simulation off.
   const anyLive = modes.some((m) => m.isLive)
 
   if (!enabled && !anyLive) {
@@ -155,17 +186,15 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
                 <label className="cb-fs-meta text-muted d-block mb-1" htmlFor="pf-amount">
                   Amount
                 </label>
-                <input
+                {/* Grouped while typing. */}
+                <MoneyInput
                   id="pf-amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
                   className={`form-control form-control-sm rounded-0 ${
                     amountInvalid ? 'is-invalid' : ''
                   }`}
                   placeholder="Oldest invoice in full"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
                 />
                 <span className="cb-fs-meta text-muted">
                   Blank settles their oldest invoice exactly.
@@ -173,8 +202,7 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
               </div>
 
               {/* ---- 3. which ending to rehearse ---- */}
-              {/* Gone entirely when the gateway is live: there is nothing to script, because the
-                  customer decides on their own handset. */}
+              {/* Gone entirely when the gateway is live: there is nothing to script. */}
               <div className={`col-md-3 ${mode.isLive ? 'd-none' : ''}`}>
                 <label className="cb-fs-meta text-muted d-block mb-1" htmlFor="pf-outcome">
                   Simulated outcome
@@ -235,8 +263,7 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
                   <span className="d-block cb-fs-meta mt-1">
                     {state.sessionRef}
                     {state.providerReference ? ` · ${state.providerReference}` : ''}
-                    {/* The provider's own code, kept visible: it is what a Safaricom support
-                        ticket gets argued with, and "it failed" is not. */}
+                    {/* The provider's own code, kept visible. */}
                     {state.failureCode ? ` · code ${state.failureCode}` : ''}
                     {state.expiresInSeconds != null && running
                       ? ` · expires in ${state.expiresInSeconds}s`
@@ -244,6 +271,41 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
                   </span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ---- 4b. the paperwork, attached here ---- */}
+          {state?.isSuccess && state.acceptsDocument && state.paymentId && (
+            <div className="mt-2">
+              {attached ? (
+                <span className="cb-fs-meta text-success d-flex align-items-center gap-1">
+                  <span className="material-icons" style={{ fontSize: 15 }}>
+                    check_circle
+                  </span>
+                  {attached} attached.
+                </span>
+              ) : (
+                <>
+                  <label className="cb-fs-meta text-muted d-block mb-1" htmlFor="pf-doc">
+                    Attach the slip (optional)
+                  </label>
+                  <input
+                    id="pf-doc"
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                    className="form-control form-control-sm rounded-0"
+                    disabled={docBusy}
+                    onChange={(e) => attach(e.target.files?.[0], e.target)}
+                  />
+                  <span className="cb-fs-meta text-muted">
+                    {docBusy
+                      ? 'Uploading…'
+                      : 'The bank slip, cheque or statement line — a PDF or a photo, up to 10 MB. ' +
+                        'It can also be added later from the payment.'}
+                  </span>
+                  {docError && <span className="cb-fs-meta text-danger d-block">{docError}</span>}
+                </>
+              )}
             </div>
           )}
 
@@ -265,8 +327,10 @@ const PaymentFlowPanel = ({ flow, cusCode, alsoCovers, onSettled }) => {
               >
                 {busy
                   ? 'Starting…'
-                  : `Pay ${amount ? money(Number(amount), 'KES') : ''}`.trim() +
-                    (alsoCovers?.length ? ` for ${alsoCovers.length + 1} clients` : '')}
+                  : // parseAmount so a part-typed "." reads as no figure yet, not "KES NaN"
+                    `Pay ${
+                      parseAmount(amount) != null ? money(parseAmount(amount), 'KES') : ''
+                    }`.trim() + (alsoCovers?.length ? ` for ${alsoCovers.length + 1} clients` : '')}
               </button>
             )}
 
@@ -303,11 +367,7 @@ PaymentFlowPanel.propTypes = {
   flow: PropTypes.object.isRequired,
   /** The paying client. The flow will not start without one. */
   cusCode: PropTypes.string,
-  /**
-   * The OTHER clients this one payment settles — a group paying for several of its companies by
-   * one transfer. Staff name these explicitly; the customer-facing portal cannot, and asks a
-   * "pay everything I own" question instead.
-   */
+  /** The OTHER clients this one payment settles. */
   alsoCovers: PropTypes.arrayOf(PropTypes.string),
   /** Called once when an attempt settles, so the caller can refresh what is behind the panel. */
   onSettled: PropTypes.func,

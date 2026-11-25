@@ -6,21 +6,7 @@ import { toast } from 'react-toastify'
 import useConfirm from '../../components/useConfirm'
 const axios = require('axios')
 
-/**
- * Billing automation — whether the nightly run actually bills anybody.
- *
- * These three switches were appsettings keys, which meant switching invoicing on required editing
- * a file on the server and restarting the API. That is the wrong shape for a decision taken the
- * day prices are finally in place, and badly wrong for the reverse: something billing or texting
- * wrongly at 2am needs an off switch somebody can reach.
- *
- * They are read from the database on EVERY run, not captured at startup, so switching one back off
- * takes effect tonight.
- *
- * The screen's job is to make the consequence visible before the click. Each switch says plainly
- * what it will do, "Raise invoices" shows how many clients would actually be billed tonight and
- * how many have no price, and the two that reach customers ask for confirmation.
- */
+/** Billing automation — whether the nightly run actually bills anybody. */
 const BillingAutomation = ({ onStatus }) => {
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Invoices`
   const canManage = hasModule(MODULES.ManageBilling)
@@ -39,9 +25,7 @@ const BillingAutomation = ({ onStatus }) => {
 
   const [cfg, setCfg] = useState(null)
 
-  // A dry run of the pre-expiry sweep. Allowed while the switch is OFF, which is the point:
-  // "how many clients would this message, and which?" has to be answerable before anyone
-  // starts texting customers.
+  // A dry run of the pre-expiry sweep.
   const [preview, setPreview] = useState(null)
   const [previewing, setPreviewing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -65,13 +49,7 @@ const BillingAutomation = ({ onStatus }) => {
     load()
   }, [load])
 
-  /**
-   * Report upward for the Setup tab strip.
-   *
-   * "Off" is a legitimate, deliberate state rather than a problem — so it is not flagged as an
-   * error. What IS worth flagging is generation on while clients have no price, because that
-   * combination bills fewer people than whoever threw the switch probably expects.
-   */
+  /** Report upward for the Setup tab strip. */
   useEffect(() => {
     if (!cfg || !onStatus) return
 
@@ -246,8 +224,7 @@ const BillingAutomation = ({ onStatus }) => {
         </div>
       </div>
 
-      {/* A SEPARATE switch from the chase above, because the two say opposite things: that one
-          tells a client they are late, this one tells them a renewal is coming. */}
+      {/* A SEPARATE switch from the chase above, because the two say opposite things. */}
       <Switch
         id="ba-expiry-reminders"
         label="Remind clients before expiry"
@@ -296,9 +273,7 @@ const BillingAutomation = ({ onStatus }) => {
               Save
             </button>
           </div>
-          {/* The server sorts, de-duplicates and drops anything out of range, so a typo here
-              cannot produce a reminder a year early or a stream of them. Said so nobody treats
-              the box as more fragile than it is. */}
+          {/* The server sorts, de-duplicates and drops anything out of range. */}
           <span className="cb-fs-meta text-muted">
             days before expiry, comma separated. Only exact matches fire, so a client gets one
             message per entry.
@@ -321,8 +296,7 @@ const BillingAutomation = ({ onStatus }) => {
             {preview.skipped > 0 && <> · {preview.skipped} skipped</>}
             {' · offsets '}
             {(preview.offsets ?? []).join(' and ')} day(s)
-            {/* Zero is the ordinary answer on most days — only clients landing EXACTLY on an
-                offset fire — so it has to read as information, not as something broken. */}
+            {/* Zero is the ordinary answer on most days. */}
             {preview.sent === 0 && (
               <> — nobody expires exactly that far out today, which is the usual case.</>
             )}
@@ -355,8 +329,7 @@ const BillingAutomation = ({ onStatus }) => {
                   <td className="cb-fs-meta text-end">{c.daysBefore}</td>
                   <td className="cb-fs-meta">
                     {c.invoiceNo ?? (
-                      // Ordinary at seven days out, and worth saying — otherwise it reads as a
-                      // missing invoice rather than one not yet due to be raised.
+                      // Ordinary at seven days out, and worth saying.
                       <span className="text-muted">not raised yet</span>
                     )}
                   </td>
@@ -379,9 +352,7 @@ const BillingAutomation = ({ onStatus }) => {
         </div>
       )}
 
-      {/* Read-only: Quartz has to be rescheduled to honour a change, so an editable field here
-          would lie until the next restart. Shown because "when does this run?" is the obvious
-          next question once the switch is on. */}
+      {/* Read-only: Quartz has to be rescheduled to honour a change. */}
       <div className="cb-fs-meta text-muted mt-3 pt-2 border-top">
         <div>
           Invoice run: <code>{cfg.generateCron || 'not scheduled'}</code> · Reminder run:{' '}

@@ -5,17 +5,7 @@ import PasswordInput from '../../components/PasswordInput'
 import { getToken } from '../../utils/session'
 const axios = require('axios')
 
-/**
- * The outgoing mail server. A section of the Setup screen.
- *
- * Lifted out of the Emails screen, where it sat behind an "SMTP Settings" button above the queue.
- * Behaviour is unchanged — same endpoints, same blank-password rule — it is only no longer in the
- * way of the thing people open that screen to read.
- *
- * The password is never returned by the server, so the box is blank with "(set — leave blank to
- * keep)" beside it. Blank has to mean "unchanged" rather than "clear it": otherwise correcting the
- * from-address would silently wipe the credentials and every email would start failing.
- */
+/** The outgoing mail server. */
 const BLANK = {
   host: '',
   port: 587,
@@ -79,8 +69,7 @@ const SmtpSettings = ({ onStatus }) => {
         setPasswordSet(false)
       }
 
-      // "Off" and "not set up" are different states; a tab that conflated them would hide a
-      // deliberate stop and make a missing host look intentional.
+      // "Off" and "not set up" are different states.
       if (onStatus) {
         const configured = !!c.exists && !!c.host && !!c.passwordSet
         onStatus({

@@ -1,25 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { portalGet, readErr, fmtDate, apiUrl, PortalSessionEnded } from '../../utils/portalApi'
+import {
+  portalGet,
+  portalHtml,
+  readErr,
+  fmtDate,
+  apiUrl,
+  PortalSessionEnded,
+} from '../../utils/portalApi'
 import { formatMoney as money } from '../../utils/money'
 import { downloadFile } from '../../utils/download'
 import { PortalListFilters, PortalListPager, rangeOf } from './PortalListControls'
 
-/**
- * The customer's invoices.
- *
- * Drafts never appear — the server excludes them. A draft has not been issued, so the client does
- * not owe it, and showing one would invite payment for something that might still be withdrawn.
- *
- * Paying hands off to /portal/pay rather than collecting anything here. That page owns the whole
- * attempt — the method, the server-described form, the waiting, the failure vocabulary — and a
- * second entry point into it would be a second place for that to drift.
- */
-/**
- * Server-side, all of them. They used to filter the array in the browser, which stops working the
- * moment the list is paged: "To pay" would have filtered page one and silently omitted the unpaid
- * invoices on page two.
- */
+/** The customer's invoices. */
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'open', label: 'To pay' },
@@ -45,21 +38,21 @@ const PortalInvoices = () => {
   const [filter, setFilter] = useState('all')
   const [open, setOpen] = useState(null)
 
-  // The date range, and the page. `preset` is only which button looks pressed — `from`/`to` are
-  // the truth, so typing a date by hand simply deselects the presets rather than fighting them.
+  // The date range, and the page. `preset` is only which button looks pressed.
   const [preset, setPreset] = useState('all')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
 
-  // From the server, over the WHOLE filtered set and the whole account respectively — see
-  // PortalInvoicePageVM. Adding up the page would have made both wrong the moment paging arrived.
+  // From the server, over the WHOLE filtered set and the whole account respectively.
   const [matchingRows, setMatchingRows] = useState(0)
   const [account, setAccount] = useState(null)
   const [span, setSpan] = useState({})
-  // Which invoice is being fetched. Held by id rather than as a boolean so the spinner appears on
-  // the row that was clicked and the rest of the table stays usable.
+  // Which invoice is being fetched.
   const [downloading, setDownloading] = useState(null)
+
+  // The invoice document being read on screen: { id, html } or { id, loading }.
+  const [doc, setDoc] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -92,12 +85,7 @@ const PortalInvoices = () => {
     load()
   }, [load])
 
-  /**
-   * Any change to WHAT is being looked at goes back to page one.
-   *
-   * Without this, filtering while on page 5 asks for page 5 of a shorter result set and the table
-   * comes back empty — which reads as "you have no invoices" rather than "you are past the end".
-   */
+  /** Any change to WHAT is being looked at goes back to page one. */
   const refilter = (fn) => {
     setPage(1)
     fn()
@@ -112,8 +100,7 @@ const PortalInvoices = () => {
     })
   }
 
-  // Typed dates deselect the presets rather than contradicting them: a pressed "This year" above
-  // a range of somebody else's choosing is a lie about what is being shown.
+  // Typed dates deselect the presets rather than contradicting them.
   const applyFrom = (v) =>
     refilter(() => {
       setPreset('')
@@ -130,17 +117,24 @@ const PortalInvoices = () => {
       outstanding: account?.outstanding ?? 0,
       overdue: account?.overdue ?? 0,
       owing: account?.companiesOwing ?? 0,
+      // Money already paid that no invoice has claimed.
+      credit: account?.credit ?? 0,
+      // THE PART AN OPEN INVOICE CAN ACTUALLY REACH, which is not always all of it.
+      creditUsable: account?.creditUsable ?? 0,
+      creditUnusable: Math.max(0, (account?.credit ?? 0) - (account?.creditUsable ?? 0)),
+      toPay: Math.max(0, (account?.outstanding ?? 0) - (account?.creditUsable ?? 0)),
       currency: account?.currency ?? 'KES',
     }),
     [account],
   )
 
-  // Is an empty table a filter result or an empty account? Anything narrowing the view says the
-  // first — including being past the last page, which looks identical to a customer.
+  // Is an empty table a filter result or an empty account?
   const narrowed = filter !== 'all' || !!from || !!to || page > 1
 
   const show = async (row) => {
     setOpen({ loading: true })
+    // Closed whenever a different invoice is opened.
+    setDoc(null)
     try {
       setOpen(await portalGet(`/Portal/Invoices/${row.id}`))
     } catch (e) {
@@ -149,12 +143,25 @@ const PortalInvoices = () => {
     }
   }
 
-  /**
-   * Save the invoice as a PDF — what a customer needs to file it or give it to their accountant.
-   *
-   * The server stores the document it emailed and renders one on the spot if that is missing, so
-   * this is offered on every invoice without the screen having to know which have one.
-   */
+  /** READ the invoice, rather than download it. */
+  const readDoc = async (row, toggle = false) => {
+    // Only the button inside the open card toggles.
+    if (toggle && doc?.id === row.id) {
+      setDoc(null)
+      return
+    }
+
+    setDoc({ id: row.id, loading: true })
+    try {
+      setDoc({ id: row.id, html: await portalHtml(`/Portal/Invoices/${row.id}/Html`) })
+    } catch (e) {
+      if (e instanceof PortalSessionEnded) throw e
+      setDoc(null)
+      setError(readErr(e))
+    }
+  }
+
+  /** Save the invoice as a PDF — what a customer needs to file it or pass it on. */
   const savePdf = async (row) => {
     setDownloading(row.id)
     setError('')
@@ -189,9 +196,25 @@ const PortalInvoices = () => {
         </div>
       )}
 
-      {/* Gated on the ACCOUNT owing something, not on this page having rows. Gating it on the
-          page meant filtering to "Paid" — or to a quiet date range — hid the outstanding total
-          and the Pay button on an account that still owes money. */}
+      {/* NOTHING OWED, BUT MONEY ON THE ACCOUNT. */}
+      {totals.outstanding <= 0 && totals.credit > 0 && (
+        <div className="pt-note" style={{ marginBottom: 16 }}>
+          <span className="pt-note__icon">
+            <span className="material-icons">savings</span>
+          </span>
+          <span>
+            <strong>
+              You have {money(totals.credit, totals.currency)} in credit on your account
+            </strong>
+            <span>
+              Nothing is outstanding right now. This comes off your next invoice automatically —
+              there is nothing for you to do, and it is not lost if you do not use it this month.
+            </span>
+          </span>
+        </div>
+      )}
+
+      {/* Gated on the ACCOUNT owing something, not on this page having rows. */}
       {totals.outstanding > 0 && (
         <section className="pt-card pt-card--dark pt-hero">
           <span aria-hidden="true" className="pt-hero__ring pt-hero__ring--a" />
@@ -215,12 +238,35 @@ const PortalInvoices = () => {
             )}
           </span>
           <span className="pt-hero__value">{money(totals.outstanding, totals.currency)}</span>
-          <div className="pt-hero__actions">
-            {/* Hidden when nothing is outstanding — offering it anyway would land them on a page
-                with an empty company picker and no explanation.
 
-                Someone owing on several companies gets the one-payment offer by name; with one
-                company owing, "pay everything" and "pay now" are the same button. */}
+          {/* THE SUM THE CUSTOMER ACTUALLY HAS TO SEND, spelled out rather than implied. */}
+          {totals.creditUsable > 0 && (
+            <div className="pt-sum" style={{ marginTop: 10 }}>
+              <span className="pt-sum__row">
+                <span>Invoiced and unpaid</span>
+                <span>{money(totals.outstanding, totals.currency)}</span>
+              </span>
+              <span className="pt-sum__row pt-sum__row--credit">
+                <span>Credit on your account</span>
+                <span>− {money(totals.creditUsable, totals.currency)}</span>
+              </span>
+              <span className="pt-sum__row pt-sum__row--total">
+                <span>To pay</span>
+                <span>{money(totals.toPay, totals.currency)}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Credit that cannot touch this bill. */}
+          {totals.creditUnusable > 0 && (
+            <span className="pt-hero__label" style={{ marginTop: 6, textTransform: 'none' }}>
+              {money(totals.creditUnusable, totals.currency)} more is in credit on a company with
+              nothing outstanding. It stays on your account for that company&apos;s next invoice.
+            </span>
+          )}
+
+          <div className="pt-hero__actions">
+            {/* Hidden when nothing is outstanding. */}
             {totals.outstanding > 0 && (
               <button
                 type="button"
@@ -259,9 +305,7 @@ const PortalInvoices = () => {
         {invoices.length === 0 ? (
           <div className="pt-empty">
             <span className="material-icons">description</span>
-            {/* "Nothing matches" and "you have none" are different facts, and only the server
-                knows which: an account with history and an active filter is the first, an empty
-                account is the second. `narrowed` distinguishes them. */}
+            {/* "Nothing matches" and "you have none" are different facts. */}
             {narrowed ? 'Nothing matches those filters.' : 'No invoices yet.'}
             <span style={{ fontSize: 'var(--pt-fs-sm)' }}>
               {narrowed
@@ -323,15 +367,27 @@ const PortalInvoices = () => {
                               aria-label={`Pay invoice ${i.invoiceNo}`}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                // The company, not the invoice: the pay page allocates oldest-
-                                // first across everything that company owes, so sending it one
-                                // invoice id would promise a precision it does not have.
+                                // The company, not the invoice: the pay page allocates oldest-first.
                                 navigate(`/portal/pay?cus=${encodeURIComponent(i.cusCode)}`)
                               }}
                             >
                               <span className="material-icons">payments</span>
                             </button>
                           )}
+                          {/* Read it, which is what most people clicking a row want. */}
+                          <button
+                            type="button"
+                            className="pt-icon-btn"
+                            title={`Read ${i.invoiceNo}`}
+                            aria-label={`Read invoice ${i.invoiceNo}`}
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await show(i)
+                              readDoc(i)
+                            }}
+                          >
+                            <span className="material-icons">visibility</span>
+                          </button>
                           <button
                             type="button"
                             className="pt-icon-btn"
@@ -401,6 +457,17 @@ const PortalInvoices = () => {
                   <button
                     type="button"
                     className="pt-btn"
+                    disabled={doc?.id === open.id && doc?.loading}
+                    onClick={() => readDoc(open, true)}
+                  >
+                    {doc?.id === open.id && !doc.loading ? 'Hide the invoice' : 'Read the invoice'}
+                    <span className="material-icons">
+                      {doc?.id === open.id && !doc.loading ? 'visibility_off' : 'visibility'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="pt-btn"
                     disabled={downloading === open.id}
                     onClick={() => savePdf(open)}
                   >
@@ -430,6 +497,13 @@ const PortalInvoices = () => {
                   <span className="pt-tile__k">Outstanding</span>
                   <span className="pt-tile__v">{money(open.outstanding, open.currency)}</span>
                 </div>
+                {/* THE ANSWER TO "so what do I send?". */}
+                {open.creditApplied > 0 && (
+                  <div className="pt-tile">
+                    <span className="pt-tile__k">To pay now</span>
+                    <span className="pt-tile__v">{money(open.amountToPay, open.currency)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-scroll">
@@ -463,9 +537,51 @@ const PortalInvoices = () => {
                         </td>
                       </tr>
                     )}
+
+                    {/* The overpayment, carried down onto the invoice it can be spent on. */}
+                    {open.creditApplied > 0 && (
+                      <>
+                        <tr>
+                          <td style={{ color: 'var(--pt-green, #157347)' }}>
+                            Credit already on your account
+                          </td>
+                          <td
+                            style={{
+                              textAlign: 'right',
+                              whiteSpace: 'nowrap',
+                              color: 'var(--pt-green, #157347)',
+                            }}
+                          >
+                            − {money(open.creditApplied, open.currency)}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ fontWeight: 700 }}>To pay now</td>
+                          <td style={{ textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            {money(open.amountToPay, open.currency)}
+                          </td>
+                        </tr>
+                      </>
+                    )}
                   </tbody>
                 </table>
               </div>
+
+              {/* THE DOCUMENT ITSELF, below the figures rather than instead of them. */}
+              {doc?.id === open.id && (
+                <div className="pt-doc">
+                  {doc.loading ? (
+                    <div className="pt-empty">Loading the invoice…</div>
+                  ) : (
+                    <iframe
+                      title={`Invoice ${open.invoiceNo}`}
+                      srcDoc={doc.html}
+                      sandbox=""
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                </div>
+              )}
             </>
           )}
         </section>

@@ -5,16 +5,7 @@ import PasswordInput from '../../components/PasswordInput'
 import { getToken } from '../../utils/session'
 const axios = require('axios')
 
-/**
- * The SMS gateway (Africa's Talking). A section of the Setup screen.
- *
- * Lifted out of the SMS screen, where it sat behind a button above the queue. Same endpoints, same
- * blank-key rule, same test send.
- *
- * Behind the SAME right as email by the user's decision: setting up SMTP and setting up the SMS
- * gateway is one job done by one person, so a separate pair of SMS rights only ever got granted
- * alongside the email ones.
- */
+/** The SMS gateway (Africa's Talking). */
 const LIVE_URL = 'https://api.africastalking.com/version1/messaging'
 const SANDBOX_URL = 'https://api.sandbox.africastalking.com/version1/messaging'
 
@@ -214,8 +205,7 @@ const SmsSettings = ({ onStatus }) => {
               onChange={(e) => set({ senderId: e.target.value })}
               title="An alphanumeric sender ID registered and approved on your Africa's Talking account. Leave blank to use the account default."
             />
-            {/* The natural mistake, and it fails with a message that does not say why: the
-                provider answers 201 with an EMPTY recipient list. */}
+            {/* The natural mistake, and it fails with a message that does not say why. */}
             {cfg.senderId &&
               cfg.username &&
               cfg.senderId.trim().toLowerCase() === cfg.username.trim().toLowerCase() && (

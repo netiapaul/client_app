@@ -9,53 +9,33 @@ import {
   initialsOf,
   tintOf,
 } from '../../utils/portalApi'
-import { formatMoney as money } from '../../utils/money'
+import { formatMoney as money, formatAmount } from '../../utils/money'
+import MoneyInput from '../../components/MoneyInput'
 import usePaymentCheckout from '../../hooks/usePaymentCheckout'
 import PortalNotActive from './portalNotActive'
 
-/**
- * Paying, from the customer's side — the whole process, step by step.
- *
- * The same checkout the admin screen drives, through the same `usePaymentCheckout` hook and the
- * same server-described forms, rendered in the portal's own idiom rather than shared as a
- * component: the two apps have different design systems and bridging them would cost more than it
- * saved.
- *
- * What a customer actually sees depends on what they pick, because the server says so:
- *  - M-PESA, push    — a phone number, then "check your phone" for as long as it really takes
- *  - M-PESA, receipt — they already paid the paybill; the receipt number gets looked up
- *  - Card            — card details, then the issuer's 3-D Secure challenge
- *  - Bank transfer   — the bank, the statement reference, the value date
- *
- * Cheque and cash are deliberately absent: the server does not offer them to a customer. A cheque
- * is handed over in person, and a customer recording that they paid cash is a claim, not a payment.
- *
- * Nothing here decides whether paying works. The catalogue endpoint does, from server
- * configuration — a customer-facing checkout that a client could switch on would be a way to
- * settle invoices for free.
- */
+/** Paying, from the customer's side — the whole process, step by step. */
 const PortalPay = () => {
   const navigate = useNavigate()
 
-  // ?cus= is where the invoices page sends someone who pressed Pay on a particular company's
-  // invoice. A REQUEST, not authority: it only ever selects among the companies the server already
-  // returned for this user, so a hand-typed code for somebody else's company selects nothing.
+  // ?cus= is where the invoices page sends someone who pressed Pay on one company.
   const [params] = useSearchParams()
   const wantedCus = params.get('cus')
   const wantedAll = params.get('all') === '1'
 
   const [companies, setCompanies] = useState([])
+
+  // Money already on the account.
+  const [credit, setCredit] = useState(0)
+  const [creditCurrency, setCreditCurrency] = useState('KES')
   const [cusCode, setCusCode] = useState('')
 
-  // Settle every company at once. Sent to the server as a FLAG, not as a list of companies — the
-  // server resolves it from the signed-in account's own scope, so nothing the browser says can
-  // reach a company this customer does not own.
+  // Settle every company at once.
   const [payAll, setPayAll] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // A 401 anywhere means the session is over; the hook reports errors through this, so the
-  // redirect is handled once rather than at every call site.
+  // A 401 anywhere means the session is over; the hook reports errors through this.
   const onError = useCallback(
     (e) => {
       if (e instanceof PortalSessionEnded) {
@@ -83,19 +63,21 @@ const PortalPay = () => {
   const loadDue = useCallback(async () => {
     setLoading(true)
     try {
-      const list = (await portalGet('/Portal/Payments/Due')) ?? []
-      setCompanies(list)
+      // Credit comes from the account summary rather than from Due.
+      const [list, account] = await Promise.all([
+        portalGet('/Portal/Payments/Due').then((r) => r ?? []),
+        portalGet('/Portal/Summary').catch(() => null),
+      ])
 
-      // A payment may have settled every other company, leaving one. "All companies" would then
-      // be a choice between a thing and the same thing, and the option disappears — so the state
-      // behind it has to go too, or the hidden radio stays selected and the button reads "Pay all
-      // 1" against a single company.
+      setCompanies(list)
+      setCredit(account?.credit ?? 0)
+      setCreditCurrency(account?.currency ?? 'KES')
+
+      // A payment can settle every other company, leaving one — then "pay all" no longer applies.
       if (list.length <= 1) setPayAll(false)
       else if (wantedAll) setPayAll(true)
 
-      // Keep an existing choice across the reload that follows a payment — unless it has gone,
-      // which is what happens when that payment settled the company's last invoice. Only on the
-      // first load does ?cus= get a say; after a payment the URL is stale and the rules above win.
+      // Keep an existing choice across the reload that follows a payment — unless it has gone.
       setCusCode((c) => {
         if (c && list.some((x) => x.cusCode === c)) return c
 
@@ -126,11 +108,6 @@ const PortalPay = () => {
   const currency = companies[0]?.currency ?? 'KES'
 
   // Renew the licence and leave the add-ons.
-  //
-  // Add-ons are billed on their own invoice precisely so this is possible: a customer who has
-  // finished with one should not have to buy it again to keep their licence running. Choosing it
-  // CANCELS NOTHING — the add-on invoice simply stays outstanding, the grant lapses on its own
-  // date, and paying it later still renews it.
   const [licenceOnly, setLicenceOnly] = useState(false)
 
   const addOnDue = payAll
@@ -144,23 +121,27 @@ const PortalPay = () => {
   // Only worth asking when there is actually an add-on charge to decline.
   const canSplit = addOnDue > 0
 
-  // The choice is meaningless once there is nothing to decline, and leaving it latched would
-  // quietly underpay the next company the customer selects.
+  // The choice is meaningless once there is nothing to decline.
   useEffect(() => {
     if (!canSplit && licenceOnly) setLicenceOnly(false)
   }, [canSplit, licenceOnly])
 
-  // What the Pay button is about to collect, and what the amount box defaults to. One figure
-  // whichever mode they are in, so the two cannot disagree.
-  const fullDue = payAll ? totalOutstanding : chosen?.outstanding ?? 0
+  // What the Pay button is about to collect, and what the amount box defaults to.
+  const fullDue = payAll
+    ? companies.reduce((sum, c) => sum + (c.toPay ?? c.outstanding ?? 0), 0)
+    : chosen?.toPay ?? chosen?.outstanding ?? 0
+
+  // What the credit is taking off, for the line explaining the gap against the invoice.
+  const creditApplied = payAll
+    ? companies.reduce((sum, c) => sum + (c.creditApplied ?? 0), 0)
+    : chosen?.creditApplied ?? 0
+
   const due = licenceOnly ? licenceDue : fullDue
 
   const { state, mode, modes } = flow
   const running = state && !state.isFinished
 
-  // Whether anything here can take real money. Used for the page-level banner; the per-method
-  // notice uses mode.isLive, because one page can legitimately have a live M-PESA and a
-  // still-simulated card.
+  // Whether anything here can take real money.
   const anyLive = modes.some((m) => m.isLive)
 
   // Once an attempt settles, the amounts on this page are stale — that invoice may be paid off.
@@ -210,9 +191,7 @@ const PortalPay = () => {
         </div>
       </div>
 
-      {/* The banner tracks the CHOSEN method, not the page: with M-PESA live and card still
-          simulated, one page genuinely has both, and a single blanket notice would be wrong for
-          whichever one you picked. */}
+      {/* The banner tracks the CHOSEN method, not the page. */}
       {anyLive && (
         <div className="pt-note pt-note--green">
           <span className="pt-note__icon">
@@ -266,18 +245,17 @@ const PortalPay = () => {
           <div className="pt-empty">
             <span className="material-icons">check_circle</span>
             Nothing outstanding. Every invoice on your account is settled.
+            {/* Otherwise a customer in credit is told "settled" and nothing else. */}
+            {credit > 0 && (
+              <span style={{ display: 'block', marginTop: 8 }}>
+                You also have <strong>{money(credit, creditCurrency)}</strong> in credit, which
+                comes off your next invoice automatically.
+              </span>
+            )}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 14 }}>
-            {/*
-              Pay the lot in one go. Only offered to somebody who actually owns more than one
-              company with something outstanding — on a single-company account it would be a
-              choice between a thing and the same thing.
-
-              One payment, not several: one M-PESA prompt and one PIN. The server allocates it
-              oldest-month-first across every company, so a short payment clears the most overdue
-              month wherever it is rather than working through the list.
-            */}
+            {/* Pay the lot in one go. */}
             {companies.length > 1 && (
               <label
                 style={{
@@ -358,9 +336,18 @@ const PortalPay = () => {
                   <span className="pt-company__code">{c.cusCode}</span>
                 </span>
                 <span style={{ textAlign: 'right' }}>
+                  {/* The headline is what they SEND. */}
                   <span style={{ display: 'block', fontSize: 'var(--pt-fs-h3)', fontWeight: 800 }}>
-                    {money(c.outstanding, c.currency)}
+                    {money(c.creditApplied > 0 ? c.toPay : c.outstanding, c.currency)}
                   </span>
+                  {c.creditApplied > 0 && (
+                    <span
+                      style={{ fontSize: 'var(--pt-fs-xs)', color: 'var(--pt-green, #157347)' }}
+                    >
+                      {money(c.outstanding, c.currency)} invoiced less{' '}
+                      {money(c.creditApplied, c.currency)} credit
+                    </span>
+                  )}
                   <span style={{ fontSize: 'var(--pt-fs-xs)', color: 'var(--pt-muted)' }}>
                     {c.invoices.length} invoice{c.invoices.length === 1 ? '' : 's'} · oldest due{' '}
                     {fmtDate(c.invoices[0]?.dueDate)}
@@ -371,13 +358,7 @@ const PortalPay = () => {
           </div>
         )}
 
-        {/* ---- renew the licence, or renew everything ----
-
-            Only shown when there is an add-on charge to decline. Most customers want their
-            add-ons and should not be asked a question with one sensible answer; the ones who have
-            finished with one need this, because the alternative is buying it again to keep their
-            licence running. Declining writes nothing off — the add-on invoice stays on the
-            account and paying it later renews the feature. */}
+        {/* ---- renew the licence, or renew everything ---- */}
         {canSplit && !state && (
           <div style={{ marginTop: 16 }}>
             <span style={{ ...fieldLabel, marginBottom: 8 }}>What would you like to pay for?</span>
@@ -571,15 +552,15 @@ const PortalPay = () => {
 
             <label htmlFor="pt-f-amount">
               <span style={fieldLabel}>Amount</span>
-              <input
+              {/* Grouped as it is typed, the same as the admin side. */}
+              <MoneyInput
                 id="pt-f-amount"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder={due > 0 ? String(due) : '0.00'}
+                currency={null}
+                className=""
+                placeholder={due > 0 ? formatAmount(due) : '0.00'}
                 style={box(flow.amountInvalid)}
                 value={flow.amount}
-                onChange={(e) => flow.setAmount(e.target.value)}
+                onChange={flow.setAmount}
               />
               <span style={hint}>
                 {flow.amountInvalid
@@ -591,9 +572,7 @@ const PortalPay = () => {
               </span>
             </label>
 
-            {/* Rehearsal only. A customer never chooses how their own payment fails — when the
-                gateway is live the outcome is theirs to decide on their handset, so the picker
-                disappears entirely rather than sitting there inert. */}
+            {/* Rehearsal only. A customer never chooses how their own payment fails. */}
             {flow.enabled && !mode.isLive && (mode.outcomes ?? []).length > 1 && (
               <label htmlFor="pt-f-outcome">
                 <span style={fieldLabel}>Test outcome</span>
@@ -679,6 +658,15 @@ const PortalPay = () => {
             : 'Total outstanding'}
         </span>
         <span className="pt-hero__value">{money(due || totalOutstanding, currency)}</span>
+
+        {/* WHY THE FIGURE ABOVE IS SMALLER THAN THE INVOICE. */}
+        {!licenceOnly && creditApplied > 0 && (
+          <span className="pt-hero__label" style={{ textTransform: 'none' }}>
+            {money(fullDue + creditApplied, currency)} invoiced, less{' '}
+            {money(creditApplied, currency)} already on your account
+          </span>
+        )}
+
         {licenceOnly && (
           <span className="pt-hero__label">{money(addOnDue, currency)} of add-ons left unpaid</span>
         )}
@@ -688,8 +676,7 @@ const PortalPay = () => {
             <button
               type="button"
               className="pt-btn pt-btn--accent"
-              // A live method is payable even with simulation switched off — that is the whole
-              // point of switching the gateway on.
+              // A live method is payable even with simulation switched off.
               disabled={!flow.canStart || !cusCode || (!flow.enabled && !mode?.isLive)}
               title={
                 !flow.enabled && !mode?.isLive
@@ -700,9 +687,7 @@ const PortalPay = () => {
                   ? `Still needed: ${flow.missing.join(', ')}`
                   : undefined
               }
-              // cusCode travels even when paying for everything: a payment still has to say who
-              // paid it, and it is the company the receipt is addressed to. payAll is what widens
-              // which invoices the money may settle, and the server resolves that from the scope.
+              // cusCode travels even when paying for everything.
               onClick={() => flow.start({ cusCode, payAll, licenceOnly })}
             >
               {flow.busy

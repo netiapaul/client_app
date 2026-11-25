@@ -3,31 +3,11 @@ import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { getToken, hasModule } from '../../utils/session'
 import { MODULES } from '../../utils/permissions'
-import { formatMoney as money } from '../../utils/money'
+import { formatMoney as money, parseAmount } from '../../utils/money'
+import MoneyInput from '../../components/MoneyInput'
 const axios = require('axios')
 
-/**
- * What each add-on costs. A Billing screen, alongside Billing profiles.
- *
- * It sits here rather than under Setup because it is PRICING, not configuration: the subscription
- * price lives under Billing profiles and an add-on price is the same kind of decision, made by the
- * same person, changed for the same reasons. Setup is for credentials and letterheads — things
- * touched once and then left alone.
- *
- * THE CATALOGUE ONLY: what we normally charge for each add-on, for any client who has not
- * agreed something else.
- *
- * A client's OWN figures used to be a second tab here. They moved to the client's billing profile,
- * beside their monthly amount, because setting a client up across two screens meant leaving a
- * half-filled price to go and find the other one — and the figures belong next to the price they
- * are billed alongside.
- *
- * Resolution is always: this client's own figure, else the catalogue, else NOT BILLED. Unpriced
- * has never meant free — nothing reaches a document until somebody puts a number somewhere.
- *
- * Charged ONCE PER COMPANY however many branches hold the grant, which is why the counts here are
- * companies rather than branches.
- */
+/** What each add-on costs. */
 const api = `${process.env.REACT_APP_URL_CONFIG}/api/Invoices/AddOns`
 
 const authHeaders = () => ({
@@ -74,8 +54,8 @@ const AddOnPricing = () => {
     try {
       const payload = rows.map((a) => ({
         addonId: a.addonId,
-        monthlyPrice:
-          a.monthlyPrice === '' || a.monthlyPrice == null ? null : Number(a.monthlyPrice),
+        // parseAmount, not Number: an empty or half-typed box must read as null, not NaN.
+        monthlyPrice: parseAmount(a.monthlyPrice),
       }))
 
       const r = await axios.post(api, payload, { headers: authHeaders() })
@@ -88,8 +68,7 @@ const AddOnPricing = () => {
     }
   }
 
-  // What this pricing would add to a month's billing, across every company holding a grant. The
-  // figure somebody should see before pressing save.
+  // What this pricing would add to a month's billing, across every company holding a grant.
   const monthly = rows.reduce((sum, a) => sum + (Number(a.monthlyPrice) || 0) * a.clients, 0)
   const priced = rows.filter((a) => Number(a.monthlyPrice) > 0).length
 
@@ -108,15 +87,7 @@ const AddOnPricing = () => {
         </h1>
       </div>
 
-      {/* ONE WINDOW PER CLIENT.
-
-          A client's own add-on figures used to be a second tab here, which meant setting a client
-          up took two screens — leave a half-filled price, go and find the other one. They now sit
-          in the client's billing profile beside their monthly amount, which is where somebody
-          setting up a client is already working, and the Save there writes both.
-
-          What is left on this screen is the CATALOGUE: a global price list that belongs to no
-          client in particular. */}
+      {/* ONE WINDOW PER CLIENT: what is left on this screen is the global catalogue. */}
       <div className="alert alert-info rounded-0 py-2 cb-fs-body d-flex flex-wrap gap-2 align-items-center">
         <span className="material-icons" style={{ fontSize: 18 }}>
           info
@@ -189,16 +160,15 @@ const AddOnPricing = () => {
                           </td>
 
                           <td className="text-end">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
+                            {/* Grouped while typing. */}
+                            <MoneyInput
+                              currency={null}
                               className="form-control form-control-sm rounded-0 text-end"
                               style={{ width: 120 }}
                               placeholder="Not billed"
                               disabled={!canManage}
                               value={a.monthlyPrice ?? ''}
-                              onChange={(e) => set(a.addonId, e.target.value)}
+                              onChange={(v) => set(a.addonId, v)}
                               aria-label={`Monthly price for ${a.addonName}`}
                             />
                           </td>
@@ -241,16 +211,6 @@ const AddOnPricing = () => {
   )
 }
 
-/**
- * One client's add-on prices.
- *
- * Every add-on is listed, not only the ones they hold — you cannot set a price for something the
- * screen has hidden, and a client is often given an add-on right after its price is agreed.
- *
- * Each row says where its figure comes from, because "why is this client billed differently?" is
- * the question this screen exists to answer. A blank box means no special arrangement and falls
- * back to the default; a zero means agreed at no charge. Those are different, and the row says
- * which is in force.
- */
+/** One client's add-on prices. */
 
 export default AddOnPricing

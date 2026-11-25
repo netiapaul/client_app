@@ -1,6 +1,5 @@
 /* eslint-disable react/display-name */
 import React, { forwardRef } from 'react'
-// Import Icons
 import AddBox from '@material-ui/icons/AddBox'
 import ArrowDownward from '@material-ui/icons/ArrowDownward'
 import Check from '@material-ui/icons/Check'
@@ -51,24 +50,18 @@ const tableIcons = {
 const isDarkMode = () =>
   typeof document !== 'undefined' && document.documentElement.classList.contains('theme-dark')
 
-// MaterialTable rowStyle. Deliberately theme-NEUTRAL so the table repaints instantly when the theme
-// is toggled (no re-render needed): non-selected rows are transparent, so the themed Paper background
-// and cell-text colours (driven by CSS, which reacts to the <html> class) show through and update
-// live. The selected highlight uses a translucent accent that reads on both light and dark.
+// MaterialTable rowStyle.
 const themedRowStyle = (selected = false) => ({
   backgroundColor: selected ? 'rgba(245, 139, 64, 0.18)' : 'transparent',
 })
 
 const tableOptions = {
-  //   minBodyHeight: 535,
-  // exportButton: true,
   pageSize: 30,
   pageSizeOptions: [5, 10, 20, 30],
   actionsColumnIndex: -1,
   showSelectAllCheckbox: false,
   emptyRowsWhenPaging: false,
   searchFieldStyle: {
-    // backgroundColor: '#f3f6f9',
     backgroundColor: '#e5e5e5',
     paddingLeft: 10,
     paddingRight: 10,

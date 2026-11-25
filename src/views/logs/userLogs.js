@@ -76,9 +76,7 @@ const diffRows = (oldV, newV) => {
   }))
 }
 
-// ---- Humanising the raw audit data for a non-technical reader --------------------
-// The audit stores raw entity/property names; map the common ones to plain labels and
-// hide internal plumbing fields so the listing reads like a sentence, not a DB dump.
+// ---- Humanising the raw audit data for a non-technical reader ----
 
 // camelCase / PascalCase / snake_case  ->  "Spaced words"
 const prettify = (s) =>
@@ -129,8 +127,7 @@ const FIELD_LABELS = {
 }
 const friendlyField = (f) => FIELD_LABELS[f] || prettify(f)
 
-// Best-effort client name for the row: the Company column, else a name carried in the
-// change values (ChangeRequest rows keep the client inside their serialized payload).
+// Best-effort client name for the row: the Company column.
 const clientNameOf = (l) => {
   const direct = (l.company || '').trim()
   if (direct) return direct
@@ -157,7 +154,6 @@ const statusOf = (l) => {
 }
 
 // One short plain-English sentence describing what happened (no raw fields, no JSON).
-// Full before/after detail stays in the row's popup.
 const activityText = (l) => {
   const name = clientNameOf(l)
   const forName = name ? ` '${name}'` : ''
@@ -451,7 +447,6 @@ const UserLogs = () => {
         </div>
       </div>
 
-      {/* Pagination (server-side) */}
       <div
         className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2"
         style={{ fontSize: 11 }}

@@ -68,8 +68,7 @@ const emptyForm = {
 }
 
 const Servers = () => {
-  // Replaces window.confirm, which the browser prefixes with its own hostname and which
-  // cannot mark a destructive action. See useConfirm.
+  // Replaces window.confirm, which the browser prefixes with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
   const [servers, setServers] = useState([])
   const [isLoading, setIsLoading] = useState(false)

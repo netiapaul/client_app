@@ -15,21 +15,7 @@ import {
 } from '../../utils/portalApi'
 import { formatMoney as money } from '../../utils/money'
 
-/**
- * Portal dashboard.
- *
- * The hero states the one thing worth acting on, and WHICH thing that is depends on the account:
- *
- *  - owing anything  -> the balance, what it is made of, when it falls due, and Pay;
- *  - settled         -> the licence position, since the next renewal is then the useful fact.
- *
- * It began as the second of those alone, because there was no billing ledger to read — the comp
- * asked for "Total outstanding · Pay all with M-PESA" and a hero cannot invent a figure. Both now
- * exist, so the switch is live.
- *
- * Both figures come from /Portal/Summary rather than being added up here, so the landing page is
- * never waiting on a second round trip to decide what its own headline is.
- */
+/** Portal dashboard. The hero states the one thing worth acting on. */
 const PortalDashboard = () => {
   const navigate = useNavigate()
 
@@ -73,12 +59,10 @@ const PortalDashboard = () => {
     (summary?.licencesExpiringSoon ?? 0) +
     (summary?.licencesInactive ?? 0)
 
-  // Computed from the figure, not from a separate flag: one source for "is there a balance?" so
-  // the headline, the badge and the buttons cannot disagree with each other.
+  // Computed from the figure, not from a separate flag.
   const owes = (summary?.outstanding ?? 0) > 0
 
-  // The hero's per-company facts: the three closest renewals, which is what the comp showed and
-  // what a reader can act on. More than three and the line wraps into noise.
+  // The hero's per-company facts: the three closest renewals.
   const soonest = [...companies]
     .filter((c) => c.nextExpiry)
     .sort((a, b) => new Date(a.nextExpiry) - new Date(b.nextExpiry))
@@ -143,14 +127,7 @@ const PortalDashboard = () => {
             )}
           </span>
 
-          {/*
-            MONEY LEADS WHEN THERE IS ANY OWED, and the licence position leads when there is not.
-
-            Not one or the other permanently: a balance is the thing a customer can act on today,
-            so it earns the headline the moment it exists — but a hero reading "KES 0.00" on an
-            account in good standing would be a prompt to do nothing, where the next renewal date
-            is genuinely the most useful fact on the page.
-          */}
+          {/* MONEY LEADS WHEN THERE IS ANY OWED. */}
           {owes ? (
             <>
               <span className="pt-hero__value">{money(summary.outstanding, summary.currency)}</span>
@@ -178,13 +155,31 @@ const PortalDashboard = () => {
                   )}
                 </span>
 
-                {/* Only when there is some. A "credit: 0.00" line on every dashboard teaches
-                    people to stop reading the line that matters on the one day it is not zero. */}
+                {/* Only when there is some. */}
                 {summary.credit > 0 && (
                   <span className="pt-hero__fact">
                     <span>Credit on your account</span>
                     <span style={{ color: 'var(--pt-ok-bright)' }}>
                       {money(summary.credit, summary.currency)}
+                    </span>
+                  </span>
+                )}
+
+                {/* WHAT IS LEFT AFTER THE CREDIT, next to what is owed. */}
+                {summary.creditUsable > 0 && (
+                  <span className="pt-hero__fact">
+                    <span>To pay after credit</span>
+                    <span>{money(summary.toPay, summary.currency)}</span>
+                  </span>
+                )}
+
+                {/* And the opposite case, said plainly rather than left as a puzzle. */}
+                {summary.creditUnusable > 0 && summary.outstanding > 0 && (
+                  <span className="pt-hero__fact">
+                    <span style={{ textTransform: 'none' }}>
+                      {money(summary.creditUnusable, summary.currency)} of that credit is on a
+                      company with nothing outstanding — it waits for that company&apos;s next
+                      invoice.
                     </span>
                   </span>
                 )}
@@ -225,17 +220,7 @@ const PortalDashboard = () => {
           )}
 
           <div className="pt-hero__actions">
-            {/*
-              Hidden when nothing is owed, rather than disabled.
-
-              It used to sit here disabled, saying "paying from the portal is being built" — which
-              was honest while that was true. Now that it works, a greyed-out Pay button on a
-              settled account would read as something broken; "you owe nothing" is better said by
-              the hero showing the renewal date instead.
-
-              Several companies owing gets the one-payment offer by name, matching the invoices
-              page: one prompt, one PIN, each licence extending on its own date.
-            */}
+            {/* Hidden when nothing is owed, rather than disabled. */}
             {owes && (
               <button
                 type="button"

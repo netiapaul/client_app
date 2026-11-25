@@ -10,36 +10,7 @@ import DataTable from '../../components/DataTable'
 import useConfirm from '../../components/useConfirm'
 const axios = require('axios')
 
-/**
- * Payment attempts — every M-PESA push, card authorisation and transfer entry, successful or not.
- *
- * THIS IS THE SCREEN THE LEDGER CANNOT BE.
- *
- * The payments ledger holds money that arrived, by design: a Payment row means cash we have, so an
- * STK push sitting unanswered on somebody's phone is deliberately absent from it. Which leaves the
- * single most common support question unanswerable from the ledger — "the customer says they paid
- * and nothing happened". The answer is almost always here, and it is almost always one of:
- *
- *   1032  they cancelled it on the handset
- *   1037  nobody answered and the prompt timed out
- *   1     the wallet was short
- *   2001  the PIN was wrong
- *
- * It is also where Safaricom's own identifiers live. The CheckoutRequestID is what a Daraja status
- * query takes and what their support will ask for; without it on a screen, answering any question
- * about a push means somebody writing SQL.
- *
- * Read-only apart from one action: REFRESH an attempt. For a live M-PESA push that asks Safaricom
- * directly what became of it and applies whatever they say — which is the reconciliation net for a
- * callback that never arrived, and callbacks go missing on every deploy, restart and firewall
- * change. It is the same call the payer's own screen polls, so it banks money through the same
- * path with the same duplicate guards; pressing it twice cannot pay twice.
- *
- * Notably NOT offered here: the callback replay on the M-PESA settings screen. That one
- * SYNTHESISES a callback from values you type and is refused unless simulation is switched on — a
- * test tool, not a support tool. Putting it on this screen would invite somebody to manufacture a
- * payment while trying to investigate one.
- */
+/** Payment attempts — every M-PESA push, card authorisation and transfer entry. */
 const METHODS = [
   { key: '', label: 'All methods' },
   { key: 'Mpesa', label: 'M-PESA' },
@@ -50,11 +21,7 @@ const METHODS = [
   { key: 'Manual', label: 'Other' },
 ]
 
-/**
- * Attempt statuses, in the words the session uses. Deliberately not collapsed into
- * success/failure: "awaiting the payer" and "cancelled on the phone" are the same non-success to a
- * ledger and completely different things to whoever is on the phone to the customer.
- */
+/** Attempt statuses, in the words the session uses. */
 const STATUS_BADGE = {
   Succeeded: 'bg-success',
   Started: 'bg-secondary',
@@ -90,8 +57,7 @@ const DARAJA = {
 }
 
 const PaymentAttempts = () => {
-  // Matches PaymentCheckoutController's own route — the checkout hangs off Payments rather than
-  // being a top-level controller.
+  // Matches PaymentCheckoutController's own route.
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Payments/Checkout`
   const canRecord = hasModule(MODULES.RecordPayments)
 
@@ -117,9 +83,7 @@ const PaymentAttempts = () => {
   const [failedOnly, setFailedOnly] = useState(false)
   const [hideSimulated, setHideSimulated] = useState(false)
 
-  // The open attempt. Fetched separately from the listing because the raw provider payload is the
-  // largest field here and a hundred of them have no business crossing the wire for a table that
-  // shows none.
+  // The open attempt, fetched separately: the listing carries no raw provider payload.
   const [detail, setDetail] = useState(null)
   const [busy, setBusy] = useState('')
 
@@ -163,18 +127,7 @@ const PaymentAttempts = () => {
     }
   }
 
-  /**
-   * Catch an attempt up with reality.
-   *
-   * The same call the payer's own screen polls. For an unfinished LIVE M-PESA push it asks
-   * Safaricom directly and applies whatever they say, which is what rescues a push whose callback
-   * never arrived — and callbacks go missing on every deploy, restart and firewall change. For an
-   * attempt that already finished it simply re-reads it.
-   *
-   * It can therefore bank money, which is why it needs RecordPayments and why it is worth saying
-   * so before it is pressed. Pressing it twice cannot pay twice: the session is ignored once it
-   * has a payment against it, and the unique provider reference refuses the same receipt again.
-   */
+  /** Catch an attempt up with reality. */
   const refresh = async (row) => {
     const live = !row.isSimulated && row.checkoutRequestId && row.status !== 'Succeeded'
 
@@ -230,8 +183,7 @@ const PaymentAttempts = () => {
       await navigator.clipboard.writeText(text)
       toast.success(`${what} copied.`, { theme: 'colored', autoClose: 2000 })
     } catch {
-      // Clipboard access is refused outside a secure context, which is every plain-HTTP
-      // deployment. Not worth an error banner — the value is on screen and selectable.
+      // Clipboard access is refused outside a secure context, which is every plain-HTTP deployment.
       toast.info('Select and copy it by hand — the browser refused clipboard access.', {
         theme: 'colored',
       })
@@ -246,33 +198,42 @@ const PaymentAttempts = () => {
   }
 
   return (
-    <div className="cb-page">
+    <>
       {confirmDialog}
 
-      <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-        <div>
-          <h1 className="cb-fs-title mb-0">Payment attempts</h1>
-          <span className="cb-fs-meta text-muted">
-            Every push, authorisation and entry — including the ones that never became money.
-          </span>
-        </div>
-        <div className="d-flex gap-1">
+      {/* The shared page header, as every other screen uses. */}
+      <div className="cb-page-head">
+        <h1 className="cb-page-head__title">
+          <span className="material-icons">swap_horiz</span>
+          Payment attempts
+          {rows.length > 0 && (
+            <span className="cb-page-head__sub">{counts.total} attempt(s) shown</span>
+          )}
+        </h1>
+        <div className="cb-page-head__actions">
           <Link to="/payments" className="btn btn-sm filter-btn rounded-0">
-            <span className="material-icons" style={{ fontSize: 15, verticalAlign: -3 }}>
+            <span className="material-icons" style={{ fontSize: 14, verticalAlign: -3 }}>
               receipt_long
             </span>{' '}
             The ledger
           </Link>
           <Link to="/setup?s=mpesa" className="btn btn-sm cancel-btn rounded-0">
+            <span className="material-icons" style={{ fontSize: 14, verticalAlign: -3 }}>
+              settings
+            </span>{' '}
             M-PESA settings
           </Link>
         </div>
       </div>
 
+      {/* What the page is for. */}
+      <p className="cb-fs-meta text-muted mb-2">
+        Every push, authorisation and entry — including the ones that never became money.
+      </p>
+
       {error && <div className="alert alert-danger rounded-0 py-2 cb-fs-body">{error}</div>}
 
-      {/* The four figures worth knowing before reading the table. "Lost" is the pile that needs
-          somebody: a customer who tried and did not get through. */}
+      {/* The four figures worth knowing before reading the table. */}
       <div className="email-stats mb-2">
         <span className="email-stat">
           <span className="email-stat__value">{counts.total}</span>
@@ -387,8 +348,7 @@ const PaymentAttempts = () => {
                     <strong>{r.cusCode}</strong>
                     <span className="d-block cb-fs-meta text-muted">
                       {r.companyName}
-                      {/* A grouped attempt was settling several clients; showing one name would
-                          read as a single-client payment of a surprising size. */}
+                      {/* A grouped attempt was settling several clients. */}
                       {r.coversCusCodes && (
                         <span className="badge bg-info text-dark ms-1" style={{ fontSize: 9 }}>
                           + {r.coversCusCodes.split(';').filter(Boolean).length} more
@@ -459,9 +419,7 @@ const PaymentAttempts = () => {
                   <span className="material-icons">info</span>
                 </button>
 
-                {/* Offered on anything not yet settled. On a live push it asks Safaricom and can
-                    bank the money; on a finished attempt it would only re-read, so it is hidden
-                    rather than left there doing nothing. */}
+                {/* Offered on anything not yet settled. */}
                 {canRecord && r.status !== 'Succeeded' && (
                   <button
                     type="button"
@@ -527,8 +485,7 @@ const PaymentAttempts = () => {
                 )}
               </div>
 
-              {/* What went wrong, said properly. The provider's code is kept verbatim — it is
-                  what a Safaricom ticket is argued with — and translated beside it. */}
+              {/* What went wrong, said properly. */}
               {detail.failureCode && (
                 <div className="alert alert-warning rounded-0 py-2 cb-fs-body mt-3">
                   <strong>Code {detail.failureCode}</strong>
@@ -541,9 +498,7 @@ const PaymentAttempts = () => {
                 </div>
               )}
 
-              {/* Safaricom's identifiers, with a copy button each. These are what a support
-                  ticket needs, and retyping a 40-character id off a screen is how tickets get
-                  raised against the wrong transaction. */}
+              {/* Safaricom's identifiers, with a copy button each. */}
               {(detail.checkoutRequestId || detail.merchantRequestId) && (
                 <>
                   <h3 className="cb-fs-section mt-3 mb-1">Safaricom&rsquo;s references</h3>
@@ -630,7 +585,7 @@ const PaymentAttempts = () => {
           </button>
         </div>
       </CModal>
-    </div>
+    </>
   )
 }
 

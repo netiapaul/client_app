@@ -8,20 +8,7 @@ import {
   DEFAULT_CURRENCY,
 } from '../utils/money'
 
-/**
- * An amount box that groups digits as they are typed — 10000 reads as 10,000 before you finish.
- *
- * It is a TEXT input, not `type="number"`: browsers render a number input's value raw, so thousands
- * separators are simply not possible there. `inputMode="decimal"` still brings up the numeric
- * keypad on a phone, which is the part of `type="number"` worth keeping.
- *
- * The value handed back is a clean numeric STRING ("10000.50"), never the formatted text, so the
- * caller never has to strip commas before sending it anywhere.
- *
- * The caret is the fiddly part: inserting a comma shifts every character after it, and the naive
- * version sends the caret to the end on every keystroke. This counts the numeric characters before
- * the caret, reformats, then puts the caret back after that same count.
- */
+/** An amount box that groups digits as they are typed — 10000 reads as 10,000 before you finish. */
 const MoneyInput = ({
   id,
   value,
@@ -36,8 +23,7 @@ const MoneyInput = ({
   const inputRef = useRef(null)
   const caretRef = useRef(null)
 
-  // Derived, not stored: the displayed text is always the grouped form of the value the parent
-  // holds, so the two can never drift apart.
+  // Derived, not stored: the display is always the grouped form of the parent's value.
   const display = groupDigits(value ?? '')
 
   useLayoutEffect(() => {
@@ -57,7 +43,7 @@ const MoneyInput = ({
   }
 
   return (
-    <span className="money-field">
+    <span className={`money-field${currency ? ' money-field--ccy' : ''}`}>
       {currency && <span className="money-field__ccy">{currency}</span>}
       <input
         ref={inputRef}
@@ -83,7 +69,7 @@ MoneyInput.propTypes = {
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   /** Receives the cleaned numeric string — commas already stripped. */
   onChange: PropTypes.func,
-  /** Shown as a prefix inside the box. Pass null to hide it. */
+  /** Shown as a prefix inside the box. */
   currency: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,

@@ -2,21 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
 
-/**
- * A lightweight searchable dropdown (type-to-filter) with no extra dependencies.
- * Shows the option label, but reports the option id back through onChange, so it is a
- * drop-in replacement for a native <select> whose value is an id.
- *
- * The option menu is rendered through a portal to <body> with fixed positioning, so it is never
- * clipped by a scrollable/overflow container and always sits above modals (incl. stacked modals) —
- * important because these pickers are used inside the Add Branch / Create Client modals.
- *
- * options   array of option objects
- * value     currently selected id (string/number, or '' for none)
- * onChange  called with the picked id as a string ('' when cleared)
- * getId     option -> id      (default: o.id)
- * getLabel  option -> label   (default: o.name)
- */
+/** A lightweight searchable dropdown (type-to-filter) with no extra dependencies. */
 const SearchableSelect = ({ options, value, onChange, getId, getLabel, placeholder, disabled }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')

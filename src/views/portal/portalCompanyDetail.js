@@ -14,14 +14,7 @@ import {
 } from '../../utils/portalApi'
 import { formatMoney as money } from '../../utils/money'
 
-/**
- * One company in full — licences, branches, add-ons and the modules its package includes.
- *
- * Per the comp: breadcrumb, an identity header with a company switcher, a section nav, then a dark
- * licence card with a days-remaining ring. The comp's "How your monthly fee adds up" panel and its
- * Balance / Next invoice / Customer since figures are left out: none of that exists until the
- * billing ledger is built, and a fee breakdown made of plausible numbers would be read as fact.
- */
+/** One company in full — licences, branches, add-ons and the modules its package includes. */
 const PortalCompanyDetail = () => {
   const { cuscode } = useParams()
   const navigate = useNavigate()
@@ -31,16 +24,10 @@ const PortalCompanyDetail = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [section, setSection] = useState('licences')
-  // Which module groups are expanded. Collapsed by default — a full package is ~80 features and
-  // nobody arrives here wanting to read all of them.
+  // Which module groups are expanded.
   const [openMods, setOpenMods] = useState([])
 
-  // Buying a longer term. The terms, which one is chosen, and whether we are raising it.
-  //
-  // The customer creating a numbered invoice is unusual and deliberate: the alternative is to ask
-  // somebody for one and wait, which is the reason nobody ever pays for a year. Everything it can
-  // produce is bounded by rules the browser does not control — their own company, their own
-  // agreed price, one of four terms, starting where their own billing left off.
+  // Buying a longer term.
   const [renewal, setRenewal] = useState(null)
   const [term, setTerm] = useState(null)
   const [renewing, setRenewing] = useState(false)
@@ -63,9 +50,7 @@ const PortalCompanyDetail = () => {
       setSiblings(list ?? [])
       setError('')
 
-      // Separately, and deliberately not fatal. A company with no agreed price cannot buy a term,
-      // and that must not stop the page from showing their licences — which is what somebody came
-      // here for.
+      // Separately, and deliberately not fatal.
       try {
         const r = await portalGet(`/Portal/Payments/Renewal/${encodeURIComponent(cuscode)}`)
         setRenewal(r)
@@ -118,9 +103,18 @@ const PortalCompanyDetail = () => {
   const modules = data.modules ?? []
   const status = statusOf(company.worstStatus)
 
-  // Sub-modules grouped under their module: the API returns one row per sub-module, which is ~80
-  // rows for a full package. Printed flat that was several screens of text; collapsed to a row per
-  // module with a feature count, the whole package fits on one screen.
+  // This company's money.
+  const credit = data.credit ?? 0
+  const owing = data.outstanding ?? 0
+  const creditApplied = Math.min(credit, owing)
+  const toPay = Math.max(0, owing - credit)
+
+  // What the NEXT invoice starts against — what is left after any open bill has taken its share.
+  const creditRemaining = Math.max(0, credit - creditApplied)
+  // From the server, which reads it off this company's own invoices rather than assuming.
+  const ccy = data.currency || 'KES'
+
+  // Sub-modules grouped under their module: the API returns one row per sub-module.
   const moduleGroups = modules.reduce((acc, m) => {
     const key = m.moduleName || 'Other'
     acc[key] = acc[key] ?? []
@@ -132,9 +126,7 @@ const PortalCompanyDetail = () => {
 
   const lead = company.licences?.[0]
 
-  // The ring reads days-left against a 30-day window (see each licence card below). That window is
-  // a reading aid, NOT a billing period — nothing in the system records how long a licence term
-  // runs — so the real day count is always printed inside the ring.
+  // The ring reads days-left against a 30-day window (see each licence card below).
   const circumference = 2 * Math.PI * 62
 
   return (
@@ -265,8 +257,7 @@ const PortalCompanyDetail = () => {
               className="pt-card pt-card--dark"
               style={{ flex: '1 1 400px', minWidth: 0, display: 'flex', flexWrap: 'wrap', gap: 24 }}
             >
-              {/* The ring is drawn once, for the first licence card, where it carries the most
-                  weight; a second ring beside it would compete rather than inform. */}
+              {/* The ring is drawn once, for the first licence card. */}
               {i === 0 && (
                 <div className="pt-ring">
                   <svg
@@ -379,8 +370,7 @@ const PortalCompanyDetail = () => {
                   </span>
                 </div>
 
-                {/* A grace period someone granted, which will itself run out — worth saying rather
-                    than quietly showing the later date as if it were the normal one. */}
+                {/* A grace period someone granted, which will itself run out. */}
                 {l.onTemporaryExtension && (
                   <div
                     style={{
@@ -403,12 +393,61 @@ const PortalCompanyDetail = () => {
         })}
       </section>
 
-      {/* ---- buy a longer term ----
+      {/* THE ACCOUNT BALANCE FOR THIS COMPANY. */}
+      {(credit > 0 || owing > 0) && (
+        <section className="pt-card">
+          <h2 className="pt-card__title">Account balance</h2>
 
-          Sits under the licences because that is the thing being extended, and the dates on the
-          buttons only make sense next to the expiry they move. Hidden entirely when the company
-          cannot buy — no agreed price, billing paused, no expiry on file — rather than shown
-          disabled, because none of those are things the customer can fix from here. */}
+          <div className="pt-tiles" style={{ marginTop: 14 }}>
+            {owing > 0 && (
+              <div className="pt-tile">
+                <span className="pt-tile__k">Invoiced and unpaid</span>
+                <span className="pt-tile__v">{money(owing, ccy)}</span>
+              </div>
+            )}
+
+            {credit > 0 && (
+              <div className="pt-tile">
+                <span className="pt-tile__k">Credit on this company</span>
+                <span className="pt-tile__v" style={{ color: 'var(--pt-ok, #157347)' }}>
+                  {money(credit, ccy)}
+                </span>
+              </div>
+            )}
+
+            {/* Only when the two actually meet. */}
+            {creditApplied > 0 && owing > 0 && (
+              <div className="pt-tile">
+                <span className="pt-tile__k">To pay now</span>
+                <span className="pt-tile__v">{money(toPay, ccy)}</span>
+              </div>
+            )}
+          </div>
+
+          <p
+            style={{
+              margin: '12px 0 0',
+              fontSize: 'var(--pt-fs-xs)',
+              color: 'var(--pt-muted)',
+            }}
+          >
+            {creditRemaining > 0 ? (
+              <>
+                <strong>{money(creditRemaining, ccy)}</strong> stays on this company&apos;s account
+                and comes off its next invoice automatically — including one you raise below. It is
+                not lost if you do not use it this month.
+              </>
+            ) : (
+              <>
+                Your credit has been put against the invoice above. Anything left over after an
+                invoice is settled stays on this company&apos;s account for the next one.
+              </>
+            )}
+          </p>
+        </section>
+      )}
+
+      {/* ---- buy a longer term ---- */}
       {renewal?.canRenew && (
         <section className="pt-card">
           <h2 className="pt-card__title">Renew for longer</h2>
@@ -422,9 +461,7 @@ const PortalCompanyDetail = () => {
           >
             Pay for several months at once instead of renewing every month. Choose a term and we
             will raise the invoice straight away.
-            {/* Said out loud, because otherwise the dates look wrong. Somebody whose licence
-                expires in January, looking at a term that starts in February, deserves to know
-                it is because January is already invoiced — not because we got it wrong. */}
+            {/* Said out loud, because otherwise the dates look wrong. */}
             {renewal.alreadyInvoiced && (
               <>
                 {' '}
@@ -504,9 +541,7 @@ const PortalCompanyDetail = () => {
                     `/Portal/Payments/Renewal/${encodeURIComponent(cuscode)}?months=${term}`,
                   )
 
-                  // Straight to Pay with the invoice already issued. Raising a document and
-                  // leaving somebody on this page to find it would be the same wait the term
-                  // picker exists to remove.
+                  // Straight to Pay with the invoice already issued.
                   navigate(`/portal/pay?cus=${encodeURIComponent(cuscode)}`, {
                     state: { notice: r?.message },
                   })
@@ -534,6 +569,13 @@ const PortalCompanyDetail = () => {
           >
             Your licence moves only once the invoice is paid in full. Add-ons keep their own cycle
             and are billed separately.
+            {creditRemaining > 0 && (
+              <>
+                {' '}
+                The <strong>{money(creditRemaining, ccy)}</strong> on this company&apos;s account
+                comes off whichever term you choose, so you will be asked for that much less.
+              </>
+            )}
           </p>
         </section>
       )}
@@ -670,8 +712,7 @@ const PortalCompanyDetail = () => {
           ) : (
             <div className="pt-addons" style={{ marginTop: 10 }}>
               {addOns.map((a) => {
-                // Expiry on its own line rather than in a tooltip. Three cases, each said plainly:
-                // one shared date, different dates per branch, or no expiry at all.
+                // Expiry on its own line rather than in a tooltip.
                 let when = 'No expiry'
                 let note = 'Runs until cancelled'
                 if (a.mixedExpiry) {

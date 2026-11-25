@@ -2,25 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-toastify'
 import { getToken, hasModule } from '../../utils/session'
 import { MODULES } from '../../utils/permissions'
-import { formatMoney as money } from '../../utils/money'
+import { formatMoney as money, parseAmount } from '../../utils/money'
+import MoneyInput from '../../components/MoneyInput'
 const axios = require('axios')
 
-/**
- * The catalogue of chargeable items — what a one-off invoice is PICKED from.
- *
- * It exists because free text does not survive contact with a team. The same charge went out as
- * "Set up", "Setup", "Set-up and config" and "Installation" depending on who raised the invoice,
- * at whatever figure they remembered. That makes the ledger impossible to total by item and the
- * price impossible to hold anybody to.
- *
- * The amount here is a DEFAULT. It prefills the invoice line and the admin can still change it
- * there, because a joining deal is negotiated — the catalogue is to stop people guessing, not to
- * stop them agreeing something.
- *
- * Retired items stay on this screen rather than disappearing. Hiding them would make a switched-
- * off item look deleted and invite somebody to create it again under a slightly different name,
- * which is the whole problem coming back.
- */
+/** The catalogue of chargeable items — what a one-off invoice is PICKED from. */
 const BillableItems = () => {
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Invoices/Items`
   const canManage = hasModule(MODULES.ManageBilling)
@@ -44,8 +30,7 @@ const BillableItems = () => {
     setLoading(true)
     try {
       const r = await axios.get(api, { headers: authHeaders() })
-      // `amount` is the string in the box, held apart from the saved number — the same reason the
-      // add-on prices do it. A numeric field cannot tell a half-typed "1" from a real 1.
+      // `amount` is the string in the box, held apart from the saved number.
       setRows((r.data ?? []).map((i) => ({ ...i, amount: String(i.defaultAmount ?? '') })))
       setError('')
     } catch (e) {
@@ -71,8 +56,7 @@ const BillableItems = () => {
         amount: '',
         currency: 'KES',
         isActive: true,
-        // Sorted after everything that exists, so a new row lands at the bottom of the picker
-        // rather than jumping to the top of a list somebody has arranged.
+        // Sorted after everything that exists.
         sortOrder: list.reduce((m, r) => Math.max(m, r.sortOrder ?? 0), 0) + 10,
         notes: '',
       },
@@ -101,7 +85,8 @@ const BillableItems = () => {
       const payload = named.map((r) => ({
         id: r.id ?? 0,
         name: r.name.trim(),
-        defaultAmount: r.amount === '' || r.amount == null ? 0 : Number(r.amount),
+        // 0 for an empty box, not null: the column is NOT NULL.
+        defaultAmount: parseAmount(r.amount) ?? 0,
         currency: r.currency || 'KES',
         isActive: !!r.isActive,
         sortOrder: Number(r.sortOrder) || 0,
@@ -182,16 +167,15 @@ const BillableItems = () => {
                           />
                         </td>
                         <td>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                          {/* Grouped while typing, like every other amount box. */}
+                          <MoneyInput
+                            currency={null}
                             className="form-control form-control-sm rounded-0 text-end"
                             placeholder="0.00"
                             aria-label={`Item ${i + 1} default amount`}
                             disabled={!canManage}
                             value={r.amount ?? ''}
-                            onChange={(e) => set(i, 'amount', e.target.value)}
+                            onChange={(v) => set(i, 'amount', v)}
                           />
                         </td>
                         <td>
@@ -222,9 +206,7 @@ const BillableItems = () => {
                           )}
                         </td>
                         <td className="text-center">
-                          {/* Switched off rather than deleted — an invoice line keeps its own copy
-                              of the wording and the figure, so removing the row would lose only
-                              the history of what we used to sell, and somebody always asks. */}
+                          {/* Switched off rather than deleted. */}
                           <span className="form-check form-switch d-inline-block m-0">
                             <input
                               className="form-check-input"

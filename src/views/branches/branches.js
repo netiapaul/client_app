@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { getToken } from '../../utils/session'
-// import MaterialTable, { MTableToolbar } from 'material-table'
-// import { tableIcons, tableOptions } from '../../utils/helpers'
-// import Moment from 'react-moment'
-// import Drawer from '@mui/material/Drawer'
-// import { Link } from 'react-router-dom'
-// import { CForm, CCol, CFormSelect, CFormInput, CRow, CFormLabel, CButton } from '@coreui/react'
 const axios = require('axios')
 
 const Dashboard = () => {
-  //  "material-table": "^2.0.3",
   const today = new Date()
   const futureDate = new Date(today)
   const [filter, setFilter] = useState({
@@ -20,7 +13,6 @@ const Dashboard = () => {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  //   const [rowId, setRowId] = useState('')
   const [cusData, setCusData] = useState({
     psCusCode: '',
     psCompanyName: '',
@@ -60,7 +52,6 @@ const Dashboard = () => {
         },
       )
       setCustomer(response.data)
-      //   setData({ ...data, clients: response.data })
       setIsLoading(false)
     } catch (error) {
       setError(`${error?.code}: ${error?.message}`)
@@ -111,7 +102,6 @@ const Dashboard = () => {
       setIsLoading(false)
     } catch (error) {
       setError(error?.response?.data?.message)
-      //   setError(`${error?.response?.status}: ${error?.response?.data?.message}`)
       setIsLoading(false)
     }
     return setTimeout(() => {
@@ -130,8 +120,6 @@ const Dashboard = () => {
     const data = {
       psCusCode: cusData?.psCusCode,
       branchcode: formData?.branchcode,
-      //   branchcode: `BR00${formData?.branchcode}`,
-      //   bcode: Number(formData?.bcode),
       bcode: Number(formData?.branchcode),
       name: formData?.name,
       phoneNumber: formData?.phoneNumber,
@@ -199,13 +187,10 @@ const Dashboard = () => {
                           <option value={''}></option>
                           {customers.map((customer, index) => (
                             <option key={index} value={customer.psCusCode}>
-                              {/* {customer.psCusCode} */}
                               {customer.psCompanyName}
                             </option>
                           ))}
                         </datalist>
-
-                        {/* <div className="invalid-feedback">Please select a valid state.</div> */}
                       </div>
                       <div className="col-md ps-0">
                         <input
@@ -242,14 +227,8 @@ const Dashboard = () => {
                           value={formData.branchcode}
                           onChange={(e) => setFormData({ ...formData, branchcode: e.target.value })}
                           min={1}
-                          //   pattern="/^BR00/"
-                          //   onChange={this.function.handleChange}
-                          // onKeyDown={this.handleEnter}
                           required
                         />
-                        {/* <div className="valid-feedback">
-                          String must start with <em>BR00</em>
-                        </div> */}
                       </div>
                       <div className="col-md ps-0">
                         <input
@@ -259,15 +238,10 @@ const Dashboard = () => {
                           name="name"
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          //   onChange={this.function.handleChange}
-                          // onKeyDown={this.handleEnter}
                           required
                         />
                       </div>
                     </div>
-                    {/* <div id="branchcode" className="form-text">
-                      The Branch code will be automatically set to i.e <b>BR0023</b>
-                    </div> */}
                   </div>
                 </div>
                 <div className="row mb-3">
@@ -286,8 +260,6 @@ const Dashboard = () => {
                       name="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      //   onChange={this.function.handleChange}
-                      // onKeyDown={this.handleEnter}
                     />
                   </div>
                 </div>
@@ -309,8 +281,6 @@ const Dashboard = () => {
                       pattern="[0-9]{10}"
                       maxLength={10}
                       onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      //   onChange={this.function.handleChange}
-                      // onKeyDown={this.handleEnter}
                       required
                     />
                   </div>
@@ -320,9 +290,7 @@ const Dashboard = () => {
                     htmlFor="name"
                     className="col-md-3 col-form-label"
                     style={{ fontSize: '10px' }}
-                  >
-                    {/* Name */}
-                  </label>
+                  ></label>
                   <div className="col-md">
                     <input
                       className="form-check-input"
@@ -331,15 +299,13 @@ const Dashboard = () => {
                       name="enabled"
                       id="enabled"
                       disabled
-                      //   required
-                      //   onChange={this.function.handleChange}
                     />
                     <label className="form-check-label ms-2" htmlFor="enabled">
                       Branch Enabled
                     </label>
                   </div>
                 </div>
-                {/* <div className="row mb-2">
+                <div className="row mb-2">
                   <label
                     htmlFor="name"
                     className="col-md-3 col-form-label"
@@ -349,35 +315,10 @@ const Dashboard = () => {
                     <input
                       className="form-check-input"
                       type="checkbox"
-                      checked={formData.mainbranch}
-                      name="mainbranch"
-                      id="mainbranch"
-                      disabled
-                      //   onChange={this.function.handleChange}
-                      //   required
-                    />
-                    <label className="form-check-label ms-2" htmlFor="mainbranch">
-                      Is Main Branch
-                    </label>
-                  </div>
-                </div> */}
-                <div className="row mb-2">
-                  <label
-                    htmlFor="name"
-                    className="col-md-3 col-form-label"
-                    style={{ fontSize: '10px' }}
-                  >
-                    {/* Name */}
-                  </label>
-                  <div className="col-md">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
                       checked={formData.acct}
                       name="acct"
                       id="acct"
                       disabled
-                      //   onChange={this.function.handleChange}
                     />
                     <label className="form-check-label ms-2" htmlFor="acct">
                       Branch Accounts Enabled
@@ -389,9 +330,7 @@ const Dashboard = () => {
                     htmlFor="name"
                     className="col-md-3 col-form-label"
                     style={{ fontSize: '10px' }}
-                  >
-                    {/* Name */}
-                  </label>
+                  ></label>
                   <div className="col-md">
                     <input
                       className="form-check-input"
@@ -400,7 +339,6 @@ const Dashboard = () => {
                       name="showallcustomertrans"
                       id="showallcustomertrans"
                       disabled
-                      //   onChange={this.function.handleChange}
                     />
                     <label className="form-check-label ms-2" htmlFor="showallcustomertrans">
                       Show All Customer Transactions
@@ -412,9 +350,7 @@ const Dashboard = () => {
                     htmlFor="name"
                     className="col-md-3 col-form-label"
                     style={{ fontSize: '10px' }}
-                  >
-                    {/* Name */}
-                  </label>
+                  ></label>
                   <div className="col-md">
                     <input
                       className="form-check-input"
@@ -423,7 +359,6 @@ const Dashboard = () => {
                       name="showallcustomer"
                       id="showallcustomer"
                       disabled
-                      //   onChange={this.function.handleChange}
                     />
                     <label className="form-check-label ms-2" htmlFor="showallcustomer">
                       Show All Customers Setup

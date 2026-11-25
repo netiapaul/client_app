@@ -632,7 +632,6 @@ const Analytics = () => {
 }
 
 // Refresh button whose ring fills toward the next auto-refresh, plus a "last updated" pill.
-// Holds its own 1s tick so the countdown doesn't re-render the charts.
 const RefreshControl = ({ lastRefresh, refreshing, onRefresh }) => {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {

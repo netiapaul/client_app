@@ -3,30 +3,30 @@ import { getToken } from '../../utils/session'
 import { useParams, useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
-// CoreUI's icon set — the `fa fa-*` classes used elsewhere in this app render nothing, as
-// Font Awesome is neither installed nor linked.
+// CoreUI's icon set — the `fa fa-*` classes used elsewhere in this app render nothing.
 import CIcon from '@coreui/icons-react'
 import { cilCalendar, cilTrash, cilWarning } from '@coreui/icons'
-// import MaterialTable from 'material-table'
-// import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
 import Moment from 'react-moment'
 import Multiselect from 'multiselect-react-dropdown'
 import SearchableSelect from '../../components/SearchableSelect'
 import { toast } from 'react-toastify'
 import { useBreadcrumbLabel } from '../../context/BreadcrumbContext'
-// "homepage": ".",
 const axios = require('axios')
 const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const { setLabel } = useBreadcrumbLabel()
-  // const [bcode, SetBcode] = useState('')
   const [error, setError] = useState('')
   const [totalUsers, setTotalUSers] = useState(0)
   const [clientModal, setClientModal] = useState(false)
   const [isClientModal, setIsClientModal] = useState(false)
   const [serialModal, setSerialModal] = useState(false)
+  // BRANCH-level expiry.
+  const [branchExpiryEdit, setBranchExpiryEdit] = useState(false)
+  const [branchExpiryDate, setBranchExpiryDate] = useState(null)
+  const [branchTempDays, setBranchTempDays] = useState('')
+
   const [tempDays, setTempDays] = useState('') // temporary-expiry extension (days)
   const [tempDate, setTempDate] = useState(null) // ...or pick the temp expiry date directly
   const [userCALSModal, setUserCALSModal] = useState(false)
@@ -38,22 +38,16 @@ const UpdateClient = () => {
   // Add-on grants live per branch, so each change picks a scope. Expiry is optional — blank never lapses.
   const [addOnScope, setAddOnScope] = useState('all')
   const [addOnExpiry, setAddOnExpiry] = useState(null)
-  // One size for every per-add-on action button, so they align down the column however long the
-  // label is. minWidth rather than width: the icon + text still sets the floor on narrow screens.
+  // One size for every per-add-on action button.
   const addOnActionStyle = { fontSize: 10, minWidth: 84 }
-  // Expiry editor for an add-on already granted: null when closed, otherwise the coverage row being
-  // extended. Days and date are two ways to express the same change — see onExtendDays.
+  // Expiry editor for an add-on already granted: null when closed.
   const [expiryEdit, setExpiryEdit] = useState(null)
   const [extendDays, setExtendDays] = useState('')
   const [extendDate, setExtendDate] = useState(null)
   const [extendScope, setExtendScope] = useState('all')
-  // Branch-level Is Active/Archived are edited together in their own modal, matching how every other
-  // field group on this screen works: read-only inline, "Change" opens the editor. The company-level
-  // pair lives in the Update Serial No modal, beside the expiry it is set with.
+  // Branch-level Is Active/Archived are edited together in their own modal.
   const [branchStatusModal, setBranchStatusModal] = useState(false)
   const [branchStatusForm, setBranchStatusForm] = useState({ isActive: false, archived: false })
-  // const [cloudModules, setCloudModules] = useState([])
-  // const [modulesSelected, setModulesSelected] = useState([])
   const [packages, setPackages] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   // Company level changes every branch of the client; branch level changes only this one row.
@@ -99,7 +93,6 @@ const UpdateClient = () => {
     queryAcctName: '',
     queryBranchCode: '',
     queryBranchName: '',
-    /*2*/
     querySerialNo: '',
     queryExpiryDate: '',
     queryDays: '',
@@ -107,16 +100,11 @@ const UpdateClient = () => {
     psGL: false,
     isActive: false,
     archived: false,
-    applyToAllBranches: false,
-    /*3*/
     queryUserCount: '',
-    /*4*/
     queryBranchCount: '',
-    /*5*/
     queryStockTakeCals: '',
     queryStockTakeStartDate: '',
     queryStockTakeEndDate: '',
-    /*6*/
     queryAddOns: [],
     AddOnsArray: [],
     selectedAdons: '',
@@ -139,10 +127,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetClientDetails?id=${id}`,
         {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -183,6 +170,8 @@ const UpdateClient = () => {
           companyArchived: result?.companyArchived === true,
           companyActive: result?.companyActive === true,
           branchCount: result?.branchCount ?? 0,
+          // Every branch with the expiry it sits on.
+          branchExpiries: result?.branchExpiries ?? [],
           archived: result?.clientDetails?.archived === true,
         })
         setEditFormData({
@@ -198,11 +187,8 @@ const UpdateClient = () => {
             result.clientDetails.psActivateExpiryDate === '' ||
             result.clientDetails.psActivateExpiryDate === null
               ? ''
-              : // : moment(result?.clientDetails?.psActivateExpiryDate).format('DD/MM/YYYY'),
-                new Date(result?.clientDetails?.psActivateExpiryDate),
-          // The Serial/Expiry modal is company level, so seed its Is Active and Archived from the
-          // company rollups rather than the opened branch — otherwise they read "active"/"archived"
-          // while other branches differ.
+              : new Date(result?.clientDetails?.psActivateExpiryDate),
+          // The Serial/Expiry modal is company level.
           isActive: result?.companyActive === true,
           archived: result?.companyArchived === true,
           queryStockTakeStartDate:
@@ -216,9 +202,7 @@ const UpdateClient = () => {
               ? ''
               : new Date(result?.clientDetails?.stockTakeEndDate),
           queryUserCount: result?.clientDetails?.psUserCount,
-          // The add-on picker starts EMPTY and is only for what you're granting now. Pre-selecting
-          // what the client already holds would make the default Edit re-grant everything, silently
-          // overwriting each existing expiry with whatever is in the date box.
+          // The add-on picker starts EMPTY and is only for what you're granting now.
           AddOnsArray: [],
           selectedAdons: [],
           queryStockTakeCals: result?.clientDetails.psStockTakeCals,
@@ -324,10 +308,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetAllUsersInCompany?ClientID=${id}`,
         {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -355,10 +338,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
         {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -383,10 +365,9 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Logs/GetAddOns`, {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -410,10 +391,9 @@ const UpdateClient = () => {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -432,9 +412,7 @@ const UpdateClient = () => {
       setTimeout(() => setError(''), 10000)
     }
   }
-  // Every gated endpoint answers in one of four ways: queued for approval, applied but the client
-  // database couldn't be reached (warning), applied with nothing to do (unchanged), or applied.
-  // Returns true when the change was actually applied, so callers know whether to close and reload.
+  // Every gated endpoint answers in one of four ways: queued for approval.
   const handleGatedResponse = (body) => {
     if (body?.pendingApproval) {
       toast.info(body.message || 'Submitted for approval — approvers have been notified.', {
@@ -448,16 +426,14 @@ const UpdateClient = () => {
       toast.info(body.message || 'Nothing changed.', { theme: 'colored', autoClose: 5000 })
       return false
     }
-    // The central write succeeded; only the mirror into the client database failed. Surfaced as a
-    // warning rather than an error so the operator knows to retry the push, not the edit.
+    // The central write succeeded; only the mirror into the client database failed.
     if (body?.warning) {
       toast.warning(body.warning, { theme: 'colored', autoClose: 12000 })
     }
     return true
   }
 
-  // One PUT, shared by the simple query-string toggles (archive / branch activation).
-  // reload is skipped when the caller fires more than one of these and wants a single refresh.
+  // One PUT, shared by the simple query-string toggles.
   const putToggle = async (path, params, { reload = true } = {}) => {
     setIsLoading(true)
     setError('')
@@ -498,10 +474,7 @@ const UpdateClient = () => {
     }
   }
 
-  // Branch level — Is Active and Archived are separate endpoints, so only the ones that actually
-  // changed are sent, and the screen is refreshed once at the end rather than after each. A failed
-  // call aborts the rest: the second request would almost certainly fail the same way and its error
-  // would overwrite the first one's message.
+  // Branch level — Is Active and Archived are separate endpoints.
   const SaveBranchStatus = async (e) => {
     e.preventDefault()
     const activeChanged = branchStatusForm.isActive !== data.psActivated
@@ -536,9 +509,7 @@ const UpdateClient = () => {
     GetClientDetails(id)
   }
 
-  // Company level — the name is applied to every branch and mirrored to the client database's
-  // SYSDEFAULTS plus both PhamacoreWeb company records. The server skips all of that when the name
-  // hasn't actually changed. Only the name is editable: the account and branch codes are join keys.
+  // Company level — the name is applied to every branch and mirrored to the client database's.
   const UpdateClientDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -547,10 +518,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -574,8 +544,57 @@ const UpdateClient = () => {
       setTimeout(() => setError(''), 10000)
     }
   }
-  // Serial / expiry / Is Active go together in one request; Archived is its own endpoint, so it is
-  // sent separately and only when it actually changed. Both are company level.
+  /** This branch's own row out of the company-wide list the detail endpoint returns. */
+  const thisBranchExpiry = () => {
+    const found = (data?.branchExpiries ?? []).find((b) => String(b.id) === String(id))
+    if (found) return found
+
+    return data?.psActivateExpiryDate
+      ? {
+          id,
+          branchCode: data.branchCode,
+          branchName: data.psBranchName,
+          licenceExpiry: data.psActivateExpiryDate,
+          temporaryExpiry: data.psTemporaryActivateExpiryDate,
+        }
+      : null
+  }
+
+  /** The branches this one shares an invoice with — those on the SAME licence expiry. */
+  const invoiceGroupPeers = () => {
+    const mine = thisBranchExpiry()
+    if (!mine?.licenceExpiry) return []
+    const key = String(mine.licenceExpiry).slice(0, 10)
+    return (data?.branchExpiries ?? []).filter(
+      (b) => String(b.id) !== String(id) && String(b.licenceExpiry ?? '').slice(0, 10) === key,
+    )
+  }
+
+  /** Branches NOT on the company-wide date — what a Company-level save would reset. */
+  const branchesOffCompanyDate = () => {
+    const rows = data?.branchExpiries ?? []
+    if (rows.length < 2) return []
+    const target = moment(editFormData.queryExpiryDate).format('YYYY-MM-DD')
+    return rows.filter((b) => String(b.licenceExpiry ?? '').slice(0, 10) !== target)
+  }
+
+  const saveBranchExpiry = async () => {
+    if (!branchExpiryDate) return setError('Pick an expiry date for this branch.')
+    const r = await putToggle('UpdateBranchExpiry', {
+      expiryDate: moment(branchExpiryDate).format('DD/MM/YYYY'),
+    })
+    if (r.ok) setBranchExpiryEdit(false)
+  }
+
+  const saveBranchTempDays = async () => {
+    const n = Number(branchTempDays)
+    if (!Number.isFinite(n) || n <= 0)
+      return setError('Enter the number of extension days (greater than zero).')
+    const r = await putToggle('UpdateBranchTempExpiry', { days: String(n) })
+    if (r.ok) setBranchTempDays('')
+  }
+
+  // Serial / expiry / Is Active go together in one request; Archived is its own endpoint.
   const UpdateSerialsDetails = async (e) => {
     e.preventDefault()
     setIsLoading(true)
@@ -584,22 +603,19 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateSerialDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             serialNo: editFormData.querySerialNo,
             isActive: editFormData.isActive,
-            // psBedCount: editFormData.psBedCount,
-            // psGL: editFormData.psGL,
             cusCode: data.psCusCode,
             branchCode: data.branchCode,
+            // The expiry here is COMPANY level and always writes every branch row.
             expiryDate: moment(editFormData.queryExpiryDate).format('DD/MM/YYYY'),
-            applyToAllBranches: editFormData.applyToAllBranches,
           }),
         },
       )
@@ -690,10 +706,9 @@ const UpdateClient = () => {
           editFormData.queryUserCount,
         )}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -726,10 +741,9 @@ const UpdateClient = () => {
           editFormData.queryBranchCount,
         )}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -762,10 +776,9 @@ const UpdateClient = () => {
           editFormData.psBedCount,
         )}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -794,10 +807,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateGL?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}&psGL=${editFormData.psGL}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -826,10 +838,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateStockTakeCals?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -856,8 +867,6 @@ const UpdateClient = () => {
     }
   }
   // Grants are stored per branch, so the scope choice is real: all branches, or just this one.
-  // A blank expiry means the add-on never lapses. Re-granting one a branch already holds just moves
-  // its expiry, which is how a lapsed add-on is renewed.
   const UpdateAddsOn = async (e) => {
     e.preventDefault()
     const ids = editFormData.selectedAdons
@@ -881,7 +890,7 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateAddsOn?${qs.toString()}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
@@ -917,7 +926,7 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdatePackage?id=${id}&packagecode=${editFormData.packageCode}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
@@ -942,10 +951,7 @@ const UpdateClient = () => {
   }
   // --- Extending an add-on already granted ---
 
-  // The baseline a days-extension counts from: the add-on's own expiry while it is still running,
-  // otherwise today. Extending a lapsed add-on by 30 days therefore buys 30 usable days rather than
-  // landing on a date still in the past, and one with time left keeps its remainder. Mirrors exactly
-  // what the server does per grant row.
+  // The baseline a days-extension counts from: the add-on's own expiry while it is still running.
   const extendBaseline = (row) => {
     const current = row?.expiryDate ?? row?.earliestExpiry
     if (!current) return moment().startOf('day')
@@ -961,12 +967,7 @@ const UpdateClient = () => {
     setExtendScope(row?.allBranches ? 'all' : 'branch')
   }
 
-  // Days -> date. Shown as a preview; when the add-on has mixed expiries across branches the days
-  // value is what gets sent, so each branch moves forward from its own date.
-  //
-  // Zero and negatives are ignored rather than previewed: the server refuses them, and quietly
-  // showing a date BEHIND the current expiry for a typed "-5" would suggest it was a thing that
-  // could be saved.
+  // Days -> date. Shown as a preview.
   const onExtendDays = (e) => {
     const value = e.target.value
     setExtendDays(value)
@@ -979,13 +980,7 @@ const UpdateClient = () => {
     )
   }
 
-  /**
-   * How many licensed days a chosen date would REMOVE, or 0 when it adds or changes nothing.
-   *
-   * Worth saying out loud: pulling an expiry back is legitimate — correcting a date entered wrong
-   * — but it also switches a feature off sooner than the client currently expects, and the only
-   * other thing on screen is a bare date that looks the same either way.
-   */
+  /** How many licensed days a chosen date would REMOVE, or 0 when it adds or changes nothing. */
   const shortensBy = () => {
     if (!extendDate || !expiryEdit) return 0
 
@@ -997,15 +992,6 @@ const UpdateClient = () => {
   }
 
   // Date -> days, counted from the same baseline so the two boxes agree.
-  //
-  // Only when the date is actually an EXTENSION. Days means "add this many to the current expiry"
-  // — the server refuses anything that is not greater than zero — so a date on or before the
-  // baseline has no day count to show. It used to display the negative difference: picking
-  // 15 Nov against a current expiry of 4 Dec put "-19" in a box whose only legal values are
-  // positive, which reads as a broken screen and could not have been saved from.
-  //
-  // Pulling an expiry BACK is still perfectly allowed; it just travels as a date, which is a
-  // complete instruction on its own.
   const onExtendDate = (date) => {
     setExtendDate(date)
 
@@ -1038,8 +1024,7 @@ const UpdateClient = () => {
         addonId: expiryEdit.addonId,
         allBranches: String(extendScope === 'all'),
       })
-      // Mixed expiries only stay staggered if the server does the arithmetic per row, so send days
-      // when they were entered and fall back to the absolute date otherwise.
+      // Mixed expiries only stay staggered if the server does the arithmetic per row.
       if (days > 0 && expiryEdit.mixedExpiry) qs.set('days', String(days))
       else if (extendDate) qs.set('expiryDate', moment(extendDate).format('DD/MM/YYYY'))
       else qs.set('days', String(days))
@@ -1088,10 +1073,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/RemoveAddons?${qs.toString()}`,
         {
-          method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
+          method: 'DELETE',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -1118,10 +1102,9 @@ const UpdateClient = () => {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateDetails?id=${id}&cpu=${data.psPickCpu}&bios=${data.psPickBios}&hdd=${data.psPickHdd}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${token}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -1142,39 +1125,6 @@ const UpdateClient = () => {
       setTimeout(() => setError(''), 10000)
     }
   }
-  // const UpdateClientModules = async (userData) => {
-  //   setIsLoading(true)
-  //   setError('')
-  //   try {
-  //     const response = await fetch(
-  //       `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateClientModules?id=${id}&modulecode=${userData.modulecode}&status=${userData.status}`,
-  //       {
-  //         method: 'POST', // *GET, POST, PUT, DELETE, etc.
-  //         headers: {
-  //           Authorization: `Bearer ${getToken()}`,
-  //           // Authorization: `Bearer ${token}`,
-  //           Accept: 'application/json',
-  //           'Content-Type': 'application/json',
-  //         },
-  //       },
-  //     )
-  //     if (response.ok) {
-  //       const result = await response.json()
-  //       setIsClientModal(false)
-  //       setIsLoading(false)
-  //       console.log(result)
-  //       // navigate('/dashboard')
-  //     } else {
-  //       const result = await response.json()
-  //       setIsLoading(false)
-  //       setError(result.message)
-  //       console.log(result)
-  //     }
-  //   } catch (error) {
-  //     setIsLoading(false)
-  //     console.log(error)
-  //   }
-  // }
 
   const handleDay = (e) => {
     const date = new Date()
@@ -1186,10 +1136,6 @@ const UpdateClient = () => {
         ? new Date(date.setDate(date.getDate() + Number(e.target.value)))
         : new Date(),
     })
-    // console.log(data.psActivateExpiryDate.replace(/[\\/]/g, '-').split('-').reverse().join('-'))
-    // console.log(res.setDate(res.getDate() + Number(e.target.value)))
-    // console.log(new Date(res.setDate(res.getDate() + Number(e.target.value))))
-    // console.log(finalDate)
   }
 
   const handleDate = (date) => {
@@ -1200,11 +1146,9 @@ const UpdateClient = () => {
       queryExpiryDate: date,
       queryDays: Math.round(conv / (1000 * 60 * 60 * 24)),
     })
-    // console.log(new Date(moment(date).format('DD/MM/YYYY')))
   }
 
-  // Temporary-extension date <-> days, mirroring the expiry entry above. The backend sets the temp
-  // expiry to TODAY + days, so days are counted as whole calendar days to keep the picked date exact.
+  // Temporary-extension date <-> days, mirroring the expiry entry above.
   const handleTempDay = (e) => {
     const value = e.target.value
     setTempDays(value)
@@ -1218,8 +1162,7 @@ const UpdateClient = () => {
     )
   }
 
-  // Select and de-select must both leave selectedAdons as an ARRAY of ids — the grant endpoint binds
-  // a string[]. (De-select used to join it into a comma string, which broke the next submit.)
+  // Select and de-select must both leave selectedAdons as an ARRAY of ids.
   const onAddOnPick = (selectedList) =>
     setEditFormData({
       ...editFormData,
@@ -1227,53 +1170,10 @@ const UpdateClient = () => {
       selectedAdons: selectedList.map((item) => item.addonId),
     })
 
-  // const CloudModules = async () => {
-  //   setIsLoading(true)
-  //   try {
-  //     const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
-  //       method: 'GET', // *GET, POST, PUT, DELETE, etc.
-  //       headers: {
-  //         Authorization: `Bearer ${getToken()}`,
-  //         Accept: 'application/json',
-  //         'Content-Type': 'application/json',
-  //       },
-  //     })
-  //     if (response.ok) {
-  //       const result = await response.json()
-  //       setCloudModules(result)
-  //       setError(result.message)
-  //       setIsLoading(false)
-  //       console.log(result)
-  //     } else {
-  //       const result = await response.json()
-  //       setIsLoading(false)
-  //       console.log(result)
-  //     }
-  //   } catch (error) {
-  //     setIsLoading(false)
-  //     console.log(error)
-  //   }
-  // }
-
-  // const onSelectionChange = (rows) => {
-  //   setModulesSelected(rows.map((item) => item?.moduleCode))
-  //   console.log(rows)
-  // }
-
-  // const handleAccess = (rowData) => {
-  //   const data = {
-  //     modulecode: rowData.moduleCode,
-  //     status: rowData.access === true ? false : true,
-  //   }
-  //   console.log(data)
-  //   UpdateClientModules(data)
-  // }
-
   useEffect(() => {
     GetSerialNumbers()
     GetAddOns()
     GetPackages()
-    // CloudModules()
     GetRegions()
     GetClientDetails()
     GetAllUsersInCompany()
@@ -1296,8 +1196,6 @@ const UpdateClient = () => {
                 Client:{' '}
                 <span className="company_text_color fw-semibold">{data?.psCompanyName}</span>
               </h6>
-              {/* <div className="vr fw-bold mx-2"></div> */}
-              {/* <h6 className="m-0">{id}</h6> */}
             </div>
           </div>
           <div className="">
@@ -1341,10 +1239,7 @@ const UpdateClient = () => {
           <span> {error} </span>
         </div>
       )}
-      {/* Company level changes every branch of this client; Branch level changes only the branch
-          that was opened. Keeping them on separate tabs makes the blast radius of each edit explicit. */}
-      {/* Colour and weight come from .nav-tabs in _custom.scss (theme accent, not the default
-          blue). The scope suffix stays a size down so the title itself leads. */}
+      {/* Company level changes every branch of this client. */}
       <ul className="nav nav-tabs" style={{ fontSize: '13px' }}>
         <li className="nav-item">
           <button
@@ -1384,7 +1279,6 @@ const UpdateClient = () => {
                   </div>
 
                   <div className="d-flex">
-                    {/* <div className="vr fw-bold mx-2"></div> */}
                     <p className="m-0 fw-bold" style={{ fontSize: '11px' }}>
                       Status:{' '}
                       <span className={data.companyActive ? 'text-success' : 'text-danger'}>
@@ -1427,15 +1321,13 @@ const UpdateClient = () => {
                       </div>
                     </div>
                   </div>
-                  {/* The branch code/name belong to the Branch Level tab — a company-level edit must not
-                    look like it is scoped to whichever branch happened to be opened. */}
+                  {/* The branch code/name belong to the Branch Level tab. */}
                   <div className="d-flex justify-content-end">
                     <p
                       className="my-1 fw-bold"
                       role="button"
                       style={{ fontSize: '10px', color: '#c58c4f' }}
                       onClick={() => setClientModal(true)}
-                      // onClick={() => setData({ ...data, editModal: true, editModalInterface: 1 })}
                     >
                       Change
                     </p>
@@ -1457,8 +1349,6 @@ const UpdateClient = () => {
                                 name="clientType"
                                 id="desktop"
                                 value={module.packageNum}
-                                // packageCode
-                                // packageName
                                 checked={module.packageNum === data.packageCode}
                                 onChange={() => {}}
                                 disabled
@@ -1468,48 +1358,6 @@ const UpdateClient = () => {
                               </label>
                             </span>
                           ))}
-                        {/* <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="desktop"
-                          // value={title}
-                          // checked={title === 'false'}
-                          // onChange={() => setTitle('false')}
-                        />
-                        <label className="form-check-label" htmlFor="desktop">
-                          Light
-                        </label>
-                      </span>
-                      <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="cloud"
-                          // value={title}
-                          // checked={title === 'true'}
-                          // onChange={() => setTitle('true')}
-                        />
-                        <label className="form-check-label" htmlFor="cloud">
-                          Standard
-                        </label>
-                      </span>
-                      <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="both"
-                          // value={title}
-                          // checked={title === ''}
-                          // onChange={() => setTitle('')}
-                        />
-                        <label className="form-check-label" htmlFor="both">
-                          Professional
-                        </label>
-                      </span> */}
                       </span>
                     </div>
                   </div>
@@ -1519,7 +1367,6 @@ const UpdateClient = () => {
                       role="button"
                       style={{ fontSize: '10px', color: '#c58c4f' }}
                       onClick={() => setIsClientModal(true)}
-                      // onClick={() => setData({ ...data, editModal: true, editModalInterface: 6 })}
                     >
                       Change
                     </p>
@@ -1539,14 +1386,11 @@ const UpdateClient = () => {
                             value={data.psSerialNo}
                             className="form-control form-control-sm rounded-0 fw-medium"
                             disabled
-                            // readOnly
                           />
                         </div>
                         <div className="col-6">
                           <div className="row">
-                            <label htmlFor="blocked" className="col-3 col-form-label">
-                              {/* Item Name */}
-                            </label>
+                            <label htmlFor="blocked" className="col-3 col-form-label"></label>
                             <div className="col ps-0">
                               <div className="form-check">
                                 <input
@@ -1555,7 +1399,6 @@ const UpdateClient = () => {
                                   checked={data.companyActive}
                                   name="blocked"
                                   id="blocked"
-                                  // disabled
                                   readOnly
                                 />
                                 <label
@@ -1575,9 +1418,7 @@ const UpdateClient = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Archive is independent of activation: an archived client is not deactivated, and a
-                    deactivated one is not archived. Company level sets it on every branch.
-                    Read-only here — edited in the Archived modal, like every other field group. */}
+                  {/* Archive is independent of activation. */}
                   <div className="row mb-1">
                     <label
                       htmlFor="companyArchivedView"
@@ -1616,24 +1457,10 @@ const UpdateClient = () => {
                     <div className="col-md ps-1">
                       <div className="row">
                         <div className="col-6">
-                          {/* <DatePicker
-                          className="form-control form-control-sm rounded-0"
-                          selected={data.psActivateExpiryDate}
-                          dateFormat="dd/MM/yyyy"
-                          peekNextMonth
-                          showMonthDropdown
-                          showYearDropdown
-                          dropdownMode="select"
-                          minDate={new Date()}
-                          onChange={(date) => setData({ ...data, psActivateExpiryDate: date })}
-                          readOnly
-                          disabled
-                        /> */}
                           <input
                             type="text"
                             name="psActivateExpiryDate"
                             id="psActivateExpiryDate"
-                            // value={data.psActivateExpiryDate}
                             value={
                               !data.psActivateExpiryDate
                                 ? ''
@@ -1705,7 +1532,6 @@ const UpdateClient = () => {
                                   role="button"
                                   style={{ fontSize: '10px', color: '#c58c4f' }}
                                   onClick={() => setUserCALSModal(true)}
-                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
                                 >
                                   Change
                                 </p>
@@ -1737,33 +1563,11 @@ const UpdateClient = () => {
                                   role="button"
                                   style={{ fontSize: '10px', color: '#c58c4f' }}
                                   onClick={() => setBranchCALSModal(true)}
-                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
                                 >
                                   Change
                                 </p>
                               </div>
                             </div>
-                            {/* <div className="col">
-                            <div className="row">
-                              <label
-                                htmlFor="branchCode"
-                                className="col-md-5 col-form-label divider"
-                              >
-                                Stock Take CALS
-                              </label>
-                              <div className="col-md ps-1">
-                                <input
-                                  type="text"
-                                  name="psStockTakeCals"
-                                  id="psStockTakeCals"
-                                  value={data.psStockTakeCals}
-                                  className="form-control form-control-sm rounded-0"
-                                  disabled
-                                  readOnly
-                                />
-                              </div>
-                            </div>
-                          </div> */}
                           </div>
                         </div>
                       </div>
@@ -1794,7 +1598,6 @@ const UpdateClient = () => {
                                   role="button"
                                   style={{ fontSize: '10px', color: '#c58c4f' }}
                                   onClick={() => setPsBedCountModal(true)}
-                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 3 })}
                                 >
                                   Change
                                 </p>
@@ -1826,33 +1629,11 @@ const UpdateClient = () => {
                                   role="button"
                                   style={{ fontSize: '10px', color: '#c58c4f' }}
                                   onClick={() => setPsGLModal(true)}
-                                  // onClick={() => setData({ ...data, editModal: true, editModalInterface: 4 })}
                                 >
                                   Change
                                 </p>
                               </div>
                             </div>
-                            {/* <div className="col">
-                            <div className="row">
-                              <label
-                                htmlFor="branchCode"
-                                className="col-md-5 col-form-label divider"
-                              >
-                                Stock Take CALS
-                              </label>
-                              <div className="col-md ps-1">
-                                <input
-                                  type="text"
-                                  name="psStockTakeCals"
-                                  id="psStockTakeCals"
-                                  value={data.psStockTakeCals}
-                                  className="form-control form-control-sm rounded-0"
-                                  disabled
-                                  readOnly
-                                />
-                              </div>
-                            </div>
-                          </div> */}
                           </div>
                         </div>
                       </div>
@@ -1895,17 +1676,6 @@ const UpdateClient = () => {
                                 disabled
                                 readOnly
                               />
-                              {/* <DatePicker
-                              className="form-control form-control-sm rounded-0"
-                              selected={data.psStockTakeStartDate}
-                              dateFormat="dd/MM/yyyy"
-                              peekNextMonth
-                              showMonthDropdown
-                              showYearDropdown
-                              dropdownMode="select"
-                              disabled
-                              readOnly
-                            /> */}
                             </div>
                           </div>
                         </div>
@@ -1928,17 +1698,6 @@ const UpdateClient = () => {
                                 disabled
                                 readOnly
                               />
-                              {/* <DatePicker
-                              className="form-control form-control-sm rounded-0"
-                              selected={data.stockTakeEndDate}
-                              dateFormat="dd/MM/yyyy"
-                              peekNextMonth
-                              showMonthDropdown
-                              showYearDropdown
-                              dropdownMode="select"
-                              disabled
-                              readOnly
-                            /> */}
                             </div>
                           </div>
                         </div>
@@ -1951,7 +1710,6 @@ const UpdateClient = () => {
                       role="button"
                       style={{ fontSize: '10px', color: '#c58c4f' }}
                       onClick={() => setStockTakeCALSModal(true)}
-                      // onClick={() => setData({ ...data, editModal: true, editModalInterface: 5 })}
                     >
                       Change
                     </p>
@@ -1961,8 +1719,7 @@ const UpdateClient = () => {
                     <label htmlFor="branchCode" className="col-md-3 col-form-label divider">
                       Add Ons
                     </label>
-                    {/* One row per add-on rather than per grant: a single add-on can cover some
-                        branches and not others, on different expiries. */}
+                    {/* One row per add-on rather than per grant. */}
                     <div className="col-md ps-1">
                       {(data.addOnCoverage ?? []).length === 0 ? (
                         <span className="text-muted" style={{ fontSize: 11 }}>
@@ -2013,8 +1770,7 @@ const UpdateClient = () => {
                       role="button"
                       style={{ fontSize: '10px', color: '#c58c4f' }}
                       onClick={() => {
-                        // Always open on a clean grant form — nothing selected, no expiry, scope
-                        // back to all branches.
+                        // Always open on a clean grant form — nothing selected, no expiry.
                         setEditFormData({ ...editFormData, AddOnsArray: [], selectedAdons: [] })
                         setAddOnScope('all')
                         setAddOnExpiry(null)
@@ -2026,7 +1782,6 @@ const UpdateClient = () => {
                     </p>
                   </div>
                   <hr className="my-3" />
-                  {/* <hr className="mb-3 mt-1" /> */}
                 </form>
               </div>
             </div>
@@ -2085,8 +1840,7 @@ const UpdateClient = () => {
                     </div>
                   </div>
                   <hr className="mb-3 mt-1" />
-                  {/* Region -> County -> Town for this branch. Saved centrally and mirrored onto this
-                    branch's BRANCH row in the client database. */}
+                  {/* Region -> County -> Town for this branch. */}
                   <div className="row mb-1">
                     <label htmlFor="regionId" className="col-md-3 col-form-label divider">
                       Location
@@ -2140,8 +1894,140 @@ const UpdateClient = () => {
                     </div>
                   </div>
                   <hr className="mb-3 mt-3" />
-                  {/* Per-branch activation and archival. Read-only here — both are edited together in
-                    the Branch Status modal. The company-wide equivalents live on the Company tab. */}
+
+                  {/* BRANCH EXPIRY. Separate from the company-wide date on the other tab. */}
+                  <div className="row mb-1">
+                    <label className="col-md-3 col-form-label divider">Licence expires</label>
+                    <div className="col-md ps-1">
+                      {(() => {
+                        const mine = thisBranchExpiry()
+                        const peers = invoiceGroupPeers()
+
+                        // A grace date equal to the licence date is not an extension.
+                        const grace =
+                          mine?.temporaryExpiry && mine.temporaryExpiry !== mine.licenceExpiry
+                            ? moment(mine.temporaryExpiry).format('DD/MM/YYYY')
+                            : null
+
+                        return (
+                          <>
+                            <span className="fw-bold" style={{ fontSize: 12 }}>
+                              {mine?.licenceExpiry
+                                ? moment(mine.licenceExpiry).format('DD/MM/YYYY')
+                                : '—'}
+                            </span>
+                            {grace && (
+                              <span className="d-block text-muted" style={{ fontSize: 10 }}>
+                                Grace period runs to {grace}.
+                              </span>
+                            )}
+                            {/* Only claimed when the company-wide list is actually loaded. */}
+                            {(data?.branchExpiries ?? []).length > 0 && (
+                              <span className="d-block text-muted" style={{ fontSize: 10 }}>
+                                {peers.length > 0
+                                  ? `Invoiced together with ${peers
+                                      .map((b) => b.branchName || `branch ${b.branchCode}`)
+                                      .join(', ')} — they share this date.`
+                                  : 'Invoiced on its own — no other branch shares this date.'}
+                              </span>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
+
+                  {branchExpiryEdit ? (
+                    <div className="row mb-1">
+                      <label htmlFor="branchExpiry" className="col-md-3 col-form-label divider">
+                        New expiry
+                      </label>
+                      <div className="col-md ps-1">
+                        <div className="d-flex flex-wrap align-items-center gap-2">
+                          <DatePicker
+                            id="branchExpiry"
+                            selected={branchExpiryDate}
+                            onChange={(d) => setBranchExpiryDate(d)}
+                            dateFormat="dd/MM/yyyy"
+                            placeholderText="dd/mm/yyyy"
+                            className="form-control form-control-sm rounded-0"
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm add-btn rounded-0"
+                            disabled={isLoading}
+                            onClick={saveBranchExpiry}
+                          >
+                            Save expiry
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-sm cancel-btn rounded-0"
+                            disabled={isLoading}
+                            onClick={() => setBranchExpiryEdit(false)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        <div className="text-muted" style={{ fontSize: 10 }}>
+                          This branch only. It moves the branch onto the invoice for that date —
+                          joining the branches already on it, or onto one of its own.
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="row mb-1">
+                      <label className="col-md-3 col-form-label divider">Grace extension</label>
+                      <div className="col-md ps-1">
+                        <div className="d-flex flex-wrap align-items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            className="form-control form-control-sm rounded-0"
+                            style={{ width: 110 }}
+                            placeholder="days"
+                            value={branchTempDays}
+                            onChange={(e) => setBranchTempDays(e.target.value)}
+                            aria-label="Grace extension days for this branch"
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm edit-btn rounded-0"
+                            disabled={isLoading || !branchTempDays}
+                            onClick={saveBranchTempDays}
+                          >
+                            Extend
+                          </button>
+                        </div>
+                        <div className="text-muted" style={{ fontSize: 10 }}>
+                          Counted from this branch&apos;s own expiry. Moves the grace date only, so
+                          the branch stays on the same invoice.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {!branchExpiryEdit && (
+                    <div className="d-flex justify-content-end">
+                      <p
+                        className="my-1 fw-bold"
+                        role="button"
+                        style={{ fontSize: '10px', color: '#c58c4f' }}
+                        onClick={() => {
+                          const mine = thisBranchExpiry()
+                          setBranchExpiryDate(
+                            mine?.licenceExpiry ? new Date(mine.licenceExpiry) : null,
+                          )
+                          setBranchExpiryEdit(true)
+                        }}
+                      >
+                        Change expiry
+                      </p>
+                    </div>
+                  )}
+
+                  <hr className="mb-3 mt-3" />
+                  {/* Per-branch activation and archival. */}
                   <div className="row mb-1">
                     <label htmlFor="branchActiveView" className="col-md-3 col-form-label divider">
                       Is Active
@@ -2252,7 +2138,6 @@ const UpdateClient = () => {
                     <Moment format="DD/MM/YYYY">{data.pickDate}</Moment>
                   </span>
                 </li>
-                {/* <hr className="my-1" /> */}
                 <li className="list-group-item d-flex justify-content-between">
                   <span className="fw-bold">All Users</span>
                   <span className="fw-bold">{totalUsers}</span>
@@ -2275,8 +2160,7 @@ const UpdateClient = () => {
                 Acct Code
               </label>
               <div className="col-md ps-1">
-                {/* The account code is the join key to the serials, add-ons, provisioning runs, the
-                    company record and the derived P{code}DB database name — it is not editable. */}
+                {/* The account code is the join key to the serials, add-ons, provisioning runs. */}
                 <input
                   type="text"
                   className="form-control form-control-sm rounded-0"
@@ -2363,17 +2247,6 @@ const UpdateClient = () => {
                     Serial No
                   </label>
                   <div className="col-md ps-1">
-                    {/* <input
-                      type="text"
-                      className="form-control form-control-sm rounded-0"
-                      name="querySerialNo"
-                      id="querySerialNo"
-                      value={editFormData.querySerialNo}
-                      readOnly
-                      onChange={(e) =>
-                        setEditFormData({ ...editFormData, querySerialNo: e.target.value })
-                      }
-                    /> */}
                     <select
                       className="form-select form-select-sm rounded-0"
                       aria-label="Default select example"
@@ -2405,18 +2278,14 @@ const UpdateClient = () => {
               </div>
               <div className="col-md">
                 <div className="row">
-                  <label htmlFor="nonregistered" className="col-md-3 col-form-label">
-                    {/* Item Name */}
-                  </label>
-                  {/* Is Active and Archived sit together: both are company level and independent of
-                      each other (archiving does not deactivate, deactivating does not archive). */}
+                  <label htmlFor="nonregistered" className="col-md-3 col-form-label"></label>
+                  {/* Is Active and Archived sit together. */}
                   <div className="col-md ps-1 d-flex gap-3">
                     <div className="form-check">
                       <input
                         className="form-check-input"
                         type="checkbox"
                         checked={editFormData.isActive}
-                        // checked={editFormData.isActive === '1'}
                         name="blocked"
                         id="blocked"
                         onChange={(e) =>
@@ -2461,9 +2330,7 @@ const UpdateClient = () => {
                 </div>
               </div>
             </div>
-            {/* Both flags here are company level: Is Active sets psActivated AND the ENABLED flag on
-                every branch in the client's database; Archived sets Archived on every branch. The
-                per-branch equivalents are on the Branch Level tab. */}
+            {/* Both flags here are company level. */}
             <div
               className={`alert ${
                 !editFormData.isActive || editFormData.archived
@@ -2494,13 +2361,6 @@ const UpdateClient = () => {
                     Expiry
                   </label>
                   <div className="col-md ps-1">
-                    {/* <input
-                      type="date"
-                      name="queryExpiryDate"
-                      className="form-control form-control-sm rounded-0"
-                      id="queryExpiryDate"
-                      value={editFormData.queryExpiryDate}
-                    /> */}
                     <DatePicker
                       className="form-control form-control-sm rounded-0"
                       selected={editFormData.queryExpiryDate}
@@ -2512,17 +2372,31 @@ const UpdateClient = () => {
                       onChange={(date) => handleDate(date)}
                       required
                     />
-                    {/* <DatePicker
-                      className="form-control form-control-sm rounded-0"
-                      selected={editFormData.queryExpiryDate}
-                      dateFormat="dd/MM/yyyy"
-                      peekNextMonth
-                      showMonthDropdown
-                      showYearDropdown
-                      dropdownMode="select"
-                      minDate={new Date()}
-                      onChange={(date) => handleDate(date)}
-                    /> */}
+
+                    {/* WHAT THIS SAVE WILL RESET. */}
+                    {branchesOffCompanyDate().length > 0 && (
+                      <div className="callout-note mt-2">
+                        <strong>
+                          {branchesOffCompanyDate().length} branch(es) are on their own expiry and
+                          will be reset to this date:
+                        </strong>
+                        <span className="d-block mt-1">
+                          {branchesOffCompanyDate()
+                            .map(
+                              (b) =>
+                                `${b.branchName || `Branch ${b.branchCode}`} (${
+                                  b.licenceExpiry
+                                    ? moment(b.licenceExpiry).format('DD/MM/YYYY')
+                                    : 'no date'
+                                })`,
+                            )
+                            .join(', ')}
+                        </span>
+                        <span className="d-block mt-1">
+                          Set a branch&apos;s own date on its Branch Level tab instead.
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -2545,8 +2419,7 @@ const UpdateClient = () => {
               </div>
             </div>
             <hr />
-            {/* Temporary expiry — a short grace extension before the client pays.
-                Same date-or-days entry as the Expiry above. */}
+            {/* Temporary expiry — a short grace extension before the client pays. */}
             <label className="col-form-label divider fw-semibold p-0 mb-1">
               Temporary Extension
             </label>
@@ -2943,15 +2816,6 @@ const UpdateClient = () => {
               <div className="col-md ps-1">
                 <div className="row">
                   <div className="col-6">
-                    {/* <input
-                          type="text"
-                          name="psStockTakeStartDate"
-                          id="psStockTakeStartDate"
-                          value={data.psStockTakeStartDate}
-                          className="form-control form-control-sm rounded-0"
-                          readOnly
-                          disabled
-                        /> */}
                     <DatePicker
                       className="form-control form-control-sm rounded-0"
                       selected={editFormData.queryStockTakeStartDate}
@@ -2972,15 +2836,6 @@ const UpdateClient = () => {
                         To
                       </label>
                       <div className="col ps-0">
-                        {/* <input
-                              type="text"
-                              name="stockTakeEndDate"
-                              id="stockTakeEndDate"
-                              value={data.stockTakeEndDate}
-                              className="form-control form-control-sm rounded-0"
-                              readOnly
-                              disabled
-                            /> */}
                         <DatePicker
                           className="form-control form-control-sm rounded-0"
                           selected={editFormData.queryStockTakeEndDate}
@@ -3048,8 +2903,7 @@ const UpdateClient = () => {
               </div>
             )}
 
-            {/* Current grants, with what they cover and when they lapse. Removing uses the same
-                scope as granting: the whole client, or only this branch. */}
+            {/* Current grants, with what they cover and when they lapse. */}
             <label className="col-form-label divider fw-semibold p-0 mb-1">Current Add Ons</label>
             {(data.addOnCoverage ?? []).length === 0 ? (
               <div className="text-muted mb-3" style={{ fontSize: 11 }}>
@@ -3094,8 +2948,7 @@ const UpdateClient = () => {
                           ? moment(a.expiryDate).format('DD/MM/YYYY')
                           : 'never'}
                       </td>
-                      {/* Fixed-width buttons so every row's actions line up, and the two destructive
-                          ones grouped together apart from the benign one. */}
+                      {/* Fixed-width buttons so every row's actions line up. */}
                       <td className="text-end align-middle text-nowrap">
                         <button
                           type="button"
@@ -3155,8 +3008,7 @@ const UpdateClient = () => {
               </table>
             )}
 
-            {/* Expiry editor for an add-on already granted. Only ever moves dates on grants that
-                exist — it never adds the add-on to a branch that doesn't hold it. */}
+            {/* Expiry editor for an add-on already granted. */}
             {expiryEdit && (
               <div className="border rounded-0 p-2 mb-3 bg-light">
                 <div className="d-flex justify-content-between align-items-center mb-2">
@@ -3176,9 +3028,7 @@ const UpdateClient = () => {
                       : 'never expires'}
                   </span>
                 </div>
-                {/* All three controls on one line, each with a plain stacked label. Deliberately NOT
-                    the `divider` class used elsewhere: its full-width dotted leader is for labels
-                    sitting BESIDE a field, and it pushed these three out of alignment. */}
+                {/* All three controls on one line, each with a plain stacked label. */}
                 <div className="row g-2 align-items-end">
                   <div className="col-md-4">
                     <label htmlFor="extendDate" className="form-label mb-1 d-block">
@@ -3187,8 +3037,7 @@ const UpdateClient = () => {
                     <DatePicker
                       id="extendDate"
                       className="form-control form-control-sm rounded-0"
-                      // The datepicker's own wrapper is inline-block, so it ignores the column width
-                      // and sits narrower than its neighbours unless stretched.
+                      // The datepicker's own wrapper is inline-block.
                       wrapperClassName="w-100"
                       selected={extendDate}
                       dateFormat="dd/MM/yyyy"
@@ -3282,8 +3131,7 @@ const UpdateClient = () => {
                     <span className="text-body">
                       → new expiry{' '}
                       <span className="fw-bold">{moment(extendDate).format('DD/MM/YYYY')}</span>
-                      {/* Pulling a date back is allowed, but it ends the add-on sooner than the
-                          client currently has — and the line above looks identical either way. */}
+                      {/* Pulling a date back is allowed. */}
                       {shortensBy() > 0 && (
                         <span className="text-danger">
                           {' '}
@@ -3309,12 +3157,11 @@ const UpdateClient = () => {
                 <Multiselect
                   closeIcon={''}
                   className="rounded-0"
-                  // hideSelectedList
-                  options={addOns} // Options to display in the dropdown
+                  options={addOns}
                   selectedValues={editFormData.AddOnsArray} // starts empty — see the Change handler
                   onSelect={onAddOnPick}
                   onRemove={onAddOnPick}
-                  displayValue="addonName" // Property name to display in the dropdown options
+                  displayValue="addonName"
                   showCheckbox
                 />
               </div>
@@ -3565,7 +3412,6 @@ const UpdateClient = () => {
                           name="clientType"
                           id="desktop"
                           value={module.packageNum}
-                          // onChange={() => {}}editFormData
                           onChange={(e) =>
                             setEditFormData({ ...editFormData, packageCode: e.target.value })
                           }

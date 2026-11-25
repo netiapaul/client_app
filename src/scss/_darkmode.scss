@@ -153,6 +153,25 @@ html.theme-dark {
   color-scheme: dark;
   background-color: $dk-bg;
 
+  // ---- .cb-* surface palette (see the :root block in _custom.scss) ----
+  // The scaffolding every newer screen is built from — page head, card, dense table, chip, code
+  // block, empty state. Re-pointing these eight tokens is what carries the whole Billing group,
+  // the SMS queue, Payment methods, Billing automation, Setup and Portal users into dark mode;
+  // before this they held their light literals and stayed white while the app around them went
+  // dark. Keep new .cb-* rules on var(--cb-*) and they will not need a line here.
+  --cb-surface: #{$dk-surface};
+  --cb-head-bg: #{$dk-surface-2};
+  --cb-border: #{$dk-border};
+  --cb-ink: #{$dk-text};
+  --cb-muted: #{$dk-muted};
+  --cb-chip-bg: #{$dk-surface-2};
+  --cb-chip-border: #{$dk-border-2};
+
+  // Deliberately NOT $dk-surface-2: a recessed block has to read as sunk INTO the card, and
+  // surface-2 is lighter than the card face, which would make it read as raised. Same darker-than-
+  // the-surface treatment as .log-json above, for the same reason.
+  --cb-soft: #161a21;
+
   // ---- CoreUI / Bootstrap CSS variables (broad, cheap coverage) ----
   --cui-body-bg: #{$dk-bg};
   --cui-body-color: #{$dk-text};
@@ -165,6 +184,37 @@ html.theme-dark {
   --bs-body-bg: #{$dk-bg};
   --bs-body-color: #{$dk-text};
   --bs-border-color: #{$dk-border};
+
+  // ---- Bootstrap 5.3 "subtle" tokens ----
+  // .bg-*-subtle, .border-*-subtle and .text-*-emphasis all read these. Bootstrap only swaps them
+  // under [data-bs-theme=dark], which this app does not set, so every subtle utility kept its light
+  // literal: the highlighted differing columns on Duplicate Branches rendered as pale yellow blocks,
+  // and text-warning-emphasis counts rendered as dark brown on dark. Values mirror the .alert-*
+  // tones below so a subtle background and an alert of the same colour read as the same colour.
+  --bs-primary-bg-subtle: #11253f;
+  --bs-secondary-bg-subtle: #{$dk-surface-2};
+  --bs-success-bg-subtle: #16301f;
+  --bs-info-bg-subtle: #0f2d37;
+  --bs-warning-bg-subtle: #332813;
+  --bs-danger-bg-subtle: #331518;
+  --bs-light-bg-subtle: #{$dk-surface-2};
+  --bs-dark-bg-subtle: #16181d;
+  --bs-primary-border-subtle: #1e4470;
+  --bs-secondary-border-subtle: #{$dk-border-2};
+  --bs-success-border-subtle: #235c3a;
+  --bs-info-border-subtle: #1b5566;
+  --bs-warning-border-subtle: #5e4c1e;
+  --bs-danger-border-subtle: #5e2327;
+  --bs-light-border-subtle: #{$dk-border};
+  --bs-dark-border-subtle: #{$dk-border};
+  --bs-primary-text-emphasis: #8cb6ef;
+  --bs-secondary-text-emphasis: #{$dk-muted};
+  --bs-success-text-emphasis: #7fd1a3;
+  --bs-info-text-emphasis: #8fd3e4;
+  --bs-warning-text-emphasis: #ecd08a;
+  --bs-danger-text-emphasis: #f0a8ac;
+  --bs-light-text-emphasis: #{$dk-text};
+  --bs-dark-text-emphasis: #{$dk-muted};
 
   body {
     background-color: $dk-bg !important;
@@ -256,6 +306,86 @@ html.theme-dark {
     background-color: $dk-surface-2 !important;
     color: $dk-text !important;
     border-color: $dk-border !important;
+  }
+
+  // Contextual row colours (.table-success / .table-danger / …). Bootstrap hard-codes these to
+  // pastels with black text and only re-points them under [data-bs-theme=dark]; this app toggles
+  // on .theme-dark instead, so they stayed light — the Duplicate Branches comparison grid came out
+  // as pale pink/green rows floating on a dark card. Re-point the same variables Bootstrap reads.
+  .table-success {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: #16301f;
+    --bs-table-border-color: #235c3a;
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #1a3724;
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #1b3b27;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #1b3b27;
+  }
+  .table-danger {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: #331518;
+    --bs-table-border-color: #5e2327;
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #3a181c;
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #3e1a1e;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #3e1a1e;
+  }
+  .table-warning {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: #332813;
+    --bs-table-border-color: #5e4c1e;
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #392d16;
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #3e3018;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #3e3018;
+  }
+  .table-info {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: #0f2d37;
+    --bs-table-border-color: #1b5566;
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #11333e;
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #133845;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #133845;
+  }
+  .table-primary {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: #11253f;
+    --bs-table-border-color: #1e4470;
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #142a48;
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #163050;
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #163050;
+  }
+  .table-secondary {
+    --bs-table-color: #{$dk-text};
+    --bs-table-bg: #{$dk-surface-2};
+    --bs-table-border-color: #{$dk-border-2};
+    --bs-table-striped-color: #{$dk-text};
+    --bs-table-striped-bg: #{$dk-surface-3};
+    --bs-table-active-color: #fff;
+    --bs-table-active-bg: #{$dk-surface-3};
+    --bs-table-hover-color: #fff;
+    --bs-table-hover-bg: #{$dk-surface-3};
+  }
+
+  // The "row you have open" marker. Bootstrap's default is rgba(0,0,0,.1), which on a dark table
+  // reads as nothing at all; lift it instead of darkening it.
+  .table > :not(caption) > *.table-active > *,
+  .table > :not(caption) > * > *.table-active {
+    --bs-table-bg: #{$dk-surface-3};
+    --bs-table-accent-bg: #{$dk-surface-3};
+    color: #fff;
   }
 
   // Forms
@@ -699,6 +829,43 @@ html.theme-dark {
       background: $dk-surface-3;
     }
   }
+
+  // Chrome paints its own background on autofilled inputs, and because this theme sets
+  // `color-scheme: dark` it picks the dark-mode variant — a blue #2f384b that matches nothing else
+  // here, so a remembered email/password pair turns the login form into a third shade. The field
+  // background cannot be set directly on an autofilled input; the inset box-shadow is the only
+  // handle, and the long transition stops Chrome fading its own colour back in.
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:active,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    box-shadow: 0 0 0 1000px $dk-surface-2 inset !important;
+    -webkit-text-fill-color: $dk-text !important;
+    caret-color: $dk-text;
+    transition: background-color 9999s ease-out 0s;
+  }
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill:focus,
+  select:-webkit-autofill:focus {
+    // Keep the accent focus ring the other fields get; the inset fill rides along with it.
+    box-shadow: 0 0 0 0.2rem rgba($dk-accent, 0.25), 0 0 0 1000px $dk-surface-2 inset !important;
+    -webkit-text-fill-color: $dk-text !important;
+  }
+
+  // ---- Login page ----
+  // The auth card is borderless and full-bleed (`card border-0` filling the right column), and the
+  // row centres it vertically, so the generic `.card { background: $dk-surface }` rule above paints
+  // a lighter horizontal band across the middle of an otherwise $dk-bg page — it reads as two
+  // shades of dark rather than as a card. There is no card edge for the step-up to sit on, so drop
+  // it: the whole right pane becomes one colour and the inputs ($dk-surface-2) are what lifts off
+  // the background. In light mode the same band is white-on-near-white and passes unnoticed, which
+  // is why this is scoped to dark.
+  .login_page .card,
+  .login_page .card-body {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
 }
 
 // Show/hide password toggle — readable on the dark form surfaces, and picking up the dark accent
@@ -925,18 +1092,18 @@ html.theme-dark .pt {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 11.5px;
   line-height: 1.5;
-  color: var(--cb-ink, #2b3445);
-  background: var(--cb-soft, #f6f7f9);
-  border: 1px solid var(--cb-border, #e3e6ec);
+  color: var(--cb-ink);
+  background: var(--cb-soft);
+  border: 1px solid var(--cb-border);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-html[data-coreui-theme='dark'] .cb-pre {
-  color: #c9d2e0;
-  background: #1b2230;
-  border-color: #2b3344;
-}
+// The dark rule that used to sit here was selected on `html[data-coreui-theme='dark']` — CoreUI's
+// own colour-mode attribute, which nothing in this app ever sets. Dark mode here is the
+// `.theme-dark` CLASS on <html> (see utils/theme.js), so that rule never matched and a provider
+// payload stayed on its light grey no matter the theme. The var()s above now carry it: --cb-soft
+// is re-pointed in the token block below, so there is no second selector left to get wrong.
 
 /**** Empty state ****/
 .cb-empty {
@@ -947,7 +1114,7 @@ html[data-coreui-theme='dark'] .cb-pre {
   padding: 40px 12px;
   font-size: var(--cb-fs-body);
   text-align: center;
-  color: #8a94a6;
+  color: var(--cb-muted);
 
   .material-icons {
     font-size: 30px;
@@ -1977,6 +2144,23 @@ input:checked {
     grid-template-columns: repeat(5, 1fr);
 
     @media (max-width: 1199px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    @media (max-width: 767px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  // The payments screen has six: "needs attention" split into UNMATCHED (money nobody can place)
+  // and IN CREDIT (money that settles itself on the next invoice), which are two different jobs
+  // and were misleading as one tile.
+  //
+  // Three-up rather than five-up at the middle width, so six tiles fall as two even rows instead
+  // of five and a stranded one.
+  &--six {
+    grid-template-columns: repeat(6, 1fr);
+
+    @media (max-width: 1399px) {
       grid-template-columns: repeat(3, 1fr);
     }
     @media (max-width: 767px) {

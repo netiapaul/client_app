@@ -4,28 +4,17 @@ import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
 import { getToken, hasModule } from '../../utils/session'
 import { MODULES } from '../../utils/permissions'
 import { toast } from 'react-toastify'
-import { formatMoney as money } from '../../utils/money'
+import { formatMoney as money, parseAmount } from '../../utils/money'
+import MoneyInput from '../../components/MoneyInput'
 import { downloadFile } from '../../utils/download'
 import DataTable from '../../components/DataTable'
 import ClientPicker from '../../components/ClientPicker'
 import useConfirm from '../../components/useConfirm'
+import { renderRichText } from '../../components/RichTextEditor'
+import DocumentViewer from '../../components/DocumentViewer'
 const axios = require('axios')
 
-/**
- * Proforma invoices — the ledger, and the run that fills it.
- *
- * PROFORMA, not tax invoices: each one requests payment for a renewal that has not been delivered
- * yet, and the tax invoice is raised against the money once it arrives. The wording is what
- * changed — the table, the routes and the INV- numbering are untouched, since those are internal
- * and renumbering a gapless sequence mid-year would split it across two formats for no gain.
- *
- * The run is DRY BY DEFAULT and shows every company it considered with the decision it made,
- * including why each was skipped. Only after reading that does the Raise button commit anything:
- * billing a hundred clients is not an action to take on trust.
- *
- * Invoices arrive as drafts. A draft owes nobody anything — issuing is the deliberate step that
- * makes it payable and emails it to the client.
- */
+/** Proforma invoices — the ledger, and the run that fills it. */
 const STATUSES = [
   { key: '', label: 'All' },
   { key: 'Draft', label: 'Drafts' },
@@ -46,8 +35,7 @@ const Invoices = () => {
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Invoices`
   const canManage = hasModule(MODULES.ManageBilling)
 
-  // Replaces window.confirm, which the browser prefixes with "localhost:3000 says" and which
-  // cannot show a formatted figure or mark a destructive action. See useConfirm.
+  // Replaces window.confirm, which the browser prefixes with "localhost:3000 says".
   const [confirm, confirmDialog] = useConfirm()
 
   const authHeaders = useCallback(
@@ -72,19 +60,10 @@ const Invoices = () => {
   const [total, setTotal] = useState(0)
 
   // Searching and paging INSIDE the preview modals.
-  //
-  // Both list every client in the database — 191 and growing — and a scrollbar is not a way to
-  // find one. The data is already in the browser (the run returns every candidate so the totals
-  // can be computed from the ticks), so this filters and pages in memory rather than re-querying.
-  //
-  // Deliberately NOT applied to the selection: ticking is by cus code and "Select all" means all
-  // that qualify, not all that happen to be on screen. Filtering the view must never silently
-  // change what is about to be invoiced.
   const [runFilter, setRunFilter] = useState('')
   const [runPage, setRunPage] = useState(1)
 
-  // Show only the clients the run would actually invoice. On this database that is 1 of 191, so
-  // the qualifying client is otherwise a needle somewhere down an alphabetical list of skips.
+  // Show only the clients the run would actually invoice.
   const [runDueOnly, setRunDueOnly] = useState(false)
   const [readyFilter, setReadyFilter] = useState('')
   const [readyPage, setReadyPage] = useState(1)
@@ -92,35 +71,27 @@ const Invoices = () => {
 
   const [run, setRun] = useState(null) // dry-run result awaiting confirmation
   const [running, setRunning] = useState(false)
-  // Which qualifying clients are ticked for this run. A Set of cus codes — the preview can be 190
-  // rows and an array would turn every checkbox render into a linear scan.
+  // Which qualifying clients are ticked for this run.
   const [picked, setPicked] = useState(new Set())
   const [detail, setDetail] = useState(null)
 
   // Editing a DRAFT's lines in place.
-  //
-  // Drafts exist so figures can be agreed, corrected and re-agreed while the document exists but
-  // nobody has seen it. `editLines` is null when not editing — the table renders read-only — and
-  // an array while it is, held apart from `detail` so Cancel is just throwing it away.
   const [editLines, setEditLines] = useState(null)
+
   const [editSaving, setEditSaving] = useState(false)
   const [chases, setChases] = useState([]) // the open invoice's reminder history
 
-  // The company details printed on every invoice. Loaded on arrival rather than when the editor is
-  // opened, because `missing` drives the banner that tells someone to open it in the first place.
+  // The invoice being READ on screen: { id, no, company, status, comments }, or null.
+  const [viewing, setViewing] = useState(null)
+
+  // The company details printed on every invoice.
   const [settings, setSettings] = useState(null)
 
-  // The daily chase of unpaid invoices: previewed before it is run, for the same reason the
-  // invoicing run is — these messages reach customers and each text is billed.
+  // The daily chase of unpaid invoices: previewed before it is run.
   const [chase, setChase] = useState(null)
   const [chasing, setChasing] = useState(false)
 
-  // The term the run buys. One is the nightly renewal; the others are for a client who has
-  // agreed to pay a quarter, half a year or a full year up front.
-  //
-  // Lives next to the as-of date because the two together define the run: WHEN it is evaluated,
-  // and HOW LONG each invoice covers. The server coerces anything that is not one of these to 1,
-  // so a stale value here can never bill an unsellable term.
+  // The term the run buys.
   const [months, setMonths] = useState(1)
   const TERMS = [
     { months: 1, label: '1 month' },
@@ -130,18 +101,6 @@ const Invoices = () => {
   ]
 
   // Billing a client for add-ons ALONE, with no renewal invoice involved.
-  //
-  // The catch-up on a row can only supplement an invoice that already exists and has been paid.
-  // This is the plain case it cannot reach: charge this client for the add-ons they hold — one
-  // taken up mid-term, or a client whose renewal is not due for another two months.
-  // A ONE-OFF invoice: the charge a new client pays on joining.
-  //
-  // Lines are typed rather than looked up, because a joining deal is rarely the same twice —
-  // setup, training, hardware, a discount. Starts with three blank rows, which is about what a
-  // joining invoice uses; more can be added.
-  // itemId is WHICH catalogue item the line came from; description and unitAmount are what
-  // ends up on the invoice. Kept separate because the amount stays editable after picking — the
-  // catalogue sets a default, it does not dictate the charge.
   const BLANK_LINE = { itemId: '', description: '', quantity: 1, unitAmount: '' }
   const [oneOffOpen, setOneOffOpen] = useState(false)
   const [oneOffCus, setOneOffCus] = useState('')
@@ -151,27 +110,18 @@ const Invoices = () => {
   const [oneOffBusy, setOneOffBusy] = useState(false)
 
   // Also bill the FIRST PERIOD on the joining invoice — the subscription and the add-ons due.
-  //
-  // Usually what a joining invoice is, and it changes the document: with it on the invoice
-  // becomes the client's first renewal, so it occupies the period, moves the licence when paid
-  // and renews the grants. `firstPeriod` is the server's answer about what that would add.
   const [oneOffFirst, setOneOffFirst] = useState(true)
   const [oneOffTerm, setOneOffTerm] = useState(1)
   const [firstPeriod, setFirstPeriod] = useState(null)
   const [firstBusy, setFirstBusy] = useState(false)
 
-  // Why the CHECK failed, as opposed to why the server said no. Held apart on purpose — see the
-  // catch in loadFirstPeriod.
+  // Why the CHECK failed, as opposed to why the server said no.
   const [firstError, setFirstError] = useState('')
 
-  // The chargeable-items catalogue, so lines are picked rather than typed. Loaded with the
-  // modal; active items only, since a retired one must not reappear in a picker.
-  //
-  // NOT `items` — that is already this screen's invoice list.
+  // The chargeable-items catalogue, so lines are picked rather than typed.
   const [catalogue, setCatalogue] = useState([])
 
-  // Every client, for the one-off picker. The add-on picker deliberately lists only clients
-  // HOLDING an add-on; a one-off can go to anybody, and most often goes to somebody brand new.
+  // Every client, for the one-off picker.
   const [allClients, setAllClients] = useState([])
 
   const [addOnOpen, setAddOnOpen] = useState(false)
@@ -223,12 +173,7 @@ const Invoices = () => {
   const fmtDate = (v) =>
     v ? new Date(v).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'
 
-  /**
-   * Filter a modal's rows by name or code, then cut the page being shown.
-   *
-   * Returns the slice alongside the counts the footer needs, so the caller never has to recompute
-   * a total from a filtered array and get it subtly wrong.
-   */
+  /** Filter a modal's rows by name or code, then cut the page being shown. */
   const modalPage = (rows, filter, page) => {
     const term = filter.trim().toLowerCase()
 
@@ -241,8 +186,7 @@ const Invoices = () => {
       : rows
 
     const pages = Math.max(1, Math.ceil(matched.length / MODAL_PAGE))
-    // Clamped rather than reset: deleting a character should not throw you back to page 1, but a
-    // filter that shrinks the list past the current page has to land somewhere real.
+    // Clamped rather than reset: deleting a character should not throw you back to page 1.
     const current = Math.min(page, pages)
     const from = (current - 1) * MODAL_PAGE
 
@@ -256,17 +200,7 @@ const Invoices = () => {
     }
   }
 
-  /**
-   * The run's candidates, QUALIFYING FIRST.
-   *
-   * The server returns them alphabetically, which buries the handful that will actually be
-   * invoiced among the ones being skipped — and those are the rows somebody came to this screen
-   * to check before writing anything.
-   *
-   * Sorted rather than filtered by default: the skipped clients and their reasons are the other
-   * half of what the preview is for ("why is this client not being billed?"), so they stay
-   * reachable below. `sort` is stable, so alphabetical order survives within each group.
-   */
+  /** The run's candidates, QUALIFYING FIRST. */
   const runRows = useMemo(() => {
     const all = run?.candidates ?? []
     const visible = runDueOnly ? all.filter((c) => c.due) : all
@@ -357,13 +291,11 @@ const Invoices = () => {
         headers: authHeaders(),
       })
       setRun(r.data)
-      // A fresh run starts on a clean view — a filter left over from the last preview would hide
-      // rows from a list somebody is about to commit.
+      // A fresh run starts on a clean view.
       setRunFilter('')
       setRunPage(1)
       setRunDueOnly(false)
-      // Everything that qualifies starts ticked. The common case is billing the whole batch, and
-      // an empty list would make the admin re-select what the preview just told them is due.
+      // Everything that qualifies starts ticked.
       setPicked(new Set((r.data?.candidates ?? []).filter((c) => c.due).map((c) => c.cusCode)))
     } catch (e) {
       setError(readErr(e))
@@ -389,14 +321,12 @@ const Invoices = () => {
 
     const chosen = (run?.candidates ?? []).filter((c) => c.due && picked.has(c.cusCode))
 
-    // Both documents. Add-ons are billed separately now, so summing amountDue alone would quote
-    // a figure lower than the one about to be raised.
+    // Both documents. Add-ons are billed separately now.
     const total = chosen.reduce((sum, c) => sum + (c.totalBilled ?? c.amountDue ?? 0), 0)
     const withAddOns = chosen.filter((c) => (c.addOns?.length ?? 0) > 0).length
     const term = TERMS.find((t) => t.months === (run?.months ?? 1))
 
-    // Raising an invoice is not undoable in the sense that matters: cancelling one leaves a
-    // cancelled invoice on the client's record. Worth one deliberate yes, with the figure in it.
+    // Raising an invoice is not undoable in the sense that matters.
     if (
       !(await confirm({
         title: `Raise invoices for ${codes.length} client(s)?`,
@@ -404,8 +334,7 @@ const Invoices = () => {
           `${codes.length} client(s) totalling ${money(total, 'KES')} will be invoiced for ` +
           `${term?.label ?? '1 month'}.`,
         detail:
-          // ONE document each, carrying the licence and any add-ons together. A client who no
-          // longer wants an add-on has to be taken off it BEFORE the run — see Add-on pricing.
+          // ONE document each, carrying the licence and any add-ons together.
           (withAddOns > 0
             ? `${withAddOns} of them also carries add-on charges on the same invoice. ` +
               'To drop an add-on for a client, stop its renewal under Add-on pricing first. '
@@ -506,17 +435,7 @@ const Invoices = () => {
     }
   }
 
-  /**
-   * Bill add-ons that were missed off an invoice the client has already PAID.
-   *
-   * Cancel-and-raise-again is the normal remedy for a wrong invoice, but it is refused once money
-   * has landed — so this raises a SECOND, add-on-only invoice for the same month. Settling it
-   * renews the add-on grants and deliberately does not move the licence: that month is already
-   * paid for, and granting another would hand out a free month at the price of an add-on.
-   *
-   * Asks the server what it would bill before offering to commit, because "nothing is missing" is
-   * the answer for most invoices and it should read as information, not as a failure.
-   */
+  /** Bill add-ons that were missed off an invoice the client has already PAID. */
   const addOnCatchUp = async (row) => {
     setError('')
     let plan
@@ -584,8 +503,7 @@ const Invoices = () => {
     setFirstPeriod(null)
     setFirstError('')
 
-    // Fetched together: both are needed before the first line can be filled in, and two
-    // sequential round trips would show an empty picker for a moment.
+    // Fetched together: both are needed before the first line can be filled.
     try {
       const [clients, catalogueRes] = await Promise.all([
         allClients.length > 0
@@ -604,16 +522,7 @@ const Invoices = () => {
     }
   }
 
-  /**
-   * Pick a catalogue item onto a line.
-   *
-   * Fills the description and the default amount. The amount is then the admin's to change —
-   * that is the whole arrangement: the catalogue stops people guessing at a figure, it does not
-   * stop them agreeing a different one.
-   *
-   * Choosing the blank option clears the item but KEEPS whatever is typed, so switching a line
-   * to a custom charge does not wipe work.
-   */
+  /** Pick a catalogue item onto a line. */
   const pickItem = (i, rawId) => {
     const id = rawId === '' ? '' : Number(rawId)
     const item = catalogue.find((x) => x.id === id)
@@ -634,12 +543,7 @@ const Invoices = () => {
     )
   }
 
-  /**
-   * Ask the server what including the first period would add.
-   *
-   * Always asked, even with the box unticked, so the figures are on screen before somebody
-   * decides — and so "this client has no price" is visible rather than discovered on save.
-   */
+  /** Ask the server what including the first period would add. */
   const loadFirstPeriod = useCallback(
     async (code, term) => {
       if (!code) {
@@ -657,11 +561,7 @@ const Invoices = () => {
         })
         setFirstPeriod(r.data)
       } catch (e) {
-        // KEPT, not swallowed. This used to set firstPeriod to null and let the panel fall back
-        // to "this client has no price on file" — which sent somebody to check a billing profile
-        // that was perfectly fine while the real problem was a 404 from a stale deployment.
-        // A failed CHECK and a server that answered "no" are different things and now read
-        // differently.
+        // KEPT, not swallowed.
         setFirstPeriod(null)
         setFirstError(readErr(e))
       } finally {
@@ -681,14 +581,13 @@ const Invoices = () => {
   const setLine = (i, field, value) =>
     setOneOffLines((rows) => rows.map((r, n) => (n === i ? { ...r, [field]: value } : r)))
 
-  // Only the rows that would actually be billed. The server drops the rest too, but the total on
-  // screen has to agree with the figure in the confirmation or nobody can check it.
+  // Only the rows that would actually be billed.
   const oneOffFilled = oneOffLines.filter(
-    (l) => l.description.trim() !== '' && Number(l.unitAmount) !== 0,
+    (l) => l.description.trim() !== '' && (parseAmount(l.unitAmount) ?? 0) !== 0,
   )
 
   const oneOffLinesTotal = oneOffFilled.reduce(
-    (s, l) => s + (Number(l.quantity) || 1) * (Number(l.unitAmount) || 0),
+    (s, l) => s + (Number(l.quantity) || 1) * (parseAmount(l.unitAmount) ?? 0),
     0,
   )
 
@@ -696,14 +595,12 @@ const Invoices = () => {
   const oneOffTotal = oneOffLinesTotal + (firstOn ? firstPeriod.total : 0)
 
   const raiseOneOff = async () => {
-    // With the first period on, the subscription alone is enough — a client can join with
-    // nothing but their first month, and nothing to type.
+    // With the first period on, the subscription alone is enough.
     if (!oneOffCus || (oneOffFilled.length === 0 && !firstOn)) return
 
     const client = allClients.find((c) => c.cusCode === oneOffCus)
 
-    // A one-off is typed from scratch, so there is no preview to check it against — the figure
-    // and the client name go in the confirmation instead.
+    // A one-off is typed from scratch, so there is no preview to check it against.
     if (
       !(await confirm({
         title: firstOn ? 'Raise this joining invoice?' : 'Raise this one-off invoice?',
@@ -740,12 +637,11 @@ const Invoices = () => {
           includeFirstPeriod: firstOn,
           months: oneOffTerm,
           lines: oneOffFilled.map((l) => ({
-            // Recorded on the line so the ledger can be totalled by item later. Null for a
-            // custom charge, which stays allowed.
+            // Recorded on the line so the ledger can be totalled by item later.
             billableItemId: l.itemId === '' || l.itemId == null ? null : Number(l.itemId),
             description: l.description.trim(),
             quantity: Number(l.quantity) || 1,
-            unitAmount: Number(l.unitAmount) || 0,
+            unitAmount: parseAmount(l.unitAmount) ?? 0,
           })),
         },
         { headers: authHeaders() },
@@ -773,8 +669,7 @@ const Invoices = () => {
     if (addOnClients.length > 0) return
 
     try {
-      // The same list the Add-on pricing screen uses — every client holding an add-on, which is
-      // exactly the set that can be billed for one.
+      // The same list the Add-on pricing screen uses — every client holding an add-on.
       const r = await axios.get(`${api}/AddOns`, { headers: authHeaders() })
       setAddOnClients(r.data?.clients ?? [])
     } catch (e) {
@@ -782,12 +677,7 @@ const Invoices = () => {
     }
   }
 
-  /**
-   * Ask the server what an add-on invoice for this client would bill.
-   *
-   * Always before offering the button. "This client has no add-on due with a price set" is the
-   * usual answer and should read as information rather than as a failed action.
-   */
+  /** Ask the server what an add-on invoice for this client would bill. */
   const previewAddOnInvoice = useCallback(
     async (code, term) => {
       if (!code) {
@@ -842,9 +732,7 @@ const Invoices = () => {
   const startEdit = () =>
     setEditLines(
       (detail.lines ?? [])
-        // The brought-forward line is NOT the admin's to edit — it is derived from what other
-        // invoices are owed, and the server re-adds it after a save. Hidden from the editor
-        // rather than shown greyed out, which would invite the question.
+        // The brought-forward line is NOT the admin's to edit.
         .filter((l) => l.kind !== 'BalanceForward')
         .map((l) => ({
           id: l.id ?? 0,
@@ -860,13 +748,61 @@ const Invoices = () => {
     setEditLines((rows) => rows.map((r, n) => (n === i ? { ...r, [field]: value } : r)))
 
   const editFilled = (editLines ?? []).filter(
-    (l) => (l.description ?? '').trim() !== '' && Number(l.unitAmount) !== 0,
+    (l) => (l.description ?? '').trim() !== '' && (parseAmount(l.unitAmount) ?? 0) !== 0,
   )
 
   const editTotal = editFilled.reduce(
-    (sum, l) => sum + (Number(l.quantity) || 1) * (Number(l.unitAmount) || 0),
+    (sum, l) => sum + (Number(l.quantity) || 1) * (parseAmount(l.unitAmount) ?? 0),
     0,
   )
+
+  /** The comment strip under the document in the viewer. */
+  const commentPanel = () => {
+    const isDraft = viewing?.status === 'Draft'
+    const editable = isDraft && canManage
+    const has = !!viewing?.comments
+
+    if (!editable && !has) return null
+
+    return (
+      <div className="dv__panel">
+        <div className="dv__panel-head">
+          <span className="dv__panel-title">Comment printed on this invoice</span>
+
+          {!isDraft && (
+            <span className="dv__panel-note">
+              Issued — the client has this document, so the wording is fixed. Cancel it and raise a
+              replacement if it is wrong.
+            </span>
+          )}
+
+          {editable && (
+            <Link
+              to={`/invoices/${viewing.id}/comment`}
+              className="btn btn-sm filter-btn rounded-0 ms-auto text-nowrap"
+            >
+              {has ? 'Edit comment' : 'Add a comment'}
+            </Link>
+          )}
+        </div>
+
+        {has ? (
+          <span
+            className="cb-fs-body rte-view"
+            dangerouslySetInnerHTML={{ __html: renderRichText(viewing.comments) }}
+          />
+        ) : (
+          editable && (
+            <span className="cb-fs-meta text-muted">
+              {viewing?.loading
+                ? 'Reading the current comment…'
+                : 'No comment — this invoice prints none.'}
+            </span>
+          )
+        )}
+      </div>
+    )
+  }
 
   const saveEdit = async () => {
     if (editFilled.length === 0) {
@@ -885,7 +821,7 @@ const Invoices = () => {
           referenceId: l.referenceId,
           description: l.description.trim(),
           quantity: Number(l.quantity) || 1,
-          unitAmount: Number(l.unitAmount) || 0,
+          unitAmount: parseAmount(l.unitAmount) ?? 0,
         })),
         { headers: authHeaders() },
       )
@@ -893,9 +829,7 @@ const Invoices = () => {
       toast.success(r.data?.message ?? 'Draft updated.', { theme: 'colored', autoClose: 7000 })
       setEditLines(null)
 
-      // Both: the modal is showing stale figures and so is the row behind it. Reloaded from the
-      // server rather than patched locally — the totals are recomputed there, including the
-      // brought-forward balance the editor never sent.
+      // Both: the modal is showing stale figures and so is the row behind it.
       await openDetail({ id: detail.id })
       await load()
     } catch (e) {
@@ -952,11 +886,7 @@ const Invoices = () => {
     }
   }
 
-  /**
-   * The stored PDF — the document the client actually received. Separate from the preview below,
-   * which renders afresh: when checking what a client is looking at, a fresh render is the wrong
-   * answer because the template may have changed since.
-   */
+  /** The stored PDF — the document the client actually received. */
   const downloadPdf = async (row) => {
     setError('')
     try {
@@ -966,10 +896,7 @@ const Invoices = () => {
     }
   }
 
-  /**
-   * Render now and open it, without storing anything. This is how the template and the renderer get
-   * checked before a document goes to a customer, so it is offered on drafts too.
-   */
+  /** Render now and open it, without storing anything. */
   const previewPdf = async (row) => {
     setError('')
     try {
@@ -981,12 +908,44 @@ const Invoices = () => {
     }
   }
 
+  /** READ the invoice on screen. */
+  const viewInvoice = async (row) => {
+    setViewing({
+      id: row.id,
+      no: row.invoiceNo,
+      company: row.companyName,
+      status: row.status,
+      comments: row.comments ?? null,
+      loading: true,
+    })
+
+    try {
+      const r = await axios.get(`${api}/${row.id}`, { headers: authHeaders() })
+
+      // Guarded on the id: a slow response for an invoice the user has already closed.
+      setViewing((v) =>
+        v && v.id === row.id
+          ? {
+              ...v,
+              status: r.data?.status ?? v.status,
+              company: r.data?.companyName ?? v.company,
+              comments: r.data?.comments ?? null,
+              hasPdf: !!r.data?.hasPdf,
+              loading: false,
+            }
+          : v,
+      )
+    } catch {
+      // The DOCUMENT is the point of this screen and it loads on its own.
+      setViewing((v) => (v && v.id === row.id ? { ...v, loading: false, noPanel: true } : v))
+    }
+  }
+
   const openDetail = async (row) => {
     setDetail({ loading: true })
     setChases([])
     try {
-      // Fetched together: "has this client been chased, and how often" is part of reading an
-      // unpaid invoice, not a separate question worth a second click.
+      // Fetched together: the invoice, and whether the client has already been chased for it.
       const [r, h] = await Promise.all([
         axios.get(`${api}/${row.id}`, { headers: authHeaders() }),
         axios.get(`${api}/${row.id}/Reminders`, { headers: authHeaders() }),
@@ -1022,8 +981,7 @@ const Invoices = () => {
                 title="The date the run is evaluated against. A later date brings forward everything due by then."
               />
             </label>
-            {/* The TERM. Sits beside the as-of date because the two together define the run:
-                when it is evaluated, and how long each invoice covers. */}
+            {/* The TERM. Sits beside the as-of date because the two together define the run. */}
             <label className="d-flex align-items-center gap-1 cb-fs-meta text-muted mb-0">
               For
               <select
@@ -1040,8 +998,7 @@ const Invoices = () => {
                 ))}
               </select>
             </label>
-            {/* The letterhead lives under Setup now. The dot stays here, because an incomplete
-                letterhead blocks the invoice run and that belongs next to the run button. */}
+            {/* The letterhead lives under Setup now. */}
             <Link
               to="/setup?s=invoice"
               className="btn btn-sm filter-btn rounded-0"
@@ -1104,8 +1061,7 @@ const Invoices = () => {
 
       {error && <div className="alert alert-danger rounded-0 py-1 mb-2 cb-fs-body">{error}</div>}
 
-      {/* The go-live blocker, said plainly and where it will be seen. An invoice with no payment
-          instructions is a demand the client cannot act on, however right the figures are. */}
+      {/* The go-live blocker, said plainly and where it will be seen. */}
       {settings && !settings.isReady && (
         <div className="alert alert-warning rounded-0 py-2 mb-2 cb-fs-body d-flex flex-wrap align-items-center gap-2">
           <span>
@@ -1122,7 +1078,8 @@ const Invoices = () => {
       )}
 
       {summary && (
-        <div className="email-stats">
+        // Five across only when the credit tile is showing.
+        <div className={`email-stats${summary.creditHeld > 0 ? ' email-stats--five' : ''}`}>
           <div className="email-stat is-all">
             <span className="email-stat__icon">
               <span className="material-icons">drafts</span>
@@ -1165,6 +1122,24 @@ const Invoices = () => {
               <span className="email-stat__label">Paid</span>
             </span>
           </div>
+
+          {/* CLIENT MONEY WE ARE HOLDING — the mirror of "outstanding". */}
+          {summary.creditHeld > 0 && (
+            <div className="email-stat is-all">
+              <span className="email-stat__icon">
+                <span className="material-icons">savings</span>
+              </span>
+              <span className="email-stat__body">
+                <span className="email-stat__value">
+                  {money(summary.creditHeld, summary.currency)}
+                </span>
+                <span className="email-stat__label">Credit held</span>
+                <span className="email-stat__meta">
+                  {summary.companiesInCredit} client(s) — comes off their next invoice
+                </span>
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -1232,10 +1207,7 @@ const Invoices = () => {
                     >
                       {r.invoiceNo}
                     </button>
-                    {/*
-                      Two live invoices can share a period now — the renewal and an add-on
-                      catch-up. Unlabelled, that pair reads as a double-billing.
-                    */}
+                    {/* Two live invoices can share a period now. */}
                     {r.kind === 'AddOn' && (
                       <span
                         className="badge bg-info text-dark ms-2"
@@ -1320,8 +1292,16 @@ const Invoices = () => {
             actionsLabel="Actions"
             actions={(r) => (
               <>
-                {/* Available to anyone who can view billing — reading the document a client was
-                    sent is not a billing change. */}
+                {/* FIRST, because reading the invoice is what people come here to do. */}
+                <button
+                  type="button"
+                  className="cb-act"
+                  title={`Read ${r.invoiceNo} on screen`}
+                  aria-label={`View ${r.invoiceNo}`}
+                  onClick={() => viewInvoice(r)}
+                >
+                  <span className="material-icons">visibility</span>
+                </button>
                 {r.hasPdf && (
                   <button
                     type="button"
@@ -1335,18 +1315,15 @@ const Invoices = () => {
                 )}
                 {canManage && (
                   <>
+                    {/* A FRESH RENDER through wkhtmltopdf. */}
                     <button
                       type="button"
                       className="cb-act"
-                      title={
-                        r.hasPdf
-                          ? 'Render a fresh preview from the current template'
-                          : 'Preview the PDF for this invoice'
-                      }
-                      aria-label={`Preview ${r.invoiceNo} as PDF`}
+                      title="Render a fresh PDF from the current template — checks the renderer"
+                      aria-label={`Render ${r.invoiceNo} as a PDF preview`}
                       onClick={() => previewPdf(r)}
                     >
-                      <span className="material-icons">visibility</span>
+                      <span className="material-icons">print</span>
                     </button>
                     {r.status === 'Draft' && (
                       <button
@@ -1370,11 +1347,7 @@ const Invoices = () => {
                         <span className="material-icons">block</span>
                       </button>
                     )}
-                    {/*
-                      The remedy for a missed add-on once cancelling is off the table. Offered on
-                      any part-paid or paid subscription invoice — whether anything is actually
-                      missing is the server's answer, not a guess made here.
-                    */}
+                    {/* The remedy for a missed add-on once cancelling is off the table. */}
                     {r.kind !== 'AddOn' && r.status !== 'Cancelled' && r.amountPaid > 0 && (
                       <button
                         type="button"
@@ -1421,8 +1394,7 @@ const Invoices = () => {
                 </div>
               )}
 
-              {/* Not a per-client problem, but it belongs on the screen someone reads before
-                  billing anybody: it affects every document the run produces. */}
+              {/* Not a per-client problem, but it belongs on the screen someone reads. */}
               {ready.missingIssuerDetails?.length > 0 && (
                 <div className="alert alert-warning rounded-0 py-2 cb-fs-body">
                   <span className="fw-bold">
@@ -1433,8 +1405,7 @@ const Invoices = () => {
                 </div>
               )}
 
-              {/* The number worth seeing before committing: a draft can still be withdrawn, an
-                  issued invoice is already in a customer's inbox. */}
+              {/* The number worth seeing before committing: a draft can still be withdrawn. */}
               {ready.willAutoIssue > 0 && (
                 <div className="alert alert-info rounded-0 py-2 cb-fs-body">
                   <span className="fw-bold">
@@ -1703,11 +1674,7 @@ const Invoices = () => {
             </div>
           </div>
 
-          {/* ---- the first period ----
-
-              Shown before the typed lines because it is usually the largest figure and it is the
-              part that decides what this document IS: with it, the invoice is the client's first
-              renewal and moves their licence; without it, a side charge. */}
+          {/* ---- the first period ---- */}
           {oneOffCus && (
             <div
               className={`alert rounded-0 py-2 mb-3 ${firstError ? 'alert-warning' : 'alert-info'}`}
@@ -1715,17 +1682,13 @@ const Invoices = () => {
               {firstBusy ? (
                 <span className="cb-fs-body">Checking their price…</span>
               ) : firstError ? (
-                // THE CHECK ITSELF FAILED. Says so, and says nothing about the client's data —
-                // the previous version blamed a missing price here and sent people to inspect a
-                // billing profile that was correct.
+                // THE CHECK ITSELF FAILED.
                 <span className="cb-fs-body">
                   <strong>Could not check their price.</strong> {firstError} The first period cannot
                   be added until this works, but the joining lines below can still be invoiced.
                 </span>
               ) : !firstPeriod?.available ? (
-                // The server answered, and the answer was no. Its own words — there is no
-                // invented fallback, because every refusal path supplies a reason and a missing
-                // one is a bug worth seeing rather than papering over.
+                // The server answered, and the answer was no.
                 <span className="cb-fs-body">
                   <strong>The first period cannot be included.</strong> {firstPeriod?.refusal} The
                   joining lines below can still be invoiced.
@@ -1786,8 +1749,7 @@ const Invoices = () => {
                         </span>
                       </>
                     ) : (
-                      // Worth saying: unticking does not mean the client is not billed for it,
-                      // only that it lands on a separate invoice from the monthly run.
+                      // Worth saying: unticking does not mean the client is not billed.
                       <> · left off, so the monthly run will bill this period separately</>
                     )}
                   </div>
@@ -1815,9 +1777,7 @@ const Invoices = () => {
                 {oneOffLines.map((l, i) => (
                   <tr key={i}>
                     <td>
-                      {/* PICK, do not type. The description beside it stays editable so a line
-                          can read "Training (2 days, on site)" without needing its own catalogue
-                          entry — but the item is what the figure and the reporting come from. */}
+                      {/* PICK, do not type. */}
                       <select
                         className="form-select form-select-sm rounded-0"
                         aria-label={`Line ${i + 1} item`}
@@ -1863,31 +1823,29 @@ const Invoices = () => {
                       />
                     </td>
                     <td>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-control form-control-sm rounded-0"
+                      {/* Grouped while typing. */}
+                      <MoneyInput
+                        currency={null}
+                        className="form-control form-control-sm rounded-0 text-end"
                         placeholder="0.00"
                         aria-label={`Line ${i + 1} unit amount`}
                         value={l.unitAmount}
-                        onChange={(e) => setLine(i, 'unitAmount', e.target.value)}
+                        onChange={(v) => setLine(i, 'unitAmount', v)}
                       />
                     </td>
                     <td className="text-end text-nowrap align-middle">
-                      {/* Blank rather than "0.00" on an untouched row: a column of zeros reads as
-                          a mistake, and three of the rows start empty by design. */}
-                      {l.description.trim() === '' && Number(l.unitAmount) === 0 ? (
+                      {/* Blank rather than "0.00" on an untouched row. */}
+                      {l.description.trim() === '' && (parseAmount(l.unitAmount) ?? 0) === 0 ? (
                         <span className="text-muted">—</span>
                       ) : (
-                        money((Number(l.quantity) || 1) * (Number(l.unitAmount) || 0), 'KES')
+                        money((Number(l.quantity) || 1) * (parseAmount(l.unitAmount) ?? 0), 'KES')
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                {/* Both parts, separately, then the figure the client will see. One combined
-                    total would hide which half a surprise came from. */}
+                {/* Both parts, separately, then the figure the client will see. */}
                 {firstOn && (
                   <>
                     <tr>
@@ -2012,8 +1970,7 @@ const Invoices = () => {
 
           {addOnBusy && <div className="cb-fs-body text-muted">Working it out…</div>}
 
-          {/* A refusal is the usual answer and is shown quietly. Most clients hold add-ons that
-              never expire, which are given as part of an original deal and are not billed. */}
+          {/* A refusal is the usual answer and is shown quietly. */}
           {!addOnBusy && addOnPlan?.refusal && (
             <div className="alert alert-secondary rounded-0 py-2 cb-fs-body mb-0">
               {addOnPlan.refusal}
@@ -2107,9 +2064,7 @@ const Invoices = () => {
                 tick the ones to invoice below.
               </div>
 
-              {/* The selection bar. Shows what is actually about to happen, recomputed from the
-                  ticks rather than from the run totals, so the figure on screen is the figure
-                  that will be raised. */}
+              {/* The selection bar. */}
               {run.raised > 0 && (
                 <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                   <button
@@ -2136,9 +2091,7 @@ const Invoices = () => {
                       {money(
                         (run.candidates ?? [])
                           .filter((c) => c.due && picked.has(c.cusCode))
-                          // totalBilled, not amountDue: the add-on invoice is part of what this
-                          // run raises, and leaving it out would quote a figure lower than the
-                          // one that lands on the ledger.
+                          // totalBilled, not amountDue: the add-on invoice is part of the figure.
                           .reduce((s, c) => s + (c.totalBilled ?? c.amountDue ?? 0), 0),
                         'KES',
                       )}
@@ -2147,9 +2100,7 @@ const Invoices = () => {
                 </div>
               )}
 
-              {/* Can-invoice filter. The list is sorted qualifying-first regardless; this hides
-                  the skipped rows entirely for when somebody is here to tick and raise rather
-                  than to work out why a client was passed over. */}
+              {/* Can-invoice filter. */}
               <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
                 <button
                   type="button"
@@ -2197,8 +2148,7 @@ const Invoices = () => {
                           aria-label="Select every qualifying client"
                           title="Select every qualifying client"
                           checked={run.raised > 0 && picked.size === run.raised}
-                          // Some-but-not-all shows a dash rather than a tick, so the header never
-                          // claims everything is selected when it is not.
+                          // Some-but-not-all shows a dash rather than a tick.
                           ref={(el) => {
                             if (el) el.indeterminate = picked.size > 0 && picked.size < run.raised
                           }}
@@ -2234,8 +2184,7 @@ const Invoices = () => {
                         }
                       >
                         <td>
-                          {/* Only the qualifying rows are selectable. The rest are shown because
-                              knowing WHY a client was skipped is the point of the preview. */}
+                          {/* Only the qualifying rows are selectable. */}
                           {c.due && (
                             <input
                               type="checkbox"
@@ -2261,17 +2210,13 @@ const Invoices = () => {
                         </td>
                         <td className="text-end text-nowrap">
                           {c.due ? money(c.amountDue, c.currency) : '—'}
-                          {/* Broken out because the total alone cannot be checked: an add-on
-                              newly priced, or a grant whose renewal date has come round, changes
-                              this figure with nothing on screen to explain it. It is on THIS
-                              invoice, so "incl." and not "plus". */}
+                          {/* Broken out because the total alone cannot be checked. */}
                           {c.due && c.addOnAmount > 0 && (
                             <span className="d-block cb-fs-meta text-muted">
                               incl. {money(c.addOnAmount, c.currency)} add-ons
                             </span>
                           )}
-                          {/* The rate behind a longer term, so a 12-month figure can be checked
-                              against the monthly one that was agreed. */}
+                          {/* The rate behind a longer term, so a 12-month figure can be checked. */}
                           {c.due && (run.months ?? 1) > 1 && (
                             <span className="d-block cb-fs-meta text-muted">
                               {run.months} × {money(c.monthlyAmount, c.currency)}
@@ -2288,8 +2233,7 @@ const Invoices = () => {
                               {picked.has(c.cusCode)
                                 ? 'Will be raised'
                                 : 'Qualifies — not selected'}
-                              {/* Named, not just totalled: "why is this client 2,000 more than
-                                  last month" is answered by the name, not the figure. */}
+                              {/* Named, not just totalled, so a larger figure can be explained. */}
                               {c.addOns?.length > 0 &&
                                 ` · ${c.addOns.map((a) => a.name).join(', ')}`}
                               {c.autoIssue && picked.has(c.cusCode) && (
@@ -2308,8 +2252,7 @@ const Invoices = () => {
                       </tr>
                     ))}
 
-                    {/* A filter that matches nothing has to say so — an empty table reads as a
-                        failed run rather than a search with no hits. */}
+                    {/* A filter that matches nothing has to say so. */}
                     {modalPage(runRows, runFilter, runPage).matched === 0 && (
                       <tr>
                         <td colSpan={6} className="text-center text-muted cb-fs-body py-3">
@@ -2539,15 +2482,15 @@ const Invoices = () => {
                                   value={l.quantity}
                                   onChange={(e) => setEditLine(i, 'quantity', e.target.value)}
                                 />
-                                <input
-                                  type="number"
-                                  step="0.01"
+                                {/* Grouped while typing, like the one-off editor above. */}
+                                <MoneyInput
+                                  currency={null}
                                   className="form-control form-control-sm rounded-0 text-end"
                                   style={{ width: 110 }}
                                   placeholder="0.00"
                                   aria-label={`Line ${i + 1} unit amount`}
                                   value={l.unitAmount}
-                                  onChange={(e) => setEditLine(i, 'unitAmount', e.target.value)}
+                                  onChange={(v) => setEditLine(i, 'unitAmount', v)}
                                 />
                                 <button
                                   type="button"
@@ -2563,16 +2506,14 @@ const Invoices = () => {
                                   </span>
                                 </button>
                               </div>
-                              {/* What the line IS, which the editor deliberately cannot change —
-                                  relabelling a joining charge as a subscription would not change
-                                  what the invoice renews, but would misreport what we sold. */}
+                              {/* What the line IS, which the editor deliberately cannot change. */}
                               {l.kind !== 'OneOff' && (
                                 <span className="cb-fs-meta text-muted">{l.kind}</span>
                               )}
                             </td>
                             <td className="text-end text-nowrap align-top">
                               {money(
-                                (Number(l.quantity) || 1) * (Number(l.unitAmount) || 0),
+                                (Number(l.quantity) || 1) * (parseAmount(l.unitAmount) ?? 0),
                                 detail.currency,
                               )}
                             </td>
@@ -2589,10 +2530,7 @@ const Invoices = () => {
                     <tr>
                       <td className="fw-bold">Total due</td>
                       <td className="text-end fw-bold text-nowrap">
-                        {/* While editing, the figure follows the boxes — the saved total is
-                            already out of date and showing it would be lying about what Save
-                            will write. The brought-forward balance is added because it is part
-                            of what the client owes and survives the edit. */}
+                        {/* While editing, the figure follows the boxes. */}
                         {editLines
                           ? money(editTotal + (detail.balanceBroughtForward ?? 0), detail.currency)
                           : money(detail.amountDue, detail.currency)}
@@ -2620,11 +2558,7 @@ const Invoices = () => {
                   </tbody>
                 </table>
 
-                {/* ---- editing a draft ----
-
-                    Only a draft, and the button says why when it is not one. An issued invoice is
-                    a document the client is holding; editing it would leave our copy saying
-                    something different from theirs with no trace of the change. */}
+                {/* ---- editing a draft ---- */}
                 {canManage && detail.status === 'Draft' && (
                   <div className="d-flex flex-wrap gap-2 mt-2">
                     {editLines ? (
@@ -2679,6 +2613,35 @@ const Invoices = () => {
                   </div>
                 )}
 
+                {/* THE PRINTED COMMENT — shown here, EDITED ON THE DOCUMENT. */}
+                {(detail.comments || (canManage && detail.status === 'Draft')) && (
+                  <div className="mt-3 pt-2 border-top">
+                    <div className="divider mb-2">Comment printed on this invoice</div>
+
+                    <div className="d-flex flex-wrap gap-2 align-items-start">
+                      {/* Rendered, not printed as text: the comment is formatted now. */}
+                      {detail.comments ? (
+                        <span
+                          className="cb-fs-body rte-view"
+                          dangerouslySetInnerHTML={{ __html: renderRichText(detail.comments) }}
+                        />
+                      ) : (
+                        <span className="cb-fs-body text-muted">No comment on this invoice.</span>
+                      )}
+                      {canManage && detail.status === 'Draft' && (
+                        <button
+                          type="button"
+                          className="btn btn-sm filter-btn rounded-0 ms-auto text-nowrap"
+                          title="Opens the invoice so the wording can be read in its place"
+                          onClick={() => viewInvoice(detail)}
+                        >
+                          {detail.comments ? 'Edit on the document' : 'Add a comment'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {detail.cancelledReason && (
                   <div className="alert alert-warning rounded-0 py-1 cb-fs-meta">
                     Cancelled {fmtDate(detail.cancelledAt)} — {detail.cancelledReason}
@@ -2716,6 +2679,14 @@ const Invoices = () => {
                 )}
 
                 <div className="d-flex justify-content-end gap-1 mt-3">
+                  {/* Leads, because reading the document is the common thing to want here. */}
+                  <button
+                    type="button"
+                    className="btn btn-sm add-btn rounded-0"
+                    onClick={() => viewInvoice(detail)}
+                  >
+                    View invoice
+                  </button>
                   {detail.hasPdf ? (
                     <button
                       type="button"
@@ -2735,9 +2706,10 @@ const Invoices = () => {
                     <button
                       type="button"
                       className="btn btn-sm filter-btn rounded-0"
+                      title="Render through wkhtmltopdf — checks the PDF renderer itself"
                       onClick={() => previewPdf(detail)}
                     >
-                      Preview PDF
+                      Render PDF
                     </button>
                   )}
                   <button
@@ -2753,6 +2725,55 @@ const Invoices = () => {
           )}
         </CModalBody>
       </CModal>
+
+      {/* Reads the invoice itself, and is where the printed comment is written. */}
+      <DocumentViewer
+        visible={!!viewing}
+        onClose={() => setViewing(null)}
+        title={viewing?.no ?? 'Invoice'}
+        subtitle={viewing?.company}
+        badge={
+          viewing?.status && (
+            <span
+              className={`badge ${STATUS_BADGE[viewing.status] ?? 'bg-secondary'}`}
+              style={{ fontSize: 9 }}
+            >
+              {viewing.status}
+            </span>
+          )
+        }
+        url={viewing ? `${api}/${viewing.id}/Html` : null}
+        token={getToken()}
+        panel={viewing && !viewing.noPanel && commentPanel()}
+        actions={
+          <>
+            {/* The one sentence worth saying about a comment. */}
+            {viewing?.status === 'Draft' ? (
+              <span className="cb-fs-meta text-muted me-auto">
+                Changes to the comment appear on the document above.
+              </span>
+            ) : (
+              <span className="cb-fs-meta text-muted me-auto">
+                This is the document the client has.
+              </span>
+            )}
+            <button
+              type="button"
+              className="btn btn-sm filter-btn rounded-0"
+              onClick={() => viewing && downloadPdf({ id: viewing.id, invoiceNo: viewing.no })}
+            >
+              Download PDF
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm cancel-btn rounded-0"
+              onClick={() => setViewing(null)}
+            >
+              Close
+            </button>
+          </>
+        }
+      />
     </>
   )
 }

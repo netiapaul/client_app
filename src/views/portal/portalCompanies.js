@@ -10,14 +10,7 @@ import {
   PortalSessionEnded,
 } from '../../utils/portalApi'
 
-/**
- * My companies — one expanded card per company, with status filter pills above.
- *
- * Follows the comp, minus the money. The comp's cards carry "Monthly fee" and "Balance" tiles and a
- * "Pay KES 10,000" button; neither figure exists until the billing ledger is built, so those tiles
- * are replaced with licence facts that are real (branches, users, expiry, surface) and the pay
- * button is left out rather than rendered dead on every card.
- */
+/** My companies — one expanded card per company, with status filter pills above. */
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'Active', label: 'Active' },
@@ -84,9 +77,7 @@ const PortalCompanies = () => {
       </div>
 
       <div className="pt-note">
-        {/* `account_circle`, not `link`: the chain glyph is a thin horizontal shape that reads as
-            a flat blob in a 34px tile, and the message is about the one ACCOUNT these companies
-            hang off rather than about linking as an action. */}
+        {/* `account_circle`, not `link`: the chain glyph is a thin horizontal shape. */}
         <span className="pt-note__icon">
           <span className="material-icons">account_circle</span>
         </span>
@@ -226,9 +217,7 @@ const PortalCompanies = () => {
                   </div>
                 </div>
 
-                {/* Per-licence lines, only when the company holds more than one: cloud and desktop
-                    are separate licences with their own expiry, and a single date above would be
-                    true for only half the branches. */}
+                {/* Per-licence lines, only when the company holds more than one. */}
                 {c.licences?.length > 1 && (
                   <div
                     style={{

@@ -1,15 +1,11 @@
-// Single choke-point for the auth session (token + user id/name). Every screen reads/writes the
-// session through here instead of touching localStorage directly, so a future change to where the
-// token lives (e.g. httpOnly cookies) is a one-file edit rather than a ~17-file sweep.
+// Single choke-point for the auth session (token + user id/name).
 
 const TOKEN_KEY = 'accessToken'
 const ID_KEY = 'ID'
 const NAME_KEY = 'name'
 const CAN_APPROVE_KEY = 'canApprove'
 const MODULES_KEY = 'modules'
-// Client portal session. `portal` decides which layout and routes the app serves; it is set from
-// the login response, never inferred from the absence of modules — a staff user whose access
-// groups haven't been configured yet also has no modules, and must not land in the portal.
+// Client portal session. `portal` decides which layout and routes the app serves.
 const PORTAL_KEY = 'portal'
 const CUSCODE_KEY = 'primaryCusCode'
 
@@ -28,8 +24,6 @@ export const getModules = () => {
     .filter((c) => !Number.isNaN(c))
 }
 // Permission check used to gate menus, routes, and buttons.
-// Always false for a portal user: the portal is gated by isPortalUser, and module codes are a
-// staff concept the server refuses to honour for a portal token anyway.
 export const hasModule = (code) => !isPortalUser() && getModules().includes(Number(code))
 
 /** True when this session belongs to a customer rather than internal staff. */

@@ -7,9 +7,7 @@ import { CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from '@co
 import MaterialTable from 'material-table'
 import { tableIcons, tableOptions } from '../../utils/helpers'
 import moment from 'moment'
-// This screen still renders its own inline copy of the picker rather than the shared component,
-// so it needs the stylesheet directly. The file moved to components/ when the picker was shared —
-// see ClientPicker.js for why it belongs with the component.
+// This screen still renders its own inline copy of the picker rather than the shared component.
 import '../../components/ClientPicker.css'
 import SearchableSelect from '../../components/SearchableSelect'
 
@@ -21,7 +19,6 @@ function CreateClient() {
   const [error, setError] = useState('')
   const [ErrorArray, setErrorArray] = useState([])
   const [customers, setCustomers] = useState([])
-  // const [serialNo, setSerialNo] = useState([])
   const [packages, setPackages] = useState([])
   const [cloudModules, setCloudModules] = useState([])
   const [modulesSelected, setModulesSelected] = useState([])
@@ -80,8 +77,7 @@ function CreateClient() {
   const [regionOpts, setRegionOpts] = useState([])
   const [countyOpts, setCountyOpts] = useState([])
   const [townOpts, setTownOpts] = useState([])
-  // Pre-submit validation for the Create Client form. Returns an array of messages
-  // (empty = valid). Surfaced in the error list and used to block submit.
+  // Pre-submit validation for the Create Client form.
   const validateClient = () => {
     const errs = []
     const f = formData
@@ -142,9 +138,7 @@ function CreateClient() {
     }
     CreateClient(data)
   }
-  // The AcctName picker selects an existing (pending) account from ClientDetails, so we don't
-  // insert a new licensing row. Instead we provision the account to the cloud (restore P{code}DB
-  // + company + users) and then mark it finalized (IsUpdated = 1) so it drops off the picker.
+  // The AcctName picker selects an existing (pending) account from ClientDetails.
   const CreateClient = async (userData) => {
     const headers = {
       Authorization: `Bearer ${getToken()}`,
@@ -270,9 +264,6 @@ function CreateClient() {
     }
   }
 
-  // Called by the Cancel button while provisioning is running. Provisioning runs in the background,
-  // so we signal the server to cancel the run (it drops any half-restored DB and marks it Cancelled);
-  // the poll loop then sees the terminal state. Also abort the (brief) POST in case it's still in flight.
   const cancelProvision = async () => {
     setProvisionStatus('Cancelling…')
     const id = provisionRunIdRef.current
@@ -321,41 +312,14 @@ function CreateClient() {
       }
     }
   }
-  // const handleDay = (e) => {
-  //   const date = new Date()
-  //   let res = new Date(formData.psActivateExpiryDate) ?? new Date()
-  //   //   formData.psActivateExpiryDate === '' ||
-  //   //   formData.psActivateExpiryDate === null
-  //   //     ? new Date()
-  //   //     : new Date(formData.psActivateExpiryDate)
 
-  //   setFormData({
-  //     ...formData,
-  //     days: e.target.value,
-  //     psActivateExpiryDate: e.target.value
-  //       ? new Date(date.setDate(date.getDate() + Number(e.target.value)))
-  //       : new Date(),
-  //   })
-  //   console.log(res)
-  // }
-  // const handleDate = (date) => {
-  //   let diffDate = new Date().getTime() - date.getTime()
-  //   let conv = Math.abs(diffDate)
-  //   setFormData({
-  //     ...formData,
-  //     psActivateExpiryDate: date,
-  //     days: Math.round(conv / (1000 * 60 * 60 * 24)),
-  //   })
-  //   console.log(conv)
-  //   console.log(Math.round(conv / (1000 * 60 * 60 * 24)))
-  // }
   const GetSerialNumbers = async () => {
     setIsLoading(true)
     try {
       const response = await fetch(
         `${process.env.REACT_APP_URL_CONFIG}/api/Customers/GetSerialNumbers`,
         {
-          method: 'GET', // *GET, POST, PUT, DELETE, etc.
+          method: 'GET',
           headers: {
             Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
@@ -380,10 +344,9 @@ function CreateClient() {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/Packages`, {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${token}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -404,7 +367,7 @@ function CreateClient() {
     setIsLoading(true)
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Clients/CloudModules`, {
-        method: 'GET', // *GET, POST, PUT, DELETE, etc.
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
@@ -511,8 +474,7 @@ function CreateClient() {
     } catch (e) {}
   }
 
-  // On picking an account, populate the details from that ClientDetails record. The admin can
-  // edit everything afterwards except the account code and name.
+  // On picking an account, populate the details from that ClientDetails record.
   const pickAccount = (a) => {
     if (!a) return
     setFormData({
@@ -768,27 +730,6 @@ function CreateClient() {
                 <div className="col-md">
                   <div className="row">
                     <div className="col-6">
-                      {/* <select
-                        className="form-select form-select-sm rounded-0"
-                        aria-label="Default select example"
-                        style={{
-                          appearance: 'none',
-                        }}
-                        id="psSerialNo"
-                        name="psSerialNo"
-                        value={formData.psSerialNo}
-                        // onChange={(e) =>
-                        //   setEditFormData({ ...editFormData, querySerialNo: e.target.value })
-                        // }
-                        disabled
-                      >
-                        <option value={''}></option>
-                        {serialNo.slice(0, 10).map((serial, index) => (
-                          <option key={index} value={serial.serialId}>
-                            {serial.serialId}
-                          </option>
-                        ))}
-                      </select> */}
                       <input
                         type="text"
                         name="psSerialNo"
@@ -844,7 +785,6 @@ function CreateClient() {
                         dropdownMode="select"
                         minDate={new Date()}
                         onChange={(date) => setFormData({ ...formData, PsActivateDate: date })}
-                        // onChange={(date) => handleDate(date)}
                         required
                       />
                     </div>
@@ -866,17 +806,8 @@ function CreateClient() {
                             onChange={(date) =>
                               setFormData({ ...formData, psActivateExpiryDate: date })
                             }
-                            // onChange={(date) => handleDate(date)}
                             required
                           />
-                          {/* <input
-                            type="number"
-                            name="days"
-                            id="days"
-                            value={formData.days}
-                            className="form-control form-control-sm rounded-0"
-                            onChange={handleDay}
-                          /> */}
                         </div>
                       </div>
                     </div>
@@ -1154,7 +1085,6 @@ function CreateClient() {
                             name="clientType"
                             id="desktop"
                             value={module.packageNum}
-                            // onChange={(e) => console.log(e.target.value)}
                             onChange={(e) =>
                               setFormData({ ...formData, packageCode: e.target.value })
                             }
@@ -1164,48 +1094,6 @@ function CreateClient() {
                           </label>
                         </span>
                       ))}
-                    {/* <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="desktop"
-                          // value={title}
-                          // checked={title === 'false'}
-                          // onChange={() => setTitle('false')}
-                        />
-                        <label className="form-check-label" htmlFor="desktop">
-                          Light
-                        </label>
-                      </span>
-                      <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="cloud"
-                          // value={title}
-                          // checked={title === 'true'}
-                          // onChange={() => setTitle('true')}
-                        />
-                        <label className="form-check-label" htmlFor="cloud">
-                          Standard
-                        </label>
-                      </span>
-                      <span className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          name="clientType"
-                          id="both"
-                          // value={title}
-                          // checked={title === ''}
-                          // onChange={() => setTitle('')}
-                        />
-                        <label className="form-check-label" htmlFor="both">
-                          Professional
-                        </label>
-                      </span> */}
                   </span>
                 </div>
               </div>
@@ -1397,35 +1285,7 @@ function CreateClient() {
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card h-100 card-body rounded-0">
-            {/* <p className="fw-bold mb-0 text-center" style={{ fontSize: '11px' }}>
-              Client Details Summary
-            </p>
-            <ul className="list-group list-group-flush" style={{ fontSize: '10px' }}>
-              <li className="list-group-item d-flex justify-content-between">
-                <span className="fw-bold ">CPU</span>
-                <span>{formData.psPickCpu}</span>
-              </li>
-              <li className="list-group-item d-flex justify-content-between">
-                <span className="fw-bold ">BIOS</span>
-                <span>{formData.psPickBios}</span>
-              </li>
-              <li className="list-group-item d-flex justify-content-between">
-                <span className="fw-bold ">Hard Disk</span>
-                <span>{formData.psPickHdd}</span>
-              </li>
-              <li className="list-group-item d-flex justify-content-between">
-                <span className="fw-bold">Company</span>
-                <span>
-                  {formData.psPickCompany} - {formData.psPickBcode}
-                </span>
-              </li>
-              <li className="list-group-item d-flex justify-content-between">
-                <span className="fw-bold">Last Service Date</span>
-                <span>{new Date().toLocaleString()}</span>
-              </li>
-            </ul> */}
-          </div>
+          <div className="card h-100 card-body rounded-0"></div>
         </div>
       </div>
       {/* Module Modals */}
@@ -1469,9 +1329,6 @@ function CreateClient() {
               overflowY: 'auto',
               selection: true,
               showSelectAllCheckbox: true,
-              // rowStyle: (rowData) => ({
-              //   backgroundColor: rowId === rowData.tableData.id ? '#d8d8d8' : '#FFF',
-              // }),
             }}
             isLoading={isLoading}
             data={cloudModules}

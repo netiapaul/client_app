@@ -1,7 +1,6 @@
 import axios from 'axios'
 
 // Counts in-flight GET requests (axios + fetch) so a global loader can show while pages load data.
-// Only GETs are tracked: form submissions already show their own button spinners.
 let pending = 0
 const listeners = new Set()
 

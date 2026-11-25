@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { CModal, CModalBody, CModalHeader, CModalTitle } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -12,31 +12,27 @@ import { MODULES } from '../../utils/permissions'
 import { toast } from 'react-toastify'
 const axios = require('axios')
 
-/**
- * Duplicate Branches — review and resolve branches that exist as more than one row.
- *
- * A branch's identity is (cus code, branch code, cloud flag). Nothing in the database enforces
- * that — ClientDetails is keyed on an identity Id alone — so whether a registration updates or
- * inserts is decided in code. Where that decision compares the PC's CPU/BIOS/disk it is unreliable:
- * many rows have a blank hardware field, some differ only by a corrupted character, and machines
- * get replaced. Each of those misses the existing row and inserts a new one.
- *
- * Organised BY CLIENT. One account can own dozens of duplicated branches (one has 43 of the 81),
- * so the left list is one row per client and its branches are reviewed together on the right —
- * a branch-per-row list repeated the same client name down the page.
- *
- * Deleting licensing rows is destructive and the recommendation is NOT always right, so nothing is
- * resolved automatically and every deletion is confirmed in a modal that spells out exactly what
- * will be kept and removed.
- */
+/** Duplicate Branches — review and resolve branches that exist as more than one row. */
+/** The rows a bulk run would switch off in one branch. */
+const pendingRows = (b) => (b.rows ?? []).filter((r) => !r.recommendedSurvivor && !r.deactivatedAt)
+
+/** Can this branch go in a bulk run? */
+const bulkable = (b) => b.verdict === 'SafeToMerge' && pendingRows(b).length > 0
+
+/** Identifies one duplicate group across reloads, where the row objects themselves do not. */
+const keyOf = (b) => `${b.cusCode}|${b.branchCode}|${b.forCloud}`
+
 const DuplicateBranches = () => {
   const canResolve = hasModule(MODULES.ResolveDuplicateBranches)
 
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [resolving, setResolving] = useState(false)
-  // Hidden by default so the working area isn't pushed down; the toggle pulses briefly on arrival
-  // (see .guide-hint) so it is still noticed.
+
+  // Step one of the cleanup — switching a suspected duplicate off and waiting.
+  const [deactivating, setDeactivating] = useState(false)
+  const [deactivateNote, setDeactivateNote] = useState('')
+  // Hidden by default so the working area isn't pushed down; the toggle pulses briefly on arrival.
   const [showGuide, setShowGuide] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -49,8 +45,7 @@ const DuplicateBranches = () => {
   const [client, setClient] = useState(null)
   const [branch, setBranch] = useState(null)
 
-  // Paging is done by the server, by client: it groups, filters and pages in SQL, so the browser
-  // only ever holds one page regardless of how large the table gets.
+  // Paging is done by the server, by client: it groups, filters and pages in SQL.
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
@@ -59,6 +54,14 @@ const DuplicateBranches = () => {
   // The admin's choice for the open branch: which row survives, which ids get deleted.
   const [survivorId, setSurvivorId] = useState(null)
   const [deleteIds, setDeleteIds] = useState([])
+
+  // BULK step one. Branch keys ("cus|branch|cloud") ticked for automatic deactivation.
+  const [picked, setPicked] = useState([])
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+
+  // What the last run declined, so it can be read after the toast has gone.
+  const [skipped, setSkipped] = useState(null)
 
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Clients`
   const authHeaders = useCallback(
@@ -70,6 +73,9 @@ const DuplicateBranches = () => {
     [],
   )
   const readErr = (e) => e?.response?.data?.message || e?.message || 'Something went wrong.'
+
+  const fmtDate = (v) =>
+    v ? new Date(v).toLocaleDateString(undefined, { dateStyle: 'medium' }) : '—'
 
   const VERDICT = {
     SafeToMerge: { label: 'Safe to merge', cls: 'bg-success' },
@@ -99,19 +105,25 @@ const DuplicateBranches = () => {
     }
   }, [api, authHeaders, verdictFilter, search, page, pageSize])
 
-  // Any change to the filters invalidates the current page number, so reset it at the source
-  // rather than in an effect — that avoids firing a request for a page that no longer exists.
+  // Any change to the filters invalidates the current page number.
   const changeSearch = (v) => {
     setSearch(v)
     setPage(1)
+    setPicked([])
   }
   const changeVerdict = (v) => {
     setVerdictFilter(v)
     setPage(1)
+    setPicked([])
   }
   const changePageSize = (v) => {
     setPageSize(Number(v))
     setPage(1)
+    setPicked([])
+  }
+  const changePage = (p) => {
+    setPage(p)
+    setPicked([])
   }
 
   useEffect(() => {
@@ -126,8 +138,7 @@ const DuplicateBranches = () => {
     }
   }, [error])
 
-  // Opening a branch pre-selects the recommendation ONLY when it is safe. Anything needing review
-  // starts blank so the admin has to make the call rather than confirm a default.
+  // Opening a branch pre-selects the recommendation ONLY when it is safe.
   const openBranch = useCallback((b) => {
     setBranch(b)
     if (b && b.verdict === 'SafeToMerge' && b.rows?.length) {
@@ -145,8 +156,7 @@ const DuplicateBranches = () => {
     openBranch(c.branches?.[0] ?? null)
   }
 
-  // Re-point the selection at the freshly loaded data. Without this, resolving one branch of a
-  // client with 43 of them would drop you back to an empty panel after every single merge.
+  // Re-point the selection at the freshly loaded data.
   useEffect(() => {
     if (!client) return
     const fresh = clients.find((c) => c.cusCode === client.cusCode)
@@ -165,9 +175,85 @@ const DuplicateBranches = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clients])
 
+  /* ---- bulk step one: pick many branches, let the server choose each survivor ---- */
+
+  const pickedSet = useMemo(() => new Set(picked), [picked])
+
+  // Every branch on the page that a run could act on, flattened.
+  const bulkableOnPage = useMemo(
+    () => clients.flatMap((c) => (c.branches ?? []).filter(bulkable)),
+    [clients],
+  )
+
+  const pickedBranches = useMemo(
+    () => bulkableOnPage.filter((b) => pickedSet.has(keyOf(b))),
+    [bulkableOnPage, pickedSet],
+  )
+
+  const pickedRowCount = pickedBranches.reduce((n, b) => n + pendingRows(b).length, 0)
+
+  const toggleBranchPick = (b) =>
+    setPicked((prev) => {
+      const k = keyOf(b)
+      return prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]
+    })
+
+  /** The whole client at once — its safe branches only, never its flagged ones. */
+  const toggleClientPick = (c) => {
+    const keys = (c.branches ?? []).filter(bulkable).map(keyOf)
+    if (keys.length === 0) return
+
+    const allOn = keys.every((k) => pickedSet.has(k))
+    setPicked((prev) =>
+      allOn ? prev.filter((k) => !keys.includes(k)) : [...new Set([...prev, ...keys])],
+    )
+  }
+
+  const clientPickState = (c) => {
+    const keys = (c.branches ?? []).filter(bulkable).map(keyOf)
+    if (keys.length === 0) return 'none'
+    const on = keys.filter((k) => pickedSet.has(k)).length
+    return on === 0 ? 'off' : on === keys.length ? 'all' : 'some'
+  }
+
+  /** STEP ONE, for everything ticked. */
+  const bulkDeactivate = async () => {
+    if (pickedBranches.length === 0) return
+
+    setBulkBusy(true)
+    setBulkConfirm(false)
+    setError('')
+    setSkipped(null)
+    try {
+      const r = await axios.post(
+        `${api}/DeactivateDuplicateBranches`,
+        {
+          groups: pickedBranches.map((b) => ({
+            cusCode: b.cusCode,
+            branchCode: b.branchCode,
+            forCloud: b.forCloud,
+          })),
+          note: deactivateNote || null,
+        },
+        { headers: authHeaders() },
+      )
+
+      toast.success(r.data?.message ?? 'Deactivated.', { theme: 'colored', autoClose: 10000 })
+      setDeactivateNote('')
+      setPicked([])
+      if (r.data?.skipped?.length) setSkipped(r.data.skipped)
+      await load()
+    } catch (e) {
+      setError(readErr(e))
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  /** Pick the row to keep — and, by saying so, pick the rest. */
   const chooseSurvivor = (id) => {
     setSurvivorId(id)
-    setDeleteIds((prev) => prev.filter((x) => x !== id)) // a row can't be kept and deleted
+    setDeleteIds((branch?.rows ?? []).filter((r) => r.id !== id).map((r) => r.id))
   }
 
   const toggleDelete = (id) => {
@@ -175,14 +261,70 @@ const DuplicateBranches = () => {
     setDeleteIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
-  // Always read the nested collections through these. A payload from a backend that hasn't been
-  // restarted after the per-client change carries no `branches` at all, and indexing straight into
-  // it took the whole screen down with it — a stale API should degrade, not white-screen.
+  // Always read the nested collections through these.
   const branches = client?.branches ?? []
   const rows = branch?.rows ?? []
 
   const keptRow = rows.find((r) => r.id === survivorId)
   const doomedRows = rows.filter((r) => deleteIds.includes(r.id))
+
+  // Selected for deletion but never switched off — what step one is for.
+  const notYetDeactivated = doomedRows.filter((r) => !r.deactivatedAt).map((r) => r.id)
+
+  // Selected but not yet deletable: never deactivated, put back on, or still inside the wait.
+  const notReadyToDelete = doomedRows.filter((r) => !r.canDelete).map((r) => r.id)
+
+  /** STEP ONE: switch the suspected duplicates off without deleting anything. */
+  const deactivate = async (ids) => {
+    if (!branch || ids.length === 0) return
+    setDeactivating(true)
+    setError('')
+    try {
+      const r = await axios.post(
+        `${api}/DeactivateDuplicateBranch`,
+        {
+          cusCode: branch.cusCode,
+          branchCode: branch.branchCode,
+          forCloud: branch.forCloud,
+          ids,
+          note: deactivateNote || null,
+        },
+        { headers: authHeaders() },
+      )
+      toast.success(r.data?.message ?? 'Deactivated.', { theme: 'colored', autoClose: 9000 })
+      setDeactivateNote('')
+      await load()
+    } catch (e) {
+      setError(readErr(e))
+    } finally {
+      setDeactivating(false)
+    }
+  }
+
+  /** The client said they use it — put it back, and close the record so the clock stops. */
+  const reactivate = async (ids) => {
+    if (!branch || ids.length === 0) return
+    setDeactivating(true)
+    setError('')
+    try {
+      const r = await axios.post(
+        `${api}/ReactivateDuplicateBranch`,
+        {
+          cusCode: branch.cusCode,
+          branchCode: branch.branchCode,
+          forCloud: branch.forCloud,
+          ids,
+        },
+        { headers: authHeaders() },
+      )
+      toast.success(r.data?.message ?? 'Put back.', { theme: 'colored', autoClose: 7000 })
+      await load()
+    } catch (e) {
+      setError(readErr(e))
+    } finally {
+      setDeactivating(false)
+    }
+  }
 
   const resolve = async () => {
     if (!branch || !survivorId || deleteIds.length === 0) return
@@ -214,8 +356,7 @@ const DuplicateBranches = () => {
     }
   }
 
-  // Columns the service reported as varying within this branch — only those get highlighted, so
-  // the eye goes straight to what actually differs instead of scanning every cell.
+  // Columns the service reported as varying within this branch — only those get highlighted.
   const cellCls = (field) =>
     branch?.differingFields?.includes(field) ? 'bg-warning-subtle fw-bold' : ''
 
@@ -265,8 +406,7 @@ const DuplicateBranches = () => {
       </div>
       <hr className="my-2" />
 
-      {/* Plain-language explanation. This module is used rarely and deletes licensing rows, so the
-          rules it applies should never have to be inferred from the table. */}
+      {/* Plain-language explanation. */}
       {showGuide && (
         <div className="card rounded-0 mb-2">
           <div className="card-body py-2" style={{ fontSize: 11 }}>
@@ -341,14 +481,89 @@ const DuplicateBranches = () => {
         </div>
       )}
 
+      {/* BULK STEP ONE. Appears only once something is ticked. */}
+      {canResolve && pickedBranches.length > 0 && (
+        <div className="card rounded-0 mb-2 border-warning">
+          <div className="card-body p-2">
+            <div className="d-flex align-items-center flex-wrap gap-2">
+              <span style={{ fontSize: 12 }}>
+                <strong>{pickedBranches.length}</strong> branch(es) selected —{' '}
+                <strong>{pickedRowCount}</strong> row(s) will be switched off, keeping the
+                recommended row in each.
+              </span>
+
+              <input
+                type="text"
+                className="form-control form-control-sm rounded-0 ms-auto"
+                style={{ maxWidth: 280, fontSize: 11 }}
+                placeholder="Why (optional) — recorded on every row"
+                value={deactivateNote}
+                onChange={(e) => setDeactivateNote(e.target.value)}
+              />
+
+              <button
+                type="button"
+                className="btn btn-sm add-btn rounded-0"
+                disabled={bulkBusy}
+                onClick={() => setBulkConfirm(true)}
+              >
+                {bulkBusy ? 'Working…' : `Deactivate ${pickedRowCount} row(s)`}
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm cancel-btn rounded-0"
+                disabled={bulkBusy}
+                onClick={() => setPicked([])}
+              >
+                Clear
+              </button>
+            </div>
+
+            <span className="d-block text-muted mt-1" style={{ fontSize: 11 }}>
+              Nothing is deleted. Each branch keeps the row the review recommends and the rest are
+              switched off — if the client does not report a problem, they can then be deleted. Only
+              branches marked <strong>safe to merge</strong> can be selected.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* What the last run would not touch. */}
+      {skipped?.length > 0 && (
+        <div className="card rounded-0 mb-2 border-warning">
+          <div className="card-body p-2">
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <strong style={{ fontSize: 12 }}>
+                {skipped.length} branch(es) were left for you to review
+              </strong>
+              <button
+                type="button"
+                className="btn btn-sm cancel-btn rounded-0 ms-auto"
+                onClick={() => setSkipped(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+            <ul className="mb-0 ps-3" style={{ fontSize: 11 }}>
+              {skipped.map((s, i) => (
+                <li key={`${s.cusCode}|${s.branchCode}|${s.forCloud}|${i}`}>
+                  <strong>
+                    {s.companyName || s.cusCode} · branch {s.branchCode}
+                  </strong>{' '}
+                  — {s.reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       <div className="row g-2">
         {/* Clients */}
         <div className="col-md-5">
           <div className="card rounded-0 h-100">
             <div className="card-body p-2">
-              {/* Flex rather than a grid row: the two controls have to read as a single bar, and
-                  align-items-center removes any residual vertical drift between an input and a
-                  select. Heights are pinned by .filter-control. */}
+              {/* Flex rather than a grid row: the two controls have to read as a single bar. */}
               <div className="d-flex align-items-center gap-1 mb-2">
                 <input
                   type="text"
@@ -379,6 +594,40 @@ const DuplicateBranches = () => {
                   <table className="table table-sm table-hover mb-0" style={{ fontSize: 11 }}>
                     <thead>
                       <tr>
+                        {/* Select-all across the PAGE. */}
+                        {canResolve && (
+                          <th style={{ width: '1%' }}>
+                            <input
+                              type="checkbox"
+                              className="form-check-input m-0"
+                              title={
+                                bulkableOnPage.length === 0
+                                  ? 'Nothing on this page can be deactivated automatically'
+                                  : `Select all ${bulkableOnPage.length} branch(es) on this page that are safe to merge`
+                              }
+                              aria-label="Select every safe branch on this page"
+                              disabled={bulkableOnPage.length === 0}
+                              checked={
+                                bulkableOnPage.length > 0 &&
+                                pickedBranches.length === bulkableOnPage.length
+                              }
+                              ref={(el) => {
+                                // Indeterminate is a PROPERTY, not an attribute.
+                                if (el)
+                                  el.indeterminate =
+                                    pickedBranches.length > 0 &&
+                                    pickedBranches.length < bulkableOnPage.length
+                              }}
+                              onChange={() =>
+                                setPicked(
+                                  pickedBranches.length === bulkableOnPage.length
+                                    ? []
+                                    : bulkableOnPage.map(keyOf),
+                                )
+                              }
+                            />
+                          </th>
+                        )}
                         <th>Client</th>
                         <th style={{ width: '1%' }}>Type</th>
                         <th
@@ -408,6 +657,32 @@ const DuplicateBranches = () => {
                             className={isOpen ? 'table-active fw-bold' : ''}
                             onClick={() => openClient(c)}
                           >
+                            {canResolve && (
+                              // stopPropagation, or ticking the box would also open the client.
+                              <td
+                                className="align-middle text-center"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="form-check-input m-0"
+                                  disabled={clientPickState(c) === 'none'}
+                                  title={
+                                    clientPickState(c) === 'none'
+                                      ? 'None of this client’s branches can be deactivated automatically'
+                                      : 'Select this client’s safe branches'
+                                  }
+                                  aria-label={`Select safe branches for ${
+                                    c.companyName || c.cusCode
+                                  }`}
+                                  checked={clientPickState(c) === 'all'}
+                                  ref={(el) => {
+                                    if (el) el.indeterminate = clientPickState(c) === 'some'
+                                  }}
+                                  onChange={() => toggleClientPick(c)}
+                                />
+                              </td>
+                            )}
                             <td className="align-middle">
                               <span className="d-block text-truncate" style={{ maxWidth: 190 }}>
                                 {c.companyName || blank}
@@ -437,8 +712,7 @@ const DuplicateBranches = () => {
                               <span className={`badge ${v.cls}`} style={{ fontSize: 9 }}>
                                 {v.label}
                               </span>
-                              {/* Only shown when the client is mixed — otherwise the badge above
-                                  already says everything about it. */}
+                              {/* Only shown when the client is mixed. */}
                               {c.duplicateBranches > 1 && c.safeBranches !== c.duplicateBranches && (
                                 <span
                                   className="d-block text-muted mt-1"
@@ -456,7 +730,7 @@ const DuplicateBranches = () => {
                       })}
                       {clients.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="text-muted text-center py-3">
+                          <td colSpan={canResolve ? 6 : 5} className="text-muted text-center py-3">
                             Nothing matches.
                           </td>
                         </tr>
@@ -466,8 +740,7 @@ const DuplicateBranches = () => {
                 </div>
               )}
 
-              {/* Server-side pager, laid out like the one MaterialTable renders on the Licences
-                  listing so both screens read the same. Only the current page is ever fetched. */}
+              {/* Server-side pager, laid out like the one MaterialTable renders. */}
               {total > 0 && (
                 <div className="pager mt-2 pt-2 border-top">
                   <select
@@ -487,7 +760,7 @@ const DuplicateBranches = () => {
                     type="button"
                     className="btn pager-btn"
                     disabled={loading || page <= 1}
-                    onClick={() => setPage(1)}
+                    onClick={() => changePage(1)}
                     title="First page"
                   >
                     <CIcon icon={cilChevronDoubleLeft} size="sm" />
@@ -496,7 +769,7 @@ const DuplicateBranches = () => {
                     type="button"
                     className="btn pager-btn"
                     disabled={loading || page <= 1}
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    onClick={() => changePage(Math.max(1, page - 1))}
                     title="Previous page"
                   >
                     <CIcon icon={cilChevronLeft} size="sm" />
@@ -510,7 +783,7 @@ const DuplicateBranches = () => {
                     type="button"
                     className="btn pager-btn"
                     disabled={loading || page >= totalPages}
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    onClick={() => changePage(Math.min(totalPages, page + 1))}
                     title="Next page"
                   >
                     <CIcon icon={cilChevronRight} size="sm" />
@@ -519,7 +792,7 @@ const DuplicateBranches = () => {
                     type="button"
                     className="btn pager-btn"
                     disabled={loading || page >= totalPages}
-                    onClick={() => setPage(totalPages)}
+                    onClick={() => changePage(totalPages)}
                     title="Last page"
                   >
                     <CIcon icon={cilChevronDoubleRight} size="sm" />
@@ -551,15 +824,55 @@ const DuplicateBranches = () => {
                       </span>
                     </span>
                     {canResolve ? (
-                      <button
-                        type="button"
-                        className="btn btn-sm delete-btn rounded-0"
-                        style={{ fontSize: 11 }}
-                        disabled={resolving || !survivorId || deleteIds.length === 0}
-                        onClick={() => setConfirmOpen(true)}
-                      >
-                        Delete {deleteIds.length} selected…
-                      </button>
+                      <>
+                        {/* STEP ONE before the delete. */}
+                        {notYetDeactivated.length > 0 && (
+                          <>
+                            {/* Why, in the admin's words. */}
+                            <input
+                              type="text"
+                              className="form-control form-control-sm rounded-0 d-inline-block me-2"
+                              style={{ fontSize: 11, width: 220 }}
+                              maxLength={400}
+                              placeholder="Why? e.g. blank BIOS, idle since March"
+                              value={deactivateNote}
+                              onChange={(e) => setDeactivateNote(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm cancel-btn rounded-0 me-2"
+                              style={{ fontSize: 11 }}
+                              disabled={deactivating}
+                              title="Switch the selected rows off and leave them. If the client is using one, they will tell you."
+                              onClick={() => deactivate(notYetDeactivated)}
+                            >
+                              {deactivating
+                                ? 'Working…'
+                                : `Deactivate ${notYetDeactivated.length} selected`}
+                            </button>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          className="btn btn-sm delete-btn rounded-0"
+                          style={{ fontSize: 11 }}
+                          disabled={
+                            resolving ||
+                            !survivorId ||
+                            deleteIds.length === 0 ||
+                            notReadyToDelete.length > 0
+                          }
+                          // Disabled rather than hidden, with the reason in the tooltip.
+                          title={
+                            notReadyToDelete.length > 0
+                              ? `${notReadyToDelete.length} selected row(s) are not switched off. Deactivate a suspected duplicate first, so what is removed is a row somebody chose to retire rather than one that happens to be idle.`
+                              : undefined
+                          }
+                          onClick={() => setConfirmOpen(true)}
+                        >
+                          Delete {deleteIds.length} selected…
+                        </button>
+                      </>
                     ) : (
                       <span
                         className="badge bg-secondary"
@@ -570,8 +883,7 @@ const DuplicateBranches = () => {
                     )}
                   </div>
 
-                  {/* This client's duplicated branches. Kept as a short scrolling list because one
-                      account can have dozens, and they are worked through one after another. */}
+                  {/* This client's duplicated branches. */}
                   <div
                     className="border mb-2"
                     style={{
@@ -582,6 +894,24 @@ const DuplicateBranches = () => {
                     <table className="table table-sm table-hover mb-0" style={{ fontSize: 10 }}>
                       <thead>
                         <tr>
+                          {canResolve && (
+                            <th style={{ width: '1%' }}>
+                              <input
+                                type="checkbox"
+                                className="form-check-input m-0"
+                                title="Select this client’s safe branches"
+                                aria-label="Select this client’s safe branches"
+                                disabled={!client || clientPickState(client) === 'none'}
+                                checked={!!client && clientPickState(client) === 'all'}
+                                ref={(el) => {
+                                  if (el)
+                                    el.indeterminate =
+                                      !!client && clientPickState(client) === 'some'
+                                }}
+                                onChange={() => client && toggleClientPick(client)}
+                              />
+                            </th>
+                          )}
                           <th style={{ width: '1%' }}>Branch</th>
                           <th>Branch name</th>
                           <th style={{ width: '1%' }}>Type</th>
@@ -596,6 +926,7 @@ const DuplicateBranches = () => {
                           const v = VERDICT[b.verdict] ?? { label: b.verdict, cls: 'bg-secondary' }
                           const isOpen =
                             branch?.branchCode === b.branchCode && branch?.forCloud === b.forCloud
+                          const canBulk = bulkable(b)
                           return (
                             <tr
                               key={`${b.branchCode}|${b.forCloud}`}
@@ -603,6 +934,30 @@ const DuplicateBranches = () => {
                               className={isOpen ? 'table-active fw-bold' : ''}
                               onClick={() => openBranch(b)}
                             >
+                              {canResolve && (
+                                <td
+                                  className="align-middle text-center"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="form-check-input m-0"
+                                    disabled={!canBulk}
+                                    title={
+                                      canBulk
+                                        ? `Deactivate ${
+                                            pendingRows(b).length
+                                          } duplicate row(s), keeping the recommended one`
+                                        : b.verdict === 'SafeToMerge'
+                                        ? 'Already deactivated'
+                                        : 'Flagged for review — open it and decide by hand'
+                                    }
+                                    aria-label={`Select branch ${b.branchCode}`}
+                                    checked={pickedSet.has(keyOf(b))}
+                                    onChange={() => toggleBranchPick(b)}
+                                  />
+                                </td>
+                              )}
                               <td className="align-middle text-center">{b.branchCode}</td>
                               <td className="align-middle text-truncate" style={{ maxWidth: 160 }}>
                                 {b.rows?.[0]?.branchName || blank}
@@ -648,7 +1003,10 @@ const DuplicateBranches = () => {
                         })}
                         {branches.length === 0 && (
                           <tr>
-                            <td colSpan={5} className="text-muted text-center py-2">
+                            <td
+                              colSpan={canResolve ? 6 : 5}
+                              className="text-muted text-center py-2"
+                            >
                               No branch detail came back for this client — reload the page.
                             </td>
                           </tr>
@@ -702,13 +1060,25 @@ const DuplicateBranches = () => {
                         >
                           <thead>
                             <tr>
-                              <th style={{ width: '1%' }} title="The single row to keep">
+                              <th
+                                style={{ width: '1%' }}
+                                title="The single row to keep. Choosing it ticks every other row in this branch — untick any you want left alone."
+                              >
                                 Keep
                               </th>
-                              <th style={{ width: '1%' }} title="Rows to permanently delete">
+                              <th
+                                style={{ width: '1%' }}
+                                title="Rows to remove. They are moved to Archived Branches, where they can be restored."
+                              >
                                 Delete
                               </th>
                               <th title="ClientDetails row id">Id</th>
+                              <th
+                                style={{ width: '1%' }}
+                                title="Step one: switch a suspected duplicate off and wait for the client to object"
+                              >
+                                Confirmation
+                              </th>
                               <th className={cellCls('branchName')}>Branch name</th>
                               <th className={cellCls('serialNo')}>Serial</th>
                               <th className={cellCls('activateExpiryDate')}>Expiry</th>
@@ -748,6 +1118,63 @@ const DuplicateBranches = () => {
                                     />
                                   </td>
                                   <td className="align-middle">{r.id}</td>
+
+                                  {/* STEP ONE AT A GLANCE. */}
+                                  <td className="align-middle text-nowrap">
+                                    {r.deactivatedAt ? (
+                                      <>
+                                        <span
+                                          className={`badge ${
+                                            r.canDelete ? 'bg-success' : 'bg-warning text-dark'
+                                          }`}
+                                        >
+                                          {/* Two states now, not three. */}
+                                          {r.canDelete ? 'Off — can delete' : 'Back in use'}
+                                        </span>
+                                        <span
+                                          className="d-block text-muted"
+                                          style={{ fontSize: 10 }}
+                                        >
+                                          off since {fmtDate(r.deactivatedAt)}
+                                        </span>
+                                        {r.deactivationNote && (
+                                          <span
+                                            className="d-block text-muted"
+                                            style={{ fontSize: 10 }}
+                                          >
+                                            {r.deactivationNote}
+                                          </span>
+                                        )}
+                                        {canResolve && (
+                                          <button
+                                            type="button"
+                                            className="btn btn-sm filter-btn rounded-0 mt-1 text-nowrap"
+                                            disabled={deactivating}
+                                            title="The client says they use this one — put it back."
+                                            onClick={() => reactivate([r.id])}
+                                          >
+                                            They use it
+                                          </button>
+                                        )}
+                                      </>
+                                    ) : keep ? (
+                                      <span className="text-muted" style={{ fontSize: 10 }}>
+                                        keeping
+                                      </span>
+                                    ) : (
+                                      canResolve && (
+                                        <button
+                                          type="button"
+                                          className="btn btn-sm cancel-btn rounded-0 text-nowrap"
+                                          disabled={deactivating}
+                                          title="Switch this row off and wait. If the client is using it they will tell you."
+                                          onClick={() => deactivate([r.id])}
+                                        >
+                                          {deactivating ? 'Working…' : 'Deactivate'}
+                                        </button>
+                                      )
+                                    )}
+                                  </td>
                                   <td className={`align-middle ${cellCls('branchName')}`}>
                                     {r.branchName || blank}
                                   </td>
@@ -815,8 +1242,84 @@ const DuplicateBranches = () => {
         </div>
       </div>
 
-      {/* Deletion is permanent, so it is confirmed against an explicit list of what goes and what
-          stays rather than a one-line browser prompt. */}
+      {/* Confirmed against an explicit list of what goes and what stays. */}
+      {/* Confirming the BULK step one. */}
+      <CModal
+        alignment="center"
+        visible={bulkConfirm}
+        backdrop="static"
+        size="lg"
+        onClose={() => setBulkConfirm(false)}
+      >
+        <CModalHeader>
+          <CModalTitle>Deactivate {pickedRowCount} duplicate row(s)?</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <div className="alert alert-warning rounded-0 py-2 mb-3" style={{ fontSize: 12 }}>
+            <strong>Nothing is deleted.</strong> Each branch keeps the recommended row and the rest
+            are switched off. If a client reports a problem, put the row back — that tells you it
+            was the live one. The rest can then be deleted, and a deleted branch is kept in{' '}
+            <strong>Archived Branches</strong> where it can be restored.
+          </div>
+
+          <div className="mb-1" style={{ fontSize: 12 }}>
+            <span className="text-muted">
+              {pickedBranches.length} branch(es) across{' '}
+              {new Set(pickedBranches.map((b) => b.cusCode)).size} client(s)
+            </span>
+          </div>
+
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            <table className="table table-sm table-bordered mb-0" style={{ fontSize: 11 }}>
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th style={{ width: '1%' }}>Branch</th>
+                  <th style={{ width: '1%' }}>Keeping</th>
+                  <th style={{ width: '1%' }}>Switching off</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pickedBranches.map((b) => {
+                  const keep = (b.rows ?? []).find((r) => r.recommendedSurvivor)
+                  return (
+                    <tr key={keyOf(b)}>
+                      <td className="text-truncate" style={{ maxWidth: 220 }}>
+                        {b.companyName || b.cusCode}
+                        <span className="text-muted d-block" style={{ fontSize: 9 }}>
+                          {b.cusCode}
+                        </span>
+                      </td>
+                      <td className="text-center">{b.branchCode}</td>
+                      <td className="text-center table-success">{keep?.id ?? blank}</td>
+                      <td className="text-center">{pendingRows(b).length}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </CModalBody>
+        <div className="d-flex gap-2 p-3 pt-0">
+          <button
+            type="button"
+            className="btn btn-sm add-btn rounded-0 ms-auto"
+            disabled={bulkBusy}
+            onClick={bulkDeactivate}
+          >
+            {bulkBusy ? 'Working…' : `Deactivate ${pickedRowCount} row(s)`}
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm cancel-btn rounded-0"
+            disabled={bulkBusy}
+            onClick={() => setBulkConfirm(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      </CModal>
+
       <CModal alignment="center" visible={confirmOpen} backdrop="static" size="lg">
         <CModalHeader>
           <CModalTitle>Confirm deletion</CModalTitle>
@@ -824,12 +1327,14 @@ const DuplicateBranches = () => {
         <CModalBody>
           {branch && (
             <>
-              <div className="alert alert-danger rounded-0 py-2 mb-3" style={{ fontSize: 12 }}>
+              {/* NO LONGER "cannot be undone", because it can. */}
+              <div className="alert alert-warning rounded-0 py-2 mb-3" style={{ fontSize: 12 }}>
                 <strong>
-                  {deleteIds.length} row{deleteIds.length === 1 ? '' : 's'} will be permanently
-                  deleted.
+                  {deleteIds.length} row{deleteIds.length === 1 ? '' : 's'} will be removed from the
+                  licensing data.
                 </strong>{' '}
-                This cannot be undone. The deletion is recorded in the audit log against your user.
+                Each one is moved to <strong>Archived Branches</strong>, where it can be restored
+                exactly as it was. The deletion is recorded in the audit log against your user.
               </div>
 
               <div className="mb-2" style={{ fontSize: 12 }}>

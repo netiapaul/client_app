@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import { isDark, toggleDark } from '../utils/theme'
 
-// Header button that toggles light/dark mode. The choice is remembered across sessions
-// and applied before first paint in index.js. The mechanism itself lives in utils/theme,
-// shared with the client portal's own toggle.
+// Header button that toggles light/dark mode.
 const ThemeToggle = () => {
   const [dark, setDark] = useState(isDark)
 

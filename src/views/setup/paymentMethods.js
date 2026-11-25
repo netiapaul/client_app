@@ -4,21 +4,7 @@ import { toast } from 'react-toastify'
 import { getToken } from '../../utils/session'
 const axios = require('axios')
 
-/**
- * Which ways of paying are offered, and to whom. A section of the Setup screen.
- *
- * Two switches per method rather than one, because they answer different questions. **Accepted**
- * is whether the business takes this at all. **In the portal** is whether a customer can complete
- * it in a browser — cash and cheque are taken every day but handed over in person, and a customer
- * ticking "I paid cash" is making a claim, not a payment.
- *
- * The portal switch is subordinate: a method that is not accepted is not accepted anywhere, so it
- * greys out when Accepted is off rather than sitting there implying otherwise.
- *
- * Switching something off hides it from the forms that offer it. Payments already taken by that
- * method keep their rows and still appear in the ledger — a menu change must not rewrite history,
- * and the screen says so, because "will this delete our cheque payments?" is the obvious worry.
- */
+/** Which ways of paying are offered, and to whom. */
 const api = `${process.env.REACT_APP_URL_CONFIG}/api/PaymentMethods`
 
 const authHeaders = () => ({
@@ -73,8 +59,7 @@ const PaymentMethods = ({ onStatus }) => {
       const to = index + by
       if (to < 0 || to >= next.length) return list
       ;[next[index], next[to]] = [next[to], next[index]]
-      // Renumbered from the visible order, so the saved SortOrder matches what is on screen
-      // rather than whatever the rows happened to arrive with.
+      // Renumbered from the visible order.
       return next.map((m, i) => ({ ...m, sortOrder: (i + 1) * 10 }))
     })
 
@@ -212,9 +197,7 @@ const PaymentMethods = ({ onStatus }) => {
                           type="checkbox"
                           className="form-check-input"
                           aria-label={`Offer ${m.displayName} in the portal`}
-                          // Subordinate to Accepted: a method the business does not take cannot
-                          // be offered to customers, so this is disabled rather than merely
-                          // ignored on the server.
+                          // Subordinate to Accepted: a method the business does not take cannot be offered.
                           disabled={!m.isEnabled}
                           checked={m.isEnabled && m.showInPortal}
                           onChange={(e) => set(m.method, { showInPortal: e.target.checked })}

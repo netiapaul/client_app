@@ -2,11 +2,7 @@ class Functions {
   constructor(that) {
     this.that = that
   }
-  /**
-   *
-   * Change user Input to new values
-   *
-   */
+  /** Change user Input to new values */
   handleChange = (event) => {
     const target = event.target
     const value = target.type === 'checkbox' ? target.checked : target.value
@@ -17,11 +13,7 @@ class Functions {
     })
   }
 
-  /**
-   *
-   * checks if All field are field before API
-   *
-   */
+  /** checks if All field are field before API */
   checkEmpty = (requiredFields) => {
     const empty = []
     requiredFields.forEach((field) =>
@@ -33,8 +25,7 @@ class Functions {
       return false
     } else {
       this.that.setState({
-        // error: 'Teating', // It appears there are required fields you haven't filled!
-        error: 'please fill the empty fields required!', // It appears there are required fields you haven't filled!
+        error: 'please fill the empty fields required!',
       })
     }
 

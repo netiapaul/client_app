@@ -1,26 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-/**
- * The filter bar and the pager for the portal's listings — TWO components, deliberately.
- *
- * They were one, with the pager half meant to be the only thing rendered when it was placed below
- * the table. That is not what happened: the preset row is built from a module constant rather than
- * a prop, so it rendered every time, and the date picker appeared a second time underneath the
- * rows. It also put two elements with id="pt-from" on the page, which is invalid and left both
- * labels pointing at the first input.
- *
- * Two components cannot do that. The filters are rendered once, above; the pager once, below.
- *
- * Both are shared by invoices and receipts because those two must behave IDENTICALLY — somebody
- * who learns the control on one page should not have to relearn it on the other, and two copies of
- * a date-range widget drift apart on the first fix.
- *
- * Paging and filtering are both SERVER-side. The parent owns the page number and refetches, which
- * is also why the status/method filters moved to the server: applied in the browser they would
- * have filtered the current page only, so "To pay" on page one would silently omit the unpaid rows
- * on page two.
- */
+/** The filter bar and the pager for the portal's listings — TWO components, deliberately. */
 
 /** Local-date ISO (yyyy-MM-dd) for a date input. `toISOString` would shift by the UTC offset. */
 const iso = (d) =>
@@ -72,14 +53,7 @@ const box = {
 
 const labelStyle = { fontSize: 'var(--pt-fs-xs)', color: 'var(--pt-muted)' }
 
-/**
- * What is being looked at: which rows, and over what dates.
- *
- * The presets exist because almost nobody types a date range. "This year" and "Last 12 months"
- * answer the two questions actually asked (a tax year, and recent history); the explicit boxes
- * stay visible rather than hiding behind a "custom" toggle, so the presets are a shortcut rather
- * than a mode.
- */
+/** What is being looked at: which rows, and over what dates. */
 export const PortalListFilters = ({
   views,
   view,
@@ -98,9 +72,7 @@ export const PortalListFilters = ({
   // The oldest row the account has, so the picker cannot offer an empty decade below it.
   const min = earliest ? earliest.slice(0, 10) : undefined
 
-  // Deliberately NO upper bound. An invoice for a future period is normal here — the generator
-  // raises one before the period starts — so clamping to the newest row would refuse a date that
-  // has perfectly good rows above it.
+  // Deliberately NO upper bound.
 
   const narrowed = !!from || !!to || (view && view !== views?.[0]?.key)
 
@@ -182,8 +154,7 @@ export const PortalListFilters = ({
             onChange={(e) => onTo(e.target.value)}
           />
 
-          {/* Only when something is actually narrowed — a permanently visible Clear invites a
-              click that does nothing and makes the unfiltered state look filtered. */}
+          {/* Only when something is actually narrowed. */}
           {narrowed && (
             <button type="button" className="pt-btn pt-btn--sm" onClick={() => onPreset('all')}>
               <span className="material-icons">close</span>
@@ -218,12 +189,7 @@ PortalListFilters.propTypes = {
   idPrefix: PropTypes.string,
 }
 
-/**
- * Which page, of how many.
- *
- * Renders NOTHING when everything fits on one page. A pager reading "Page 1 of 1" is furniture
- * that teaches people to ignore the place where paging appears.
- */
+/** Which page, of how many. */
 export const PortalListPager = ({ page, pageSize, matchingRows, onPage, busy }) => {
   if (!matchingRows || matchingRows <= pageSize) return null
 

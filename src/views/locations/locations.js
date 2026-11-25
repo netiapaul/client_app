@@ -14,8 +14,7 @@ const readErr = (e) =>
   e?.response?.data?.message || e?.request?.response || `${e?.code}: ${e?.message}`
 
 const Locations = () => {
-  // Replaces window.confirm, which the browser prefixes with its own hostname and which
-  // cannot mark a destructive action. See useConfirm.
+  // Replaces window.confirm, which the browser prefixes with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
   const [regions, setRegions] = useState([])
   const [counties, setCounties] = useState([])

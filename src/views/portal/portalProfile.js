@@ -13,24 +13,9 @@ import {
 import useConfirm from '../../components/useConfirm'
 import PasswordInput from '../../components/PasswordInput'
 
-/**
- * The portal user's own account: who they are, their password, and two-step verification.
- *
- * Two security decisions are visible here and worth stating:
- *
- *  - Changing the password needs a code emailed to the account. A live session proves someone is at
- *    the keyboard; it does not prove it is the account holder. The code proves they still hold the
- *    mailbox, which is also the address a reset would go to.
- *  - The email address itself is not editable. It is the login identifier AND where every
- *    verification code goes, so letting it be changed from inside the session it protects would
- *    defeat the verification.
- */
+/** The portal user's own account: who they are, their password, and two-step verification. */
 
-/**
- * A labelled field, matching the portal's form treatment. Password fields render through
- * PasswordInput so they get the show/hide toggle; everything else is a plain input. The adapter
- * here converts the component's DOM event into the value-style onChange this page uses.
- */
+/** A labelled field, matching the portal's form treatment. */
 const Field = ({ id, label, value, onChange, type = 'text', hint, disabled, placeholder }) => {
   const boxStyle = {
     width: '100%',
@@ -92,8 +77,7 @@ Field.propTypes = {
 }
 
 const PortalProfile = () => {
-  // Replaces window.confirm, which the browser prefixes with its own hostname and which
-  // cannot mark a destructive action. See useConfirm.
+  // Replaces window.confirm, which the browser prefixes with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
   const navigate = useNavigate()
 
@@ -653,7 +637,7 @@ const PortalProfile = () => {
           </div>
         )}
 
-        {/* Managing it once on */}
+        {/* Managing 2FA once it is on */}
         {me?.twoFactorEnabled && (
           <div style={{ marginTop: 16 }}>
             <div className="pt-tiles">

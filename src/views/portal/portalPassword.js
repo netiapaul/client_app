@@ -4,16 +4,7 @@ import { toast } from 'react-toastify'
 import { portalPost, readErr } from '../../utils/portalApi'
 import PasswordInput from '../../components/PasswordInput'
 
-/**
- * First sign-in: replacing the temporary password an admin issued.
- *
- * The shell renders this INSTEAD of the whole portal while the forced-change flag is set, because
- * the server refuses every other portal endpoint until it clears. It is the only password screen
- * that does not ask for an emailed code — the temporary password arrived by email, so holding it
- * already proves the same thing, and demanding a second code here would be friction at the one
- * moment the account cannot do anything else. Voluntary changes live on the Profile page and DO
- * require a code.
- */
+/** First sign-in: replacing the temporary password an admin issued. */
 const PortalPassword = ({ onDone }) => {
   const [form, setForm] = useState({ current: '', next: '', confirm: '' })
   const [saving, setSaving] = useState(false)
@@ -24,8 +15,7 @@ const PortalPassword = ({ onDone }) => {
   const submit = async (e) => {
     e.preventDefault()
 
-    // Checked here as well as on the server: a mismatch or a short password is worth saying
-    // immediately rather than after a round trip.
+    // Checked here as well as on the server.
     if (form.next.length < 8) return setError('Your new password must be at least 8 characters.')
     if (form.next !== form.confirm) return setError('The two new passwords do not match.')
     if (form.next === form.current) return setError('Your new password must be different.')

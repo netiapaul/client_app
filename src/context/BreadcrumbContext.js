@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState } from 'react'
 import PropTypes from 'prop-types'
 
-// Lets a routed page supply a friendly label for the current (dynamic) breadcrumb crumb —
-// e.g. the client name on /client/:id — which AppBreadcrumb then shows.
+// Lets a routed page supply a friendly label for the current (dynamic) breadcrumb crumb.
 const BreadcrumbContext = createContext({ label: null, setLabel: () => {} })
 
 export const BreadcrumbProvider = ({ children }) => {

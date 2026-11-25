@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { loginRequest, loginTwoFactorRequest } from '../../utils/requests'
 import PasswordInput from '../../components/PasswordInput'
 import { toast } from 'react-toastify'
-// const axios = require('axios')
 import CompanyRight from '../../assets/images/corebase.png'
 
 function Login() {
@@ -22,17 +21,11 @@ function Login() {
   const handleChange = (field) => {
     return (e) => setData((name) => ({ ...name, [field]: e.target.value }))
   }
-  /**
-   *
-   * * @Login User
-   */
 
   // Store the token + redirect once we have a real access token (shared by both login steps).
   const completeLogin = (res) => {
     const modules = res.modules || []
-    // One login page, two audiences. The server says which this is via `portal` — it is never
-    // inferred from an empty module list, because a staff user whose access groups aren't
-    // configured yet also has none and must not be dropped into a customer's portal.
+    // One login page, two audiences.
     const portal = res.portal === true
     setSession({
       token: res.accessToken,
@@ -49,8 +42,7 @@ function Login() {
       return
     }
 
-    // Land on the dashboard if they can view clients; otherwise send them to their profile
-    // (always accessible) so a user without client access doesn't hit a permission wall.
+    // Land on the dashboard if they can view clients; otherwise send them to their profile.
     const landing = modules.includes(1) ? '/dashboard' : '/profile'
     navigate(landing, { replace: true })
   }
@@ -115,7 +107,6 @@ function Login() {
   }, [])
 
   useEffect(() => {
-    // Update network status
     const handleStatusChange = () => {
       setIsOnline(navigator.onLine)
       if (navigator.onLine) {
@@ -131,99 +122,12 @@ function Login() {
       }
     }
 
-    // Listen to the online status
     window.addEventListener('online', handleStatusChange)
 
-    // Listen to the offline status
     window.addEventListener('offline', handleStatusChange)
-
-    // Specify how to clean up after this effect for performance improvment
-    // return () => {
-    //   window.removeEventListener('online', handleStatusChange)
-    //   window.removeEventListener('offline', handleStatusChange)
-    // }
   }, [isOnline])
 
   return (
-    // <div className="container-fluid min-vh-100 login_page">
-    //   {/* <div className="row w-100 g-5 min-vh-100 align-items-center m-0"> */}
-    //   <div className="row min-vh-100 align-items-center">
-    //     <div className="col-md d-none d-md-block align-self-stretch m-0 ps-md-0">
-    //       <div className="h-100 w-cover bg-cover"></div>
-    //     </div>
-    //     <div className="col-md-7 m-0">
-    //       <div className="card rounded-0">
-    //         <div className="card-body p-5">
-    //           <div className="mt-5 mb-3">
-    //             <h2 className="mb-3">
-    //               <span className="company_text_color">phAMACore</span> &trade;
-    //             </h2>
-    //             <h5 className="mb-1">Welcome back!</h5>
-    //             <p className="text-muted">Please enter your credentials to sign in!</p>
-    //           </div>
-
-    //           {data.error && (
-    //             <div
-    //               className="alert alert-danger d-flex align-items-center mx-0 mb-3 rounded-0"
-    //               role="alert"
-    //             >
-    //               <i className="fa fa-exclamation-triangle me-3" aria-hidden="true"></i>
-    //               <span>{data.error}</span>
-    //             </div>
-    //           )}
-    //           <form autoComplete="off" className="mb-2" onSubmit={handleAuth}>
-    //             <div className="form-group">
-    //               <label className="form-label" htmlFor="email">
-    //                 Email Address
-    //               </label>
-    //               <input
-    //                 type="email"
-    //                 className="form-control rounded-0 auth-input auth-input-lg"
-    //                 id="email"
-    //                 name="email"
-    //                 value={data.email}
-    //                 placeholder="name@address.com"
-    //                 onChange={handleChange('email')}
-    //                 required
-    //               />
-    //             </div>
-    //             <div className="form-group mb-5">
-    //               <label className="form-label" htmlFor="password">
-    //                 Password
-    //               </label>
-    //               <input
-    //                 type="password"
-    //                 className="form-control auth-input auth-input-lg rounded-0"
-    //                 id="password"
-    //                 name="password"
-    //                 value={data.password}
-    //                 placeholder="Enter your password"
-    //                 onChange={handleChange('password')}
-    //                 required
-    //               />
-    //             </div>
-    //             <button
-    //               type="submit"
-    //               className="btn w-100 rounded-0 auth-btn"
-    //               disabled={data.isLoading}
-    //             >
-    //               {data.isLoading ? (
-    //                 <span
-    //                   className="spinner-border text-denter spinner-border-sm"
-    //                   role="status"
-    //                   aria-hidden="true"
-    //                 ></span>
-    //               ) : (
-    //                 'Sign in'
-    //               )}
-    //             </button>
-    //           </form>
-    //         </div>
-    //       </div>
-    //     </div>
-    //   </div>
-    // </div>
-
     <div className="container-fluid min-vh-100 login_page">
       <div className="row min-vh-100 align-items-center">
         <div className="col-md-4 min-vh-100 d-none d-xl-block login_asset"></div>

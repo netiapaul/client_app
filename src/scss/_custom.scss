@@ -56,6 +56,29 @@ $phAMACore-color: #c58c4f;
   // stay dense without the labels under them colliding.
   --cb-lh-tight: 1.2;
   --cb-lh-normal: 1.45;
+
+  /**** Surface palette ****
+   * The companion to the type scale: one source of truth for the SURFACES of the .cb-* screen
+   * scaffolding (page head, card, table, chip, code block, empty state).
+   *
+   * These exist so dark mode is a handful of re-pointed tokens in _darkmode.scss rather than a
+   * second copy of every rule — the same approach already used for .cb-dt and the portal's .pt.
+   * That matters here: .cb-card/.cb-table/.cb-page-head/.cb-chip had their light greys written in
+   * as literals and no dark override at all, so every screen built on them (the whole Billing
+   * group, SMS, Payment methods, Billing automation, Setup, Portal users) stayed on a white card
+   * with near-white borders when the rest of the app went dark.
+   *
+   * Use var(--cb-*) in new component rules instead of a literal, and dark mode comes for free.
+   * The light values below are what those rules already rendered, so this is a no-op in light mode.
+   */
+  --cb-surface: #fff; // card / panel face
+  --cb-soft: #f6f7f9; // recessed block (code, payload dumps)
+  --cb-head-bg: #f6f8fa; // table header
+  --cb-border: #e9edf2; // card, table and divider borders
+  --cb-ink: #22304a; // primary text on a surface
+  --cb-muted: #8a94a6; // labels, captions, helper text
+  --cb-chip-bg: #eef1f6;
+  --cb-chip-border: #e0e5ec;
 }
 
 .cb-fs-page    { font-size: var(--cb-fs-page) !important;    line-height: var(--cb-lh-tight); }
@@ -129,10 +152,18 @@ $phAMACore-color: #c58c4f;
   display: block;
 
   input {
-    padding-left: 42px !important;
     // Tabular figures keep the digits on a fixed pitch, so the number doesn't jitter sideways as
     // separators appear and disappear while typing.
     font-variant-numeric: tabular-nums;
+  }
+
+  // Only when a prefix is actually being drawn. The padding used to be unconditional, which is
+  // fine for a full-width field and wrong in a 120px table cell with no prefix: 42px of the box
+  // would be dead space and a five-figure amount would scroll out of view as it was typed.
+  // Amount COLUMNS hide the code — the header carries it, and repeating "KES" down every row is
+  // noise that eats the width the digits need.
+  &--ccy input {
+    padding-left: 42px !important;
   }
 
   &__ccy {
@@ -143,7 +174,7 @@ $phAMACore-color: #c58c4f;
     font-size: var(--cb-fs-meta);
     font-weight: 700;
     letter-spacing: .04em;
-    color: #8a94a6;
+    color: var(--cb-muted);
     pointer-events: none;
   }
 }
@@ -160,7 +191,7 @@ $phAMACore-color: #c58c4f;
   gap: 10px;
   padding-bottom: 10px;
   margin-bottom: 12px;
-  border-bottom: 1px solid #e9edf2;
+  border-bottom: 1px solid var(--cb-border);
 
   &__title {
     display: flex;
@@ -169,7 +200,7 @@ $phAMACore-color: #c58c4f;
     margin: 0;
     font-size: var(--cb-fs-page);
     font-weight: 700;
-    color: #22304a;
+    color: var(--cb-ink);
 
     .material-icons {
       font-size: 22px;
@@ -179,7 +210,7 @@ $phAMACore-color: #c58c4f;
 
   &__sub {
     font-size: var(--cb-fs-table);
-    color: #8a94a6;
+    color: var(--cb-muted);
   }
 
   &__actions {
@@ -195,8 +226,8 @@ $phAMACore-color: #c58c4f;
  * columns crush, and the header sticks so the meaning of a column survives a long list.
  */
 .cb-card {
-  background: #fff;
-  border: 1px solid #e9edf2;
+  background: var(--cb-surface);
+  border: 1px solid var(--cb-border);
   border-radius: 10px;
 
   &__body {
@@ -223,16 +254,16 @@ $phAMACore-color: #c58c4f;
     font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
-    color: #8a94a6;
-    background: #f6f8fa !important;
-    border-bottom: 1px solid #e9edf2;
+    color: var(--cb-muted);
+    background: var(--cb-head-bg) !important;
+    border-bottom: 1px solid var(--cb-border);
     white-space: nowrap;
   }
 
   td {
     padding: 8px 10px;
     vertical-align: middle;
-    border-color: #e9edf2;
+    border-color: var(--cb-border);
   }
 }
 
@@ -631,13 +662,13 @@ $phAMACore-color: #c58c4f;
   font-size: var(--cb-fs-meta);
   font-weight: 600;
   line-height: 1.6;
-  color: #22304a;
-  background: #eef1f6;
-  border: 1px solid #e0e5ec;
+  color: var(--cb-ink);
+  background: var(--cb-chip-bg);
+  border: 1px solid var(--cb-chip-border);
   border-radius: 999px;
 
   &__code {
-    color: #8a94a6;
+    color: var(--cb-muted);
     font-weight: 500;
   }
 
@@ -1274,6 +1305,39 @@ $phAMACore-color: #c58c4f;
  * emerald. Those two rgba values were the last hardcoded leftovers of the original palette, which
  * is why the card kept reading teal after everything around it had been rebranded.
  */
+/* The arithmetic behind a figure, on a dark hero: what is owed, what comes off, what is left.
+   A customer shown a number smaller than their invoice needs the subtraction spelled out, or the
+   safe-feeling move is to ignore it and pay the invoice — which is how somebody ends up in credit
+   twice. Sits inside .pt-card--dark, so the colours are the hero's muted/bright pair rather than
+   the page palette. */
+.pt-sum {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  max-width: 340px;
+  font-size: var(--pt-fs-sm, 13px);
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    color: rgba(255, 255, 255, .72);
+
+    &--credit {
+      color: var(--pt-ok-bright);
+    }
+
+    &--total {
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px solid rgba(255, 255, 255, .22);
+      color: #fff;
+      font-weight: 700;
+    }
+  }
+}
+
 .pt-hero {
   display: flex;
   flex-direction: column;
@@ -2243,6 +2307,35 @@ $phAMACore-color: #c58c4f;
 .pt-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* --- The invoice document, read in the portal ---
+   The server's own invoice HTML in a sandboxed iframe: the same markup the PDF is built from, so
+   what a customer reads here cannot differ from the document they were emailed.
+
+   The PAGE INSIDE stays white in both themes, deliberately. It is a printable document, and
+   showing somebody a dark-mode version of their own invoice would be showing them something that
+   does not exist on paper. Only the frame around it follows the --pt-* tokens. */
+.pt-doc {
+  margin-top: 18px;
+  overflow: hidden;
+  /* The FRAME is themed, not white: the loading message sits here before the document arrives,
+     and on a white frame in dark mode it would be pale text on pale background. The white page is
+     on the iframe itself. */
+  background: var(--pt-surface);
+  border: 1px solid var(--pt-border);
+  border-radius: 14px;
+
+  iframe {
+    display: block;
+    width: 100%;
+    /* Tall enough to read a one-page invoice without a scrollbar inside a scrollbar, which is the
+       thing that makes a nested frame unpleasant to use. */
+    height: 72vh;
+    min-height: 420px;
+    border: 0;
+    background: #fff;
+  }
 }
 
 /* --- Empty / loading --- */

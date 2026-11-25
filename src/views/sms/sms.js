@@ -6,16 +6,7 @@ import { toast } from 'react-toastify'
 import DataTable from '../../components/DataTable'
 const axios = require('axios')
 
-/**
- * SMS — the Africa's Talking settings and the outbound queue.
- *
- * Every text costs money, so this screen is built to make that visible rather than to hide it: the
- * sandbox is called out, the segment count sits on each row, and nothing sends until someone has
- * deliberately switched it on.
- *
- * The stored API key is never shown — the server does not return it. Leaving the field blank keeps
- * the key that is already saved.
- */
+/** SMS — the Africa's Talking settings and the outbound queue. */
 const STATUS_FILTERS = [
   { key: '', label: 'All', cls: 'is-all', icon: 'sms' },
   { key: 'Sent', label: 'Sent', cls: 'is-sent', icon: 'task_alt' },
@@ -66,8 +57,7 @@ const Sms = () => {
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
 
-  // Still loaded, but read-only now: the sandbox banner below needs it, and the credentials
-  // themselves are edited under Setup.
+  // Still loaded, but read-only now: the sandbox banner below needs it.
   const [cfg, setCfg] = useState(null)
 
   const loadConfig = useCallback(async () => {
@@ -165,9 +155,7 @@ const Sms = () => {
                 Send {summary.pending} waiting
               </button>
             )}
-            {/* The credentials live under Setup now — configuration is a once-in-a-while job
-                and this screen is read every day. The dot still flags an unconfigured gateway
-                here, because the reason nothing is sending belongs next to the queue. */}
+            {/* The credentials live under Setup now. */}
             <Link to="/setup?s=sms" className="btn btn-sm cancel-btn rounded-0">
               SMS Settings
               {summary && !summary.configured && <span className="text-danger ms-1">●</span>}
@@ -178,8 +166,7 @@ const Sms = () => {
 
       {error && <div className="alert alert-danger rounded-0 py-1 mb-2 cb-fs-body">{error}</div>}
 
-      {/* The two states worth interrupting for: not set up at all, and set up but pointed at the
-          sandbox, where everything reports as sent and nothing is delivered. */}
+      {/* The two states worth interrupting for: not set up at all, or still in sandbox. */}
       {summary && !summary.configured && (
         <div className="alert alert-warning rounded-0 py-2 mb-2 cb-fs-body d-flex flex-wrap align-items-center gap-2">
           <span>

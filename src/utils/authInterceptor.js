@@ -1,8 +1,7 @@
 import axios from 'axios'
 import { getToken, clearSession } from './session'
 
-// Centralizes auth on every axios call so screens don't hand-roll the Authorization header,
-// and a 401 (expired/invalid token) logs the user out instead of failing silently.
+// Centralizes auth on every axios call so screens don't hand-roll the Authorization header.
 
 let redirecting = false
 const handleUnauthorized = () => {

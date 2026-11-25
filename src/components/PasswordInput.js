@@ -1,20 +1,7 @@
 import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 
-/**
- * A password field with a show/hide toggle.
- *
- * One component for every password box in the app — login, the admin user form, SMTP settings and
- * both portal password screens — rather than the same eye-icon plumbing copied six times.
- *
- * It takes and forwards the raw change EVENT, like a plain `<input>`, so it drops into existing
- * forms without rewriting their handlers. Anything else passed (required, onKeyDown, maxLength…)
- * lands on the input untouched.
- *
- * Hidden by default, always: the toggle exists so someone can check what they typed, not so a
- * password sits in plain view on a shared screen. The state is local and per-field, so revealing
- * one box never reveals another and nothing is remembered between page loads.
- */
+/** A password field with a show/hide toggle. */
 const PasswordInput = ({
   id,
   value,
@@ -45,8 +32,7 @@ const PasswordInput = ({
       <button
         type="button"
         className="pw-field__btn"
-        // aria-pressed rather than a changing label, so a screen reader announces the control's
-        // state instead of the reader having to infer it from the icon.
+        // aria-pressed rather than a changing label.
         aria-pressed={shown}
         aria-label={shown ? 'Hide password' : 'Show password'}
         title={shown ? 'Hide password' : 'Show password'}

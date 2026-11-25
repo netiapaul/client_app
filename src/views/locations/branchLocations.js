@@ -6,26 +6,11 @@ import { toast } from 'react-toastify'
 import SearchableSelect from '../../components/SearchableSelect'
 const axios = require('axios')
 
-/**
- * Branch Locations — one place to see and fix every client branch's region/county/town.
- *
- * Replaces opening each client, then each of its branches, just to discover which ones still have
- * no location. The left list carries a located/total count per client (incomplete clients first, an
- * "only incomplete" filter and a cloud/desktop one); the right pane edits that client's branches
- * inline.
- *
- * Edits are staged, not saved per keystroke: pick region → county → town on as many branches as you
- * like, then Save. Each branch is written centrally and mirrored onto its BRANCH row in the client's
- * own database; a mirror failure is reported per row as a warning, since the central value is
- * authoritative and the push can be retried.
- */
+/** Branch Locations — one place to see and fix every client branch's region/county/town. */
 const BranchLocations = () => {
-  // Replaces window.confirm / window.prompt — the browser prefixes those with its own
-  // hostname, cannot mark a destructive action, and cannot require an answer. See useConfirm.
+  // Replaces window.confirm / window.prompt — the browser prefixes those with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
-  // The screen itself is gated by ViewBranchLocations on the route/nav; editing is a separate
-  // right. Without it the pickers are read-only and the save actions are gone — the server
-  // enforces the same split, so this is convenience, not the control.
+  // The screen itself is gated by ViewBranchLocations on the route/nav.
   const canManage = hasModule(MODULES.ManageBranchLocations)
 
   const [error, setError] = useState('')
@@ -37,18 +22,15 @@ const BranchLocations = () => {
   const [clients, setClients] = useState([])
   const [search, setSearch] = useState('')
   const [onlyMissing, setOnlyMissing] = useState(false)
-  // Cloud/desktop surface: '' both, 'true' cloud, 'false' desktop. A string so it maps onto a
-  // <select> directly, matching the dashboard's Client Type filter.
+  // Cloud/desktop surface: '' both, 'true' cloud, 'false' desktop.
   const [clientType, setClientType] = useState('')
   const [selected, setSelected] = useState(null) // the client whose branches are shown
 
   const [branches, setBranches] = useState([])
-  // Staged edits keyed by branch row id: { regionId, countyId, townId }. A row only appears here
-  // once touched, so an untouched branch is never written.
+  // Staged edits keyed by branch row id: { regionId, countyId, townId }.
   const [edits, setEdits] = useState({})
 
-  // Lookup caches. Counties/towns are fetched per parent id and kept, so switching between branches
-  // in the same county doesn't refetch.
+  // Lookup caches. Counties/towns are fetched per parent id and kept.
   const [regions, setRegions] = useState([])
   const [countiesByRegion, setCountiesByRegion] = useState({})
   const [townsByCounty, setTownsByCounty] = useState({})
@@ -66,8 +48,7 @@ const BranchLocations = () => {
 
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Locations`
 
-  // The surface filter as the API takes it: a nullable bool, so "both" means sending nothing at all
-  // rather than an empty string (which a bool? parameter would reject).
+  // The surface filter as the API takes it: a nullable bool.
   const typeParam = useMemo(
     () => (clientType === '' ? {} : { forCloud: clientType === 'true' }),
     [clientType],
@@ -154,8 +135,7 @@ const BranchLocations = () => {
         })
         const rows = r.data ?? []
         setBranches(rows)
-        // Warm the lookups the already-located rows need, so their pickers show a label rather
-        // than an empty box on first paint.
+        // Warm the lookups the already-located rows need.
         const regionIds = [...new Set(rows.map((b) => b.regionId).filter(Boolean))]
         const countyIds = [...new Set(rows.map((b) => b.countyId).filter(Boolean))]
         await Promise.all([
@@ -176,8 +156,7 @@ const BranchLocations = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // The header totals have to follow the surface filter, so this re-runs when it changes
-  // (loadSummary's identity only moves with it).
+  // The header totals have to follow the surface filter, so this re-runs when it changes.
   useEffect(() => {
     loadSummary()
   }, [loadSummary])
@@ -188,8 +167,7 @@ const BranchLocations = () => {
     return () => clearTimeout(t)
   }, [loadClients])
 
-  // Likewise the open client's branches: the rows on the right must be the ones its located/total
-  // count was computed from, otherwise the two panes disagree.
+  // Likewise the open client's branches.
   useEffect(() => {
     if (selected?.cusCode) loadBranches(selected.cusCode)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -240,8 +218,7 @@ const BranchLocations = () => {
     [edits, branches],
   )
 
-  // Copy the first located branch's town to every branch that has none — the common case where a
-  // client's branches all sit in one town, and the whole point of "as easy as possible".
+  // Copy the first located branch's town to every branch that has none.
   const applyFirstToEmpty = () => {
     const source = branches.find((b) => rowValue(b).townId)
     if (!source) {
@@ -282,8 +259,7 @@ const BranchLocations = () => {
       if (saved > 0) {
         toast.success(`Saved ${saved} branch location(s).`, { theme: 'colored', autoClose: 5000 })
       }
-      // A warning means the central write landed but the client database didn't — worth showing
-      // per row, because each is a different host that may need a retry.
+      // A warning means the central write landed but the client database didn't.
       if (warnings > 0) {
         ;(results ?? [])
           .filter((x) => x.saved && x.warning)
@@ -302,10 +278,7 @@ const BranchLocations = () => {
     }
   }
 
-  /**
-   * Ask before throwing away staged edits. Both places that drop them — picking a different
-   * client and switching surface — ask the same question, so it is written once.
-   */
+  /** Ask before throwing away staged edits. */
   const discardStaged = () =>
     confirm({
       title: 'Discard unsaved location changes?',
@@ -315,16 +288,14 @@ const BranchLocations = () => {
       cancelText: 'Keep editing',
     })
 
-  // async because the confirmation is a modal rather than a blocking browser dialog. An async
-  // event handler is fine in React — nothing downstream awaits it.
+  // async because the confirmation is a modal rather than a blocking browser dialog.
   const selectClient = async (c) => {
     if (pendingIds.length > 0 && !(await discardStaged())) return
     setSelected(c)
     loadBranches(c.cusCode)
   }
 
-  // Switching surface reloads the branch list and so drops staged edits — ask first, exactly as
-  // picking a different client does.
+  // Switching surface reloads the branch list and so drops staged edits — ask first.
   const changeClientType = async (v) => {
     if (v === clientType) return
     if (pendingIds.length > 0 && !(await discardStaged())) return
@@ -343,16 +314,7 @@ const BranchLocations = () => {
     )
   }
 
-  // Which surface a client's branches sit on. Same colours as the Duplicate Branches screen, so
-  // Cloud/Desktop/Mixed mean the same thing wherever they appear.
-  //
-  // "Mixed" = the customer holds BOTH licences: some of its branches are cloud rows and some are
-  // desktop rows. Read off the whole-client counts, not the filtered total, so the category still
-  // tells the truth while one surface is being worked on — a mixed client stays mixed under the
-  // Cloud filter, which is precisely when it is worth knowing it has desktop branches too.
-  // Returns null when the API sent no counts at all — an older build of it, say. Nothing is
-  // rendered in that case: inferring a category from absent fields is how every client ends up
-  // wearing the same badge, which looks like data and isn't.
+  // Which surface a client's branches sit on.
   const surfaceOf = (c) => {
     if (c.cloudBranches == null && c.desktopBranches == null) return null
     if (!c.cloudBranches) return { label: 'Desktop', cls: 'bg-dark' }
@@ -379,8 +341,7 @@ const BranchLocations = () => {
             <span className="text-muted" style={{ fontSize: 11 }}>
               <span className="fw-bold text-body">{summary.branchesLocated}</span> of{' '}
               <span className="fw-bold text-body">{summary.branchesTotal}</span> branches located
-              {/* Said explicitly: the totals follow the surface filter, so without this the
-                  numbers would appear to drop for no visible reason. */}
+              {/* Said explicitly: the totals follow the surface filter. */}
               {clientType !== '' && (
                 <span className="ms-1">({clientType === 'true' ? 'cloud' : 'desktop'} only)</span>
               )}
@@ -477,10 +438,7 @@ const BranchLocations = () => {
                           {c.companyName}
                           <span className="text-muted ms-1">({c.cusCode})</span>
                         </span>
-                        {/* Two separate facts. "Attached" is the dashboard's Server column, so the
-                            screens agree; having a database is what decides whether a save can
-                            actually reach BRANCH, and a legacy client can have one without the
-                            other. */}
+                        {/* Two separate facts. */}
                         <span
                           className={`d-block text-truncate fw-normal ${
                             c.attachedToServer
@@ -592,10 +550,7 @@ const BranchLocations = () => {
                         <thead>
                           <tr>
                             <th style={{ width: '1%' }}>#</th>
-                            {/* A branch code is only unique within a surface — the same client can
-                                have a branch 1 on each — so the rows need telling apart here.
-                                Always shown: with a filter on, it is also what says which surface
-                                these rows are. */}
+                            {/* A branch code is only unique within a surface. */}
                             <th style={{ width: '1%' }}>Type</th>
                             <th style={{ minWidth: 110 }}>Branch</th>
                             <th style={{ minWidth: 130 }}>Region</th>
@@ -610,8 +565,7 @@ const BranchLocations = () => {
                             return (
                               <tr key={b.id} className={dirty ? 'table-active' : ''}>
                                 <td className="align-middle">{b.branchCode}</td>
-                                {/* A dash, not "Desktop", when the row carries no flag — absent is
-                                    not the same as false, and guessing here mislabels every row. */}
+                                {/* A dash, not "Desktop", when the row carries no flag. */}
                                 <td className="align-middle text-center">
                                   {b.forCloud == null ? (
                                     <span className="text-muted" title="Not reported by the API">
@@ -686,9 +640,7 @@ const BranchLocations = () => {
                     </div>
                   )}
 
-                  {/* Said up front rather than discovered as a warning after saving. Keyed on
-                      hasDatabase, not attachedToServer: what matters here is whether there is
-                      somewhere to write, and a legacy client can have one without the other. */}
+                  {/* Said up front rather than discovered as a warning after saving. */}
                   {selected.hasDatabase ? (
                     <div className="form-text mt-2" style={{ fontSize: 10 }}>
                       Saving writes the location centrally and mirrors it onto the branch&apos;s

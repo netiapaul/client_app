@@ -15,8 +15,7 @@ const readErr = (e) =>
 
 // Google Authenticator (TOTP) enrollment + management, embedded in the user's profile.
 const TwoFactorSettings = () => {
-  // Replaces window.confirm / window.prompt — the browser prefixes those with its own
-  // hostname, cannot mark a destructive action, and cannot require an answer. See useConfirm.
+  // Replaces window.confirm / window.prompt — the browser prefixes those with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
   const [enabled, setEnabled] = useState(false)
   const [recoveryRemaining, setRecoveryRemaining] = useState(0)

@@ -5,36 +5,8 @@ import { formatMoney as money } from '../../utils/money'
 import { downloadFile } from '../../utils/download'
 import { PortalListFilters, PortalListPager, rangeOf } from './PortalListControls'
 
-/**
- * The customer's payment history — what they have paid us, and what each payment settled.
- *
- * "Applied to" is the column that earns this page. An amount and a date tell a customer nothing
- * they did not already know from their own bank statement; which invoices the money cleared is the
- * thing only we can tell them, and it is what they ring up to ask.
- *
- * Two kinds of row never appear, both decided server-side:
- *
- *  - failed attempts, because a declined card is not a payment — they watched it fail at the time;
- *  - payments not yet matched to a company, which have no owner to show them to.
- *
- * SIMULATED payments do appear, badged, but only where the server permits simulating — off by
- * default and refused in production. They were hidden at first, for the good reason that test
- * money in a customer's history is us claiming money we never received. The trouble is that the
- * simulator settles invoices through the REAL ledger, so hiding the payment left a paid invoice
- * with no receipt behind it: the one state nobody can explain while demonstrating the thing. A
- * clearly marked rehearsal is more honest than a silent gap.
- *
- * Reversed payments DO appear, marked. Somebody whose payment was reversed has an invoice that
- * went back to unpaid, and hiding that would be the one omission they would be right to be angry
- * about.
- */
-/**
- * Server-side, like the invoices page — a method filter applied in the browser would have filtered
- * the current page only once this list was paged.
- *
- * The keys are the server's own method values, except "other", which the endpoint reads as
- * everything-except-M-PESA.
- */
+/** The customer's payment history — what they have paid us, and what each payment settled. */
+/** Server-side, like the invoices page. */
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'Mpesa', label: 'M-PESA' },
@@ -61,21 +33,18 @@ const PortalReceipts = () => {
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
 
-  // `preset` is only which button looks pressed; `from`/`to` are the truth, so a typed date simply
-  // deselects the presets rather than contradicting one.
+  // `preset` is only which button looks pressed; `from`/`to` are the truth.
   const [preset, setPreset] = useState('all')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [page, setPage] = useState(1)
 
-  // Both from the server: the matching count over the whole filtered set, and the account totals
-  // over everything. Adding up the page would make the hero wrong as soon as there are two pages.
+  // Both from the server: the matching count over the whole filtered set.
   const [matchingRows, setMatchingRows] = useState(0)
   const [account, setAccount] = useState(null)
   const [span, setSpan] = useState({})
 
-  // Held by id rather than as a boolean so the spinner appears on the row that was clicked and
-  // every other row stays usable.
+  // Held by id rather than as a boolean so the spinner appears on the row that was clicked.
   const [downloading, setDownloading] = useState(null)
 
   const load = useCallback(async () => {
@@ -144,8 +113,7 @@ const PortalReceipts = () => {
     [account],
   )
 
-  // Any rehearsals on THIS page. Their presence is itself the signal that this is not a production
-  // ledger — the server only sends them where simulating is permitted.
+  // Any rehearsals on THIS page.
   const simulated = payments.filter((p) => p.isSimulated).length
 
   // Filter result or empty account? Anything narrowing the view says the first.
@@ -186,8 +154,7 @@ const PortalReceipts = () => {
         </div>
       )}
 
-      {/* Said once at the top rather than only per row: somebody reading the total needs to know
-          it includes money that never moved, before they read the figure. */}
+      {/* Said once at the top rather than only per row. */}
       {simulated > 0 && (
         <div className="pt-note pt-note--amber">
           <span className="pt-note__icon">
@@ -208,8 +175,7 @@ const PortalReceipts = () => {
         </div>
       )}
 
-      {/* Gated on the account having paid something, not on this page having rows — otherwise
-          narrowing to a quiet month hides "paid to date", which is an account-level fact. */}
+      {/* Gated on the account having paid something, not on this page having rows. */}
       {totals.paid > 0 && (
         <section className="pt-card pt-card--dark pt-hero">
           <span aria-hidden="true" className="pt-hero__ring pt-hero__ring--a" />
@@ -308,8 +274,7 @@ const PortalReceipts = () => {
                     <tr key={p.id} style={reversed ? { opacity: 0.6 } : undefined}>
                       <td style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
                         {p.paymentNo}
-                        {/* First, and on its own: whether this was real money is a bigger fact
-                            about the row than whether it cleared. */}
+                        {/* First, and on its own: whether this was real money is the bigger fact. */}
                         {p.isSimulated && (
                           <span
                             className="pt-pill is-expiringsoon"
@@ -331,9 +296,7 @@ const PortalReceipts = () => {
                         )}
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(p.receivedAt)}</td>
-                      {/* A grouped payment settled several companies, and naming only the payer
-                          would read as a single-company payment of a suspiciously large amount.
-                          The Applied-to column lists which. */}
+                      {/* A grouped payment settled several companies. */}
                       <td>
                         {p.companyName}
                         {p.appliedTo?.length > 1 &&
@@ -363,8 +326,7 @@ const PortalReceipts = () => {
                           {m.label}
                         </span>
                       </td>
-                      {/* Their own side of the record — the one field they can check against
-                          their phone or statement. */}
+                      {/* Their own side of the record — the one field they can check against. */}
                       <td style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                         {p.reference || <span style={{ color: 'var(--pt-muted)' }}>—</span>}
                       </td>
@@ -378,8 +340,7 @@ const PortalReceipts = () => {
                                   {' '}
                                   · {money(a.amount, p.currency)}
                                 </span>
-                                {/* Only when the payment spans companies — otherwise it
-                                    repeats the Company column on every line. */}
+                                {/* Only when the payment spans companies. */}
                                 {new Set(p.appliedTo.map((x) => x.cusCode)).size > 1 && (
                                   <span
                                     style={{
@@ -436,8 +397,7 @@ const PortalReceipts = () => {
                             </span>
                           </button>
                         ) : (
-                          // Deliberately not a disabled button: there is nothing to enable. A
-                          // pending cheque and a reversed payment have no receipt to issue.
+                          // Deliberately not a disabled button: there is nothing to enable.
                           <span
                             className="material-icons"
                             style={{ color: 'var(--pt-muted)', fontSize: 18 }}

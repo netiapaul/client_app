@@ -1,14 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-/**
- * The banner each not-yet-active billing page carries.
- *
- * Shared so the three pages say the same thing in the same words. The pages themselves are built
- * out properly — real headers, real table columns, real empty states — so the navigation never
- * lands anywhere broken or obviously unfinished; this is the one element that admits the data
- * isn't flowing yet.
- */
+/** The banner each not-yet-active billing page carries. */
 const PortalNotActive = ({ children }) => (
   <div className="pt-note">
     <span className="pt-note__icon">

@@ -5,17 +5,13 @@ import { toast } from 'react-toastify'
 import MaterialTable, { MTableToolbar } from 'material-table'
 import { tableIcons, tableOptions, themedRowStyle } from '../../utils/helpers'
 import PasswordInput from '../../components/PasswordInput'
-// import Moment from 'react-moment'
-// import { Link } from 'react-router-dom'
 import Drawer from '@mui/material/Drawer'
 import swal from 'sweetalert'
 const axios = require('axios')
 
 const Users = () => {
-  //  "material-table": "^2.0.3",
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [error, setError] = useState('')
-  // const [controllerError, setControllerError] = useState([])
   const [roles, setRoles] = useState([])
   const [groups, setGroups] = useState([])
   const [formData, setFormData] = useState({
@@ -37,7 +33,6 @@ const Users = () => {
   })
 
   // Button-level permissions (the screen itself is gated by ViewUsers via the route/nav).
-  // Approver status is no longer managed here — it's a group in Access Control.
   const canManageUsers = hasModule(MODULES.ManageUsers)
   const canDeleteUsers = hasModule(MODULES.DeleteUsers)
 
@@ -152,7 +147,6 @@ const Users = () => {
       const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetUsers`, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -174,7 +168,6 @@ const Users = () => {
       const response = await axios.get(`${process.env.REACT_APP_URL_CONFIG}/api/Users/GetRoles`, {
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -195,10 +188,9 @@ const Users = () => {
     setError('')
     try {
       const response = await fetch(`${process.env.REACT_APP_URL_CONFIG}/api/Users/CreateUser`, {
-        method: 'POST', // *GET, POST, PUT, DELETE, etc.
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${getToken()}`,
-          // Authorization: `Bearer ${getToken()}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
@@ -230,7 +222,6 @@ const Users = () => {
       } else {
         const data = await response.json()
         setError(data.message)
-        // setControllerError(Object.keys(data.errors).map((key, value) => data.errors[key]))
         setIsDrawerOpen(false)
         setIsLoading(false)
       }
@@ -252,10 +243,9 @@ const Users = () => {
           selectedRow.id,
         )}&email=${selectedRow.email}`,
         {
-          method: 'PUT', // *GET, POST, PUT, DELETE, etc.
+          method: 'PUT',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -288,7 +278,6 @@ const Users = () => {
       } else {
         const data = await response.json()
         setError(data.message)
-        // setControllerError(Object.keys(data.errors).map((key, value) => data.errors[key]))
         setIsDrawerOpen(false)
         setIsLoading(false)
       }
@@ -309,10 +298,9 @@ const Users = () => {
           selectedRow.id,
         )}&email=${selectedRow.email}`,
         {
-          method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
+          method: 'DELETE',
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -391,13 +379,11 @@ const Users = () => {
                     })
                   }}
                 >
-                  {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
                   New
                 </button>
               )}
 
               <Drawer
-                // sx={{ width: 540, bgcolor: '#C58C4F' }}
                 anchor={'right'}
                 open={isDrawerOpen}
                 PaperProps={{ style: { width: '30rem' } }}
@@ -426,7 +412,6 @@ const Users = () => {
                             })
                           }
                           required
-                          // onChange={this.function.handleChange}
                         />
                       </div>
                     </div>
@@ -448,7 +433,6 @@ const Users = () => {
                             })
                           }
                           required
-                          // onChange={this.function.handleChange}
                         />
                       </div>
                     </div>
@@ -470,7 +454,6 @@ const Users = () => {
                             })
                           }
                           required
-                          // onChange={this.function.handleChange}
                         />
                       </div>
                     </div>
@@ -483,7 +466,6 @@ const Users = () => {
                           className="form-select form-select-sm rounded-0"
                           id="role"
                           name="role"
-                          // disabled={!queryParams.byQueryUserName}
                           value={formData.role}
                           aria-label="role"
                           onChange={(e) =>
@@ -513,8 +495,7 @@ const Users = () => {
                         )}
                       </label>
                       <div className="col-md">
-                        {/* Was type="text", which left a colleague's new password sitting in plain
-                            view on screen. Masked by default now, with a toggle for checking it. */}
+                        {/* Was type="text", which left a colleague's new password on screen. */}
                         <PasswordInput
                           className="form-control form-control-sm rounded-0"
                           id="password"
@@ -532,7 +513,6 @@ const Users = () => {
                           placeholder={toEdit ? '••••••••' : ''}
                           title="At least 6 characters"
                           required={!toEdit}
-                          // onChange={this.function.handleChange}
                         />
                       </div>
                     </div>
@@ -575,8 +555,6 @@ const Users = () => {
                         type="submit"
                         className="btn add-btn rounded-0 me-1"
                         disabled={isLoading}
-                        // onClick={() => setIsDrawerOpen(false)}
-                        // onClick={() => setIsDrawerOpen(false)}
                       >
                         {isLoading ? (
                           <span
@@ -625,7 +603,6 @@ const Users = () => {
                   })
                 }}
               >
-                {/* <i className="fa fa-plus-circle" style={{ marginRight: 5 }}></i> */}
                 Edit
               </button>
             )}
@@ -644,7 +621,6 @@ const Users = () => {
                   }).then((willDelete) => {
                     if (willDelete) {
                       DeleteUser()
-                      // alert('I am Headed to greatness With Kinjoz')
                     } else {
                       return
                     }
@@ -676,15 +652,6 @@ const Users = () => {
         </div>
       )}
 
-      {/* {controllerError.length > 0 && (
-        <div className="alert alert-danger mb-1" role="alert">
-          <ul className="m-0">
-            {controllerError.map((err, index) => (
-              <li key={index}>{err}</li>
-            ))}
-          </ul>
-        </div>
-      )} */}
       <div className="card rounded-0">
         <div className="card-body pt-0">
           {isLoading ? (
@@ -707,7 +674,6 @@ const Users = () => {
                 sorting: true,
                 rowStyle: (rowData) => themedRowStyle(rowID === rowData.tableData.id),
               }}
-              //  setSelectedRow(selectedRow)
               onRowClick={(evt, selectedRow) => handleRowClick(evt, selectedRow)}
               components={{
                 Toolbar: (props) => (

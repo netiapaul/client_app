@@ -145,8 +145,7 @@ const Emails = () => {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
-  // If the filtered total shrinks below the current page (e.g. after Resend Failed empties the
-  // Failed view), snap back to the last valid page — which reloads at a sensible position.
+  // If the filtered total shrinks below the current page.
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
   }, [page, totalPages])
@@ -261,9 +260,7 @@ const Emails = () => {
           >
             Resend Failed ({summary.failed})
           </button>
-          {/* The server settings live under Setup now — configuration is a once-in-a-while job
-              and this screen is read every day. A link rather than a panel, so anyone who came
-              here looking for it still finds it. */}
+          {/* The server settings live under Setup now. */}
           <Link to="/setup?s=email" className="btn btn-sm cancel-btn rounded-0">
             SMTP Settings
           </Link>

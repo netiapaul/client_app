@@ -1,5 +1,4 @@
 // Module codes — must match the backend ModuleCodes catalog (ClientsApi/Model/SystemModule.cs).
-// These are stable permission identifiers used to gate menus, routes, and buttons.
 export const MODULES = {
   ViewClients: 1,
   CreateClient: 2,
@@ -29,6 +28,10 @@ export const MODULES = {
   RecordPayments: 24,
   ManageClientPortalUsers: 25,
 
-  // 26/27 were ViewSms/ManageSms. SMS now uses ViewEmails/ManageSmtp — one right covers messaging
-  // setup, email and SMS alike. The numbers are not reused.
+  // 26/27 were ViewSms/ManageSms.
+
+  // The branch archive.
+  ViewArchivedBranches: 28,
+  RestoreArchivedBranches: 29,
+  PurgeArchivedBranches: 30,
 }

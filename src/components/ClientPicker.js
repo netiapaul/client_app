@@ -2,29 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import PropTypes from 'prop-types'
 
 // The component owns its stylesheet, which is the whole point of it living here.
-//
-// It used to sit in views/clients/ and be imported only by createClient.js. That screen is a LAZY
-// route, so its CSS only reached the browser once somebody had opened Create Client — and every
-// other screen using this picker rendered the same markup with no styles behind it: no floating
-// panel, no border, no scroll cap, just a bare table shoving the page down. Importing it here
-// means the styling arrives with the component, wherever it is used.
 import './ClientPicker.css'
 
-/**
- * Pick a client, the way Create Client does it.
- *
- * A read-only box that opens a searchable panel listing the accounts as a TABLE — code, company,
- * branch and whatever else the caller asks for. A plain <select> of 191 companies is unusable, and
- * a bare code box means knowing the code by heart; this lets someone search by whichever of those
- * they happen to have.
- *
- * Extracted from createClient.js, where it was inline, so the payments and simulation screens get
- * the same thing rather than a second picker that looks almost like it. The `.client-picker` /
- * `.picker-panel` styling already exists for that screen and is reused as-is.
- *
- * `columns` keeps it general: the caller says which fields to show and how to render them, so a
- * billing screen can show the outstanding balance where Create Client shows a serial number.
- */
+/** Pick a client, the way Create Client does it. */
 const ClientPicker = ({
   options,
   value,

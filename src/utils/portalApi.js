@@ -1,19 +1,11 @@
 // Shared HTTP helpers for the client portal screens.
-//
-// The admin screens each build their own axios headers and error-reading helper, which is a lot of
-// repetition and a lot of places to get wrong. The portal has one of each, so every screen reports
-// failures the same way and a change to how the token travels is a one-file edit.
 
 import axios from 'axios'
 import { getToken, clearSession } from './session'
 
 const base = () => `${process.env.REACT_APP_URL_CONFIG}/api`
 
-/**
- * The absolute URL for an API path. Needed by file downloads, which go through utils/download to
- * fetch a blob rather than through the JSON helpers below — but must still point at the same API as
- * everything else on these screens, from the one place that knows where that is.
- */
+/** The absolute URL for an API path. */
 export const apiUrl = (path) => `${base()}${path}`
 
 const headers = () => ({
@@ -34,11 +26,7 @@ export const readErr = (e) => {
   return e?.response?.data?.message || e?.message || 'Something went wrong. Please try again.'
 }
 
-/**
- * A 401 means the token has expired or the account was disabled — there is nothing to retry, so the
- * session is cleared and the caller is told to send the user back to sign in. Thrown rather than
- * redirected here so the component decides when to navigate (and React Router stays in charge).
- */
+/** A 401 means the token has expired or the account was disabled — there is nothing to retry. */
 export class PortalSessionEnded extends Error {
   constructor() {
     super('Your session has ended. Please sign in again.')
@@ -81,6 +69,29 @@ export const portalPut = async (path, body) => {
   }
 }
 
+/** A document endpoint, which answers text/html rather than JSON. */
+export const portalHtml = async (path) => {
+  const res = await fetch(`${base()}${path}`, {
+    headers: { Authorization: `Bearer ${getToken()}`, Accept: 'text/html' },
+  })
+
+  const body = await res.text()
+  if (res.ok) return body
+
+  if (res.status === 401) {
+    clearSession()
+    throw new PortalSessionEnded()
+  }
+
+  let message = 'Could not load this document. Please try again.'
+  try {
+    message = JSON.parse(body)?.message || message
+  } catch {
+    /* not JSON — the generic message is the honest one */
+  }
+  throw new Error(message)
+}
+
 // ---- shared formatting ----
 
 /** A date the way a customer reads one: 7 Nov 2026. Null-safe. */
@@ -108,11 +119,7 @@ export const initialsOf = (name) =>
     .join('')
     .toUpperCase()
 
-/**
- * A stable tint for a company's identity tile. Derived from the cus code rather than the list
- * index, so a company keeps the same colour between the dashboard, the list and its own page —
- * an index would recolour everything as soon as the ordering changed.
- */
+/** A stable tint for a company's identity tile. */
 const TINTS = ['', 'is-indigo', 'is-amber']
 
 export const tintOf = (cusCode) => {
@@ -122,11 +129,7 @@ export const tintOf = (cusCode) => {
   return TINTS[h % TINTS.length]
 }
 
-/**
- * The expiry meter's fill. Days remaining against a 30-day window, which is a reading aid and NOT
- * a billing period — nothing in the system records how long a licence term is, so the meter is
- * capped at 30 days and always labelled with the real day count beside it.
- */
+/** The expiry meter's fill. */
 export const METER_WINDOW_DAYS = 30
 
 export const meterOf = (days) => {
@@ -153,11 +156,7 @@ export const greeting = () => {
   return 'Good evening'
 }
 
-/**
- * "in 24 days" / "12 days ago" / "today". Days come from the server, which computed them against
- * its own clock — the device's clock may be wrong, and a licence date is not something to let a
- * stale phone clock reinterpret.
- */
+/** "in 24 days" / "12 days ago" / "today". */
 export const fmtDays = (days) => {
   if (days === null || days === undefined) return null
   if (days === 0) return 'today'

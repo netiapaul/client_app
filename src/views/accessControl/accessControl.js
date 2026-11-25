@@ -14,8 +14,7 @@ const authHeaders = () => ({
 const readErr = (e) =>
   e?.response?.data?.message || e?.request?.response || `${e?.code}: ${e?.message}`
 
-// Manage access groups and the module permissions each grants. Assigning users to groups is done
-// on the Users screen (user create/update), not here.
+// Manage access groups and the module permissions each grants.
 const AccessControl = () => {
   const [modules, setModules] = useState([])
   const [groups, setGroups] = useState([])

@@ -5,9 +5,7 @@ import { portalGet, readErr, PortalSessionEnded, initialsOf } from '../utils/por
 import { isDark, toggleDark } from '../utils/theme'
 import swal from 'sweetalert'
 
-// A plain fallback, not the app's PageLoader: that one is an overlay driven by the global loading
-// tracker and renders null unless the tracker is active, so as a Suspense fallback it would show
-// nothing at all while a chunk downloads.
+// A plain fallback, not PageLoader: that one renders nothing unless the loading tracker is on.
 const chunkLoading = <div className="pt-empty">Loading…</div>
 
 const PortalDashboard = React.lazy(() => import('../views/portal/portalDashboard'))
@@ -19,41 +17,17 @@ const PortalReceipts = React.lazy(() => import('../views/portal/portalReceipts')
 const PortalPay = React.lazy(() => import('../views/portal/portalPay'))
 const PortalProfile = React.lazy(() => import('../views/portal/portalProfile'))
 
-/**
- * The client portal shell — dark navigation rail against a light workspace, per the Phase 1 designs.
- *
- * Deliberately NOT DefaultLayout. That is the staff shell (admin sidebar, module-gated nav,
- * breadcrumbs) and serving any of it to a customer would be both confusing and a disclosure of how
- * the back office is organised.
- *
- * It owns two things no individual screen should have to repeat:
- *
- *  - The forced password change. An account created by an admin starts on a temporary password and
- *    the server refuses every other portal endpoint until it is replaced, so the shell renders ONLY
- *    the change-password screen until that is done.
- *  - Session ending. A 401 anywhere means the token expired or the account was disabled; the shell
- *    signs out rather than leaving a screen stuck on an error it cannot clear.
- *
- * Invoices, receipts and payments are live. They were built to shape first, carrying no figures
- * while the ledger behind them was a later increment, and badged "soon" in the rail — the badge
- * and the banners are gone now that each one reads real data. `pt-navlink__badge` is kept in the
- * markup for the next page that needs it.
- */
+/** The client portal shell — dark navigation rail against a light workspace. */
 const PortalLayout = () => {
   const navigate = useNavigate()
 
   const [me, setMe] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  // The portal gets its own theme control in the rail — it never renders the admin header, so the
-  // toggle there is unreachable from here. Both go through utils/theme, so a customer and a staff
-  // user flipping it mean the same thing and the choice persists either way.
+  // The portal gets its own theme control in the rail — it never renders the admin header.
   const [dark, setDark] = useState(isDark)
 
-  // Two doors out, deliberately. `signOut` is the immediate one and is what the session-expiry and
-  // wrong-audience paths call — asking "are you sure?" about a session that has already ended would
-  // be nonsense. `confirmSignOut` is the one behind the button, and matches the admin header's
-  // confirm (same sweetalert, same wording) so leaving works the same way in both halves.
+  // Two doors out: signOut is the immediate one, used by the session-expiry path.
   const signOut = useCallback(() => {
     clearSession()
     navigate('/', { replace: true })
@@ -88,8 +62,7 @@ const PortalLayout = () => {
   }, [signOut])
 
   useEffect(() => {
-    // A staff session reaching a /portal URL gets bounced: the portal is not an alternative view of
-    // the admin app, and the server would refuse these endpoints for a staff token anyway.
+    // A staff session reaching a /portal URL gets bounced.
     if (!getToken() || !isPortalUser()) {
       navigate('/', { replace: true })
       return
@@ -100,8 +73,7 @@ const PortalLayout = () => {
   const name = me?.name || getName() || ''
   const gated = !!me?.mustChangePassword
 
-  // Collapsed to icons. Remembered, so someone who prefers the narrow rail is not re-collapsing it
-  // on every visit — the same courtesy the staff sidebar gets.
+  // Collapsed to icons.
   const [railNarrow, setRailNarrow] = useState(
     () => localStorage.getItem('portalRailCollapsed') === '1',
   )
@@ -116,25 +88,12 @@ const PortalLayout = () => {
     { to: '/portal', icon: 'dashboard', label: 'Dashboard', end: true },
     { to: '/portal/companies', icon: 'business', label: 'My companies' },
     { to: '/portal/invoices', icon: 'description', label: 'Proforma invoices' },
-    // "Payments", not "Receipts". What this page holds are CONFIRMATIONS that money arrived;
-    // the official receipt is issued by finance afterwards, and a nav item labelled Receipts
-    // promises the wrong document. The ROUTE keeps its name — it is linked from emails already.
+    // "Payments", not "Receipts".
     { to: '/portal/receipts', icon: 'receipt_long', label: 'Payments' },
     { to: '/portal/pay', icon: 'credit_card', label: 'Make a payment' },
   ]
 
-  /**
-   * The forced password change is a GATE, not a page inside the portal — so it does not get the
-   * portal's furniture.
-   *
-   * It used to render inside the full shell with the rail still showing: brand, support card,
-   * signed-in footer, theme and sign-out. The navigation itself was hidden, but everything around
-   * it said "you are in", which is exactly what someone on a temporary password is not. Every
-   * endpoint behind it is refused anyway, so the shell was advertising doors that do not open.
-   *
-   * This is the sign-in page's shape instead: one centred card and nothing else. Sign out stays,
-   * because it is the only legitimate way off this screen.
-   */
+  /** The forced password change is a GATE, not a page inside the portal. */
   if (!loading && gated) {
     return (
       <div className="pt pt-gate">
@@ -172,9 +131,7 @@ const PortalLayout = () => {
             <span className="pt-rail__name">Client Portal</span>
             <span className="pt-rail__tag">Licences &amp; subscriptions</span>
           </span>
-          {/* Collapses the rail to icons, the same idea as the hamburger on the staff side. Hidden
-              on phones, where the rail is already a horizontal strip and there is nothing to
-              collapse. */}
+          {/* Collapses the rail to icons, the same idea as the hamburger on the staff side. */}
           <button
             type="button"
             className="pt-rail__collapse"
@@ -187,8 +144,7 @@ const PortalLayout = () => {
           </button>
         </div>
 
-        {/* No `!gated` guard needed: the forced change returns its own page above, so reaching
-            here already means the account is through it. */}
+        {/* No `!gated` guard needed: the forced change returns its own page above. */}
         {me && (
           <nav className="pt-rail__nav" aria-label="Main">
             {nav.map((n) => (
@@ -197,8 +153,7 @@ const PortalLayout = () => {
                 to={n.to}
                 end={n.end}
                 className="pt-navlink"
-                // Collapsed there is no label, so the CSS pops this out beside the icon. A data
-                // attribute rather than `title`, or the browser's tooltip doubles up on it.
+                // Collapsed there is no label, so the CSS pops this out beside the icon.
                 data-label={n.label}
               >
                 <span className="material-icons">{n.icon}</span>

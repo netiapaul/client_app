@@ -1,0 +1,315 @@
+/* RichTextEditor.css — the formatting box for the invoice text fields.
+
+   Built entirely on the --cb-* tokens rather than literal colours, so dark mode needs nothing
+   here: _darkmode.scss re-points those tokens under html.theme-dark and this follows. A panel
+   with a hardcoded #fff is exactly the bug that was being fixed across the billing screens. */
+
+.rte {
+  border: 1px solid var(--cb-border);
+  background: var(--cb-surface);
+  border-radius: 0; /* matches form-control throughout the app */
+}
+
+.rte--over {
+  border-color: #e55353;
+}
+
+.rte__bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1px;
+  padding: 3px 4px;
+  background: var(--cb-head-bg);
+  border-bottom: 1px solid var(--cb-border);
+}
+
+.rte__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cb-muted);
+  cursor: pointer;
+}
+
+.rte__btn .material-icons {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.rte__btn:hover:not(:disabled) {
+  background: var(--cb-chip-bg);
+  color: var(--cb-ink);
+}
+
+.rte__btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* The block-style select. Sized to the toolbar's 26px buttons rather than to a form-control, so
+   the bar stays one row tall. */
+.rte__block {
+  height: 26px;
+  max-width: 130px;
+  padding: 0 4px;
+  border: 1px solid var(--cb-border);
+  background: var(--cb-surface);
+  color: var(--cb-ink);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.rte__block:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.rte__sep {
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  background: var(--cb-border);
+}
+
+/* The placeholder is absolutely positioned over the box, so this is the containing block.
+   A contentEditable has no placeholder attribute and the ::before trick needs :empty, which an
+   execCommand-managed box does not stay. */
+.rte__wrap {
+  position: relative;
+}
+
+.rte__ph {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  right: 10px;
+  color: var(--cb-muted);
+  font-size: 0.78rem;
+  pointer-events: none; /* click through to the box behind it */
+  white-space: pre-line; /* multi-line placeholders keep their shape */
+}
+
+.rte__box {
+  min-height: inherit;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--cb-ink);
+  outline: none;
+  overflow-wrap: anywhere; /* a pasted URL must not widen the card */
+}
+
+.rte__box:focus {
+  /* Same cue as a focused form-control, without the shadow — the border is on the wrapper. */
+  background: var(--cb-surface);
+}
+
+/* The content itself. Margins are tightened because these fields are three lines on an invoice,
+   not an article, and the browser's default paragraph spacing makes a two-line comment look like
+   a letter. */
+.rte__box p {
+  margin: 0 0 0.35rem;
+}
+
+.rte__box p:last-child {
+  margin-bottom: 0;
+}
+
+.rte__box ul,
+.rte__box ol {
+  margin: 0 0 0.35rem;
+  padding-left: 1.25rem;
+}
+
+.rte__box li {
+  margin-bottom: 0.1rem;
+}
+
+/* A FOUR-LEVEL SCALE, not two sizes. h3/h4 used to render identically, which was fine while the
+   field was three lines of terms — nobody nests a note. A maintenance contract has a title, named
+   sections and labelled sub-blocks, and levels that look the same are levels the writer cannot
+   tell apart while writing. The steps are deliberately small: this is still a block on an invoice,
+   and a browser-default h1 at 2em would read as a headline shouting over the document.
+
+   Mirrors .doc-note in PdfLayout.cs, which is what the PDF actually renders. The two being in
+   step is why what the box shows is what the client receives. */
+.rte__box h1,
+.rte__box h2,
+.rte__box h3,
+.rte__box h4 {
+  font-weight: 600;
+  margin: 0.55rem 0 0.25rem;
+  color: var(--cb-ink);
+}
+
+.rte__box h1 {
+  font-size: 1.05rem;
+}
+
+.rte__box h2 {
+  font-size: 0.95rem;
+}
+
+.rte__box h3 {
+  font-size: 0.85rem;
+}
+
+.rte__box h4 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rte__box > :first-child,
+.rte-view > :first-child {
+  margin-top: 0;
+}
+
+/* A divider has to be VISIBLE while it is being edited — an hr at the browser default is a 2px
+   bevel that all but disappears on a tinted surface, and somebody who cannot see the rule they
+   just inserted inserts three more. */
+.rte__box hr,
+.rte-view hr {
+  border: 0;
+  border-top: 1px solid var(--cb-border);
+  margin: 0.6rem 0;
+}
+
+.rte__box a {
+  color: #c58c4f; /* the document accent, so a link looks the same here as on the PDF */
+  text-decoration: underline;
+}
+
+.rte__box blockquote {
+  margin: 0 0 0.35rem;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--cb-border);
+  color: var(--cb-muted);
+}
+
+/* READ-ONLY rendering of the same stored HTML — the detail panel showing what a comment says,
+   next to the editor that wrote it. Shares the content rules above so the two cannot drift, which
+   is the whole reason this is a class on the same stylesheet rather than inline styles at each
+   call site. */
+.rte-view {
+  display: block;
+  color: var(--cb-ink);
+  overflow-wrap: anywhere;
+}
+
+.rte-view p,
+.rte-view ul,
+.rte-view ol,
+.rte-view blockquote {
+  margin: 0 0 0.35rem;
+}
+
+.rte-view p:last-child,
+.rte-view ul:last-child,
+.rte-view ol:last-child {
+  margin-bottom: 0;
+}
+
+.rte-view ul,
+.rte-view ol {
+  padding-left: 1.25rem;
+}
+
+.rte-view h1,
+.rte-view h2,
+.rte-view h3,
+.rte-view h4 {
+  font-weight: 600;
+  margin: 0.55rem 0 0.25rem;
+}
+
+.rte-view h1 {
+  font-size: 1.05rem;
+}
+
+.rte-view h2 {
+  font-size: 0.95rem;
+}
+
+.rte-view h3 {
+  font-size: 0.85rem;
+}
+
+.rte-view h4 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.rte-view a {
+  color: #c58c4f;
+  text-decoration: underline;
+}
+
+.rte-view blockquote {
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--cb-border);
+  color: var(--cb-muted);
+}
+
+.rte--disabled .rte__box {
+  color: var(--cb-muted);
+  background: var(--cb-soft);
+}
+
+.rte__count {
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  text-align: right;
+  color: var(--cb-muted);
+  border-top: 1px solid var(--cb-border);
+}
+
+.rte__count--over {
+  color: #e55353;
+  font-weight: 600;
+}
+
+/* The "how it will print" frame on the comment page.
+
+   Paper-coloured and bounded rather than another panel of the admin app: the question it answers
+   is "what does the client see", and a preview that is styled like the screen around it does not
+   answer that. The height cap matters as much as the colour — a set of terms is longer than the
+   viewport, and a preview that pushes the Save button off the bottom of the page is a preview
+   that costs a scroll every time you use it. */
+.cmt-paper {
+  max-height: 560px;
+  overflow: auto;
+  padding: 16px 18px;
+  background: var(--cb-surface);
+  border: 1px solid var(--cb-border);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--cb-ink);
+}
+
+/* The read-only glimpse of the default comment on the Setup tab, next to the link that opens it.
+
+   Bounded hard, because the thing it is previewing is a contract: left to grow it would push the
+   rest of the invoice-settings form off the screen, which is the opposite of what moving the
+   editor out was for. Enough to recognise which wording is in force, not to read it. */
+.cmt-peek {
+  max-height: 86px;
+  overflow: hidden;
+  padding: 7px 10px;
+  background: var(--cb-soft);
+  border: 1px solid var(--cb-border);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--cb-ink);
+
+  /* Fades out at the cut rather than slicing a line of text in half. */
+  mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+}

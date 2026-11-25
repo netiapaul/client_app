@@ -25,10 +25,12 @@ const Profile = React.lazy(() => import('./views/profile/profile'))
 const AccessControl = React.lazy(() => import('./views/accessControl/accessControl'))
 const PortalUsers = React.lazy(() => import('./views/portal/portalUsers'))
 const BillingProfiles = React.lazy(() => import('./views/billing/billingProfiles'))
+const BillingProfileEditor = React.lazy(() => import('./views/billing/billingProfileEditor'))
+const ArchivedBranches = React.lazy(() => import('./views/clients/archivedBranches'))
 const Invoices = React.lazy(() => import('./views/billing/invoices'))
+const InvoiceComment = React.lazy(() => import('./views/billing/invoiceComment'))
 
-// `module` gates the route: AppContent redirects users who lack it. Routes with no `module`
-// (e.g. Profile) are always accessible to any signed-in user.
+// `module` gates the route: AppContent redirects users who lack it.
 const routes = [
   {
     path: '/dashboard',
@@ -113,6 +115,22 @@ const routes = [
     module: MODULES.ViewBilling,
   },
   {
+    // One company's arrangement.
+    path: '/billing-profiles/:cusCode',
+    name: 'Billing Profile',
+    element: BillingProfileEditor,
+    exact: true,
+    module: MODULES.ViewBilling,
+  },
+  {
+    // Reading the archive needs 28.
+    path: '/archived-branches',
+    name: 'Archived Branches',
+    element: ArchivedBranches,
+    exact: true,
+    module: MODULES.ViewArchivedBranches,
+  },
+  {
     path: '/invoices',
     name: 'Proforma Invoices',
     element: Invoices,
@@ -121,12 +139,29 @@ const routes = [
     module: MODULES.ViewBilling,
   },
   {
+    // The comment printed on ONE draft invoice.
+    path: '/invoices/:id/comment',
+    name: 'Invoice Comment',
+    element: InvoiceComment,
+    exact: true,
+    // Reading needs ViewBilling.
+    module: MODULES.ViewBilling,
+  },
+  {
+    // The DEFAULT comment, the same page in its other mode.
+    path: '/invoice-default-comment',
+    name: 'Default Invoice Comment',
+    element: InvoiceComment,
+    props: { mode: 'default' },
+    exact: true,
+    module: MODULES.ViewBilling,
+  },
+  {
     path: '/addon-pricing',
     name: 'Add-on Pricing',
     element: AddOnPricing,
     exact: true,
-    // Viewing needs ViewBilling; saving a price needs ManageBilling, checked inside and again on
-    // the endpoint.
+    // Viewing needs ViewBilling; saving a price needs ManageBilling.
     module: MODULES.ViewBilling,
   },
   {
@@ -134,8 +169,7 @@ const routes = [
     name: 'Billable Items',
     element: BillableItems,
     exact: true,
-    // Viewing needs ViewBilling; saving the catalogue needs ManageBilling, checked inside and
-    // again on the endpoint.
+    // Viewing needs ViewBilling; saving the catalogue needs ManageBilling.
     module: MODULES.ViewBilling,
   },
   {
@@ -143,8 +177,7 @@ const routes = [
     name: 'Payments',
     element: Payments,
     exact: true,
-    // Reading the ledger needs ViewPayments; banking, allocating and simulating need
-    // RecordPayments, checked inside and again on every endpoint.
+    // Reading the ledger needs ViewPayments; recording a payment needs RecordPayments.
     module: MODULES.ViewPayments,
   },
   {
@@ -152,8 +185,7 @@ const routes = [
     name: 'Transactions',
     element: PaymentAttempts,
     exact: true,
-    // Reading needs ViewPayments. Refreshing an attempt can BANK money, so that action needs
-    // RecordPayments — checked inside the screen and again on the endpoint it calls.
+    // Reading needs ViewPayments.
     module: MODULES.ViewPayments,
   },
   {
@@ -185,8 +217,7 @@ const routes = [
     name: 'Setup',
     element: Setup,
     exact: true,
-    // ANY-OF: the page is four independently-gated sections, and each one's own endpoints enforce
-    // the same rights again. Someone with only ManageSmtp reaches it and sees two tabs.
+    // ANY-OF: the page is four independently-gated sections.
     modules: [
       MODULES.ManageSmtp,
       MODULES.RecordPayments,

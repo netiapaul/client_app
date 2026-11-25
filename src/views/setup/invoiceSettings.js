@@ -3,19 +3,14 @@ import PropTypes from 'prop-types'
 import { toast } from 'react-toastify'
 import { getToken, hasModule } from '../../utils/session'
 import { MODULES } from '../../utils/permissions'
+import { Link } from 'react-router-dom'
+import RichTextEditor, { renderRichText } from '../../components/RichTextEditor'
 const axios = require('axios')
 
-/**
- * The letterhead printed on every invoice and receipt. A section of the Setup screen.
- *
- * Lifted out of a modal on the Invoices screen. Stored in the database rather than appsettings, so
- * a change takes effect on the next document without a redeploy — and deliberately with NO config
- * fallback, because two places to set the address on a customer's invoice means a screen showing
- * one value while the document carries another.
- *
- * Only the company name and "how to pay" are required. The rest is left blank on purpose until
- * somebody fills it in: an invented address on a customer's invoice is worse than none.
- */
+/** The ceiling for "How to pay" — RichText.PanelMaxLength, not the comment limit. */
+const RICH_MAX = 4000
+
+/** The letterhead printed on every invoice and receipt. */
 const BLANK = {
   issuerName: '',
   issuerAddress: '',
@@ -23,6 +18,7 @@ const BLANK = {
   issuerPhone: '',
   issuerTaxId: '',
   payTo: '',
+  defaultInvoiceComment: '',
 }
 
 const api = `${process.env.REACT_APP_URL_CONFIG}/api/Invoices`
@@ -59,11 +55,11 @@ const InvoiceSettings = ({ onStatus }) => {
         issuerPhone: s.issuerPhone ?? '',
         issuerTaxId: s.issuerTaxId ?? '',
         payTo: s.payTo ?? '',
+        defaultInvoiceComment: s.defaultInvoiceComment ?? '',
       })
 
       if (onStatus) {
-        // `missing` is the server's own readiness verdict, and it is what gates the invoice run —
-        // so the tab reports the same thing the generator will, rather than a second opinion.
+        // `missing` is the server's own readiness verdict, and it is what gates the invoice run.
         onStatus({
           ok: !s.missing,
           label: s.missing ? 'Incomplete' : `Set — ${s.issuerName}`,
@@ -224,18 +220,59 @@ const InvoiceSettings = ({ onStatus }) => {
                 <label className="cb-fs-meta text-muted d-block mb-1" htmlFor="inv-payto">
                   How to pay <span className="text-danger">*</span>
                 </label>
-                <textarea
+                {/* A formatting box, not a textarea. */}
+                <RichTextEditor
                   id="inv-payto"
-                  rows={3}
-                  className="form-control form-control-sm rounded-0"
-                  placeholder={'M-PESA Paybill 123456\nAccount: your customer code'}
                   value={form.payTo}
                   disabled={!canManage}
-                  onChange={(e) => set('payTo', e.target.value)}
+                  maxLength={RICH_MAX}
+                  ariaLabel="How to pay"
+                  placeholder={'M-PESA Paybill 123456\nAccount: your customer code'}
+                  onChange={(html) => set('payTo', html)}
                 />
                 <span className="cb-fs-meta text-muted">
                   Shown as a panel at the foot of the invoice. This is the part a client acts on —
-                  paybill, account number, bank details.
+                  paybill, account number, bank details. Bold and bullets print on the document
+                  exactly as they look here.
+                </span>
+              </div>
+
+              {/* The DEFAULT comment. */}
+              {/* A LINK, not a box. */}
+              <div className="col-12">
+                <label className="cb-fs-meta text-muted d-block mb-1">
+                  Default invoice comment
+                </label>
+
+                <div className="d-flex align-items-start gap-2">
+                  <div className="cmt-peek flex-grow-1">
+                    {form.defaultInvoiceComment ? (
+                      <span
+                        className="rte-view"
+                        dangerouslySetInnerHTML={{
+                          __html: renderRichText(form.defaultInvoiceComment),
+                        }}
+                      />
+                    ) : (
+                      <span className="text-muted">
+                        Nothing set — new invoices print no comment.
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    to="/invoice-default-comment"
+                    className="btn btn-sm filter-btn rounded-0 text-nowrap"
+                  >
+                    {form.defaultInvoiceComment ? 'Edit wording' : 'Write one'}
+                  </Link>
+                </div>
+
+                <span className="cb-fs-meta text-muted">
+                  The wording every new invoice starts with, printed above the standard footer. It
+                  is copied onto each invoice as it is raised, so changing it affects the{' '}
+                  <strong>next</strong> invoice — never one already sent. An individual draft can be
+                  given different wording from its own screen.
                 </span>
               </div>
             </div>

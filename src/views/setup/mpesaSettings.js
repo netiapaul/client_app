@@ -5,25 +5,7 @@ import PasswordInput from '../../components/PasswordInput'
 import { getToken } from '../../utils/session'
 const axios = require('axios')
 
-/**
- * M-PESA (Safaricom Daraja) settings. A section of the Setup screen.
- *
- * Two things this panel does that a plain form would not, both because getting M-PESA wrong is
- * expensive and silent:
- *
- *  - **Test connection** does the real Daraja OAuth handshake. It takes no money and creates
- *    nothing, but it is the only way to tell a wrong consumer key from a wrong secret from sandbox
- *    keys pasted into production from a server with no outbound HTTPS. Without it, credentials get
- *    entered hopefully and the first paying customer finds the mistake.
- *
- *  - **The callback warning** is shown before anything is switched on. Safaricom posts the
- *    confirmation from the public internet to that exact address; if it is localhost or http, the
- *    customer still pays and the confirmation never arrives — so their money is gone and our
- *    ledger shows nothing. It looks like a success right up until it doesn't.
- *
- * Neither secret is ever sent back by the server, so both boxes are blank with "(set — leave blank
- * to keep)" beside them, exactly as the SMTP password behaves.
- */
+/** M-PESA (Safaricom Daraja) settings. */
 const BLANK = {
   environment: 'sandbox',
   consumerKey: '',
@@ -52,8 +34,7 @@ const MpesaSettings = ({ onStatus }) => {
   const [test, setTest] = useState(null)
   const [error, setError] = useState('')
 
-  // The push tester. Defaulted to Safaricom's sandbox test number, which accepts instantly and
-  // rings nobody — any other number gets a real prompt on a real handset.
+  // The push tester. Defaulted to Safaricom's sandbox test number.
   const [pushNumber, setPushNumber] = useState('254708374149')
   const [pushing, setPushing] = useState(false)
   const [checking, setChecking] = useState(false)
@@ -82,8 +63,7 @@ const MpesaSettings = ({ onStatus }) => {
         enabled: !!c.enabled,
         autoExtendExpiry: !!c.autoExtendExpiry,
       })
-      // What the Setup tab shows without being opened. "Off" and "not set up" are different
-      // states and a tab that conflated them would hide a deliberate stop.
+      // What the Setup tab shows without being opened.
       if (onStatus) {
         onStatus({
           ok: !c.notReadyReason && c.enabled,
@@ -130,12 +110,7 @@ const MpesaSettings = ({ onStatus }) => {
     }
   }
 
-  /**
-   * Send a real prompt to a real phone, for one shilling.
-   *
-   * In sandbox use Safaricom's test number 254708374149 — it accepts instantly and never rings
-   * anyone. Any other number gets an actual M-PESA prompt.
-   */
+  /** Send a real prompt to a real phone, for one shilling. */
   const sendPush = async () => {
     if (!pushNumber.trim()) {
       setError('Enter a phone number to prompt.')
@@ -159,12 +134,7 @@ const MpesaSettings = ({ onStatus }) => {
     }
   }
 
-  /**
-   * Ask Safaricom what the customer did.
-   *
-   * The route that needs no public URL at all, which is what makes a push testable from a laptop
-   * — and in production it is the net for a callback that never arrived.
-   */
+  /** Ask Safaricom what the customer did. */
   const checkPush = async () => {
     if (!push?.checkoutRequestId) return
 
@@ -182,13 +152,7 @@ const MpesaSettings = ({ onStatus }) => {
     }
   }
 
-  /**
-   * Post a made-up callback to our own handler.
-   *
-   * Exercises the real parsing and banking path without Safaricom being able to reach this
-   * machine. The body is built by the same generator the simulator uses, so it cannot be easier
-   * to parse than the real thing.
-   */
+  /** Post a made-up callback to our own handler. */
   const replay = async (resultCode) => {
     if (!push?.checkoutRequestId) return
 
@@ -540,8 +504,7 @@ const MpesaSettings = ({ onStatus }) => {
                       <span className="d-block mt-1 cb-fs-meta">{push.callbackWarning}</span>
                     )}
 
-                    {/* The fake callback. Our handler, the real parsing and banking path, without
-                        Safaricom needing to reach this machine. */}
+                    {/* The fake callback. */}
                     {push.checkoutRequestId && (
                       <div className="d-flex flex-wrap gap-1 mt-2 pt-2 border-top">
                         <span className="cb-fs-meta text-muted align-self-center me-1">

@@ -9,27 +9,7 @@ import PaymentMethods from './paymentMethods'
 import InvoiceSettings from './invoiceSettings'
 import BillingAutomation from './billingAutomation'
 
-/**
- * Setup — every integration and letterhead setting in one place.
- *
- * These panels used to live inside the screens they related to: SMTP behind a button on Emails, the
- * gateway credentials behind one on SMS, M-PESA on Payments, the invoice letterhead in a modal on
- * Invoices. Each made sense on its own and the result did not. Configuration is a once-in-a-while
- * job done by one person, while those screens exist to be read every day — so the settings were
- * both hard to find and in the way, and "where do I change the paybill" had four possible answers.
- *
- * The panels themselves are unchanged in behaviour; they moved. Each still loads and saves its own
- * configuration, so this shell holds no form state and a section can be worked on without touching
- * the others.
- *
- * Rights are per SECTION, not for the page: messaging is ManageSmtp, payments is RecordPayments,
- * the letterhead is ManageBilling. Somebody who can set up the mail server but not take money sees
- * one tab, not a page of things they cannot use — and the server enforces the same split, so hiding
- * a tab is tidiness rather than the control.
- *
- * The section is in the URL (?s=mpesa) so a link can point at one, and so a save that reloads the
- * page comes back where it was.
- */
+/** Setup — every integration and letterhead setting in one place. */
 const SECTIONS = [
   {
     key: 'email',
@@ -44,8 +24,7 @@ const SECTIONS = [
     label: 'SMS',
     sub: "Africa's Talking gateway",
     icon: 'sms',
-    // The same right as email, by the user's decision: setting up SMTP and setting up the SMS
-    // gateway is one job done by one person.
+    // The same right as email, by the user's decision.
     modules: [MODULES.ManageSmtp],
     Component: SmsSettings,
   },
@@ -67,23 +46,17 @@ const SECTIONS = [
     Component: MpesaSettings,
   },
   {
-    // Add-on PRICING is not here: it lives under Billing, beside Billing profiles. Setup is for
-    // credentials and letterheads — things set once and left alone — while a price is a commercial
-    // decision changed by the same person who sets the subscription rate.
+    // Add-on PRICING is not here: it lives under Billing, beside Billing profiles.
     key: 'invoice',
     label: 'Invoice details',
     sub: 'Letterhead and how to pay',
     icon: 'receipt_long',
-    // Readable with ViewBilling — it is what customers already see on their own invoices, and
-    // support needs to know what was printed. The panel disables the inputs without ManageBilling,
-    // which is what the endpoint enforces too.
+    // Readable with ViewBilling — it is what customers already see on their own invoices.
     modules: [MODULES.ViewBilling, MODULES.ManageBilling],
     Component: InvoiceSettings,
   },
   {
-    // The switches that decide whether the nightly run bills anybody. They were appsettings keys,
-    // which meant a file edit and a restart to start invoicing; they are DB-backed now precisely
-    // so they can be thrown from here.
+    // The switches that decide whether the nightly run bills anybody.
     key: 'automation',
     label: 'Billing automation',
     sub: 'Invoicing and reminders',
@@ -104,8 +77,6 @@ const Setup = () => {
   const current = available.find((s) => s.key === wanted) ?? available[0] ?? null
 
   // Each panel reports whether it is actually configured, so the tabs can say so at a glance.
-  // Keyed by section — "what still needs doing" is the question this page is opened with, and
-  // answering it only after a click would mean clicking all four.
   const [status, setStatus] = useState({})
 
   const report = useCallback(
@@ -145,9 +116,7 @@ const Setup = () => {
         </h1>
       </div>
 
-      {/* The section picker. Reuses the stat-tile row the Emails and Payments screens use for
-          their filters, so a tab row here reads as the same kind of control. The default grid is
-          four across, which is exactly the number of sections. */}
+      {/* The section picker. */}
       <div className={`email-stats${available.length === 5 ? ' email-stats--five' : ''}`}>
         {available.map((s) => {
           const st = status[s.key]
@@ -173,8 +142,7 @@ const Setup = () => {
         })}
       </div>
 
-      {/* Mounted per section rather than all four hidden: each panel fetches its own config on
-          mount, and rendering them all would be four requests for one screen. */}
+      {/* Mounted per section rather than all four hidden. */}
       <Panel key={current.key} onStatus={report(current.key)} />
     </>
   )

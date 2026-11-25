@@ -12,22 +12,9 @@ import useConfirm from '../../components/useConfirm'
 import { toast } from 'react-toastify'
 const axios = require('axios')
 
-/**
- * Client Portal Users — who can sign in to the customer-facing portal, and which companies each of
- * them may see.
- *
- * One person can own several companies with different cus codes, so a portal login is linked to
- * companies explicitly rather than matched on an email field. The links on this screen are the
- * whole authorisation: a portal user sees exactly the companies listed against their name and
- * nothing else, enforced server-side on every request.
- *
- * Passwords are never chosen here. Creating an account (or resetting one) issues a temporary
- * password that is shown ONCE and is not recoverable afterwards, and the portal forces a change at
- * first sign-in.
- */
+/** Client Portal Users — who can sign in to the customer-facing portal. */
 const PortalUsers = () => {
-  // Replaces window.confirm, which the browser prefixes with its own hostname and which
-  // cannot mark a destructive action. See useConfirm.
+  // Replaces window.confirm, which the browser prefixes with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/ClientPortalUsers`
 
@@ -90,8 +77,7 @@ const PortalUsers = () => {
     }
   }, [api, authHeaders, search, status, page, pageSize])
 
-  // Any filter change invalidates the page number, so it is reset at the source rather than in an
-  // effect — that avoids firing a request for a page that no longer exists.
+  // Any filter change invalidates the page number.
   const changeSearch = (v) => {
     setSearch(v)
     setPage(1)
@@ -113,15 +99,13 @@ const PortalUsers = () => {
     }
   }, [error])
 
-  // Companies are searched on the server and capped there too, so the picker never tries to hold
-  // every client in the database.
+  // Companies are searched on the server and capped there too.
   const searchCompanies = useCallback(
     async (q, forUserId) => {
       setCompanyBusy(true)
       try {
         const r = await axios.get(`${api}/Companies`, {
-          // The account being edited is excluded from "already assigned", or every company it
-          // already holds would come back marked as taken — by itself.
+          // The account being edited is excluded from "already assigned".
           params: { search: q || '', take: 25, excludeUserId: forUserId || undefined },
           headers: authHeaders(),
         })
@@ -164,8 +148,7 @@ const PortalUsers = () => {
       companies: (u.companies ?? []).map((c) => ({
         cusCode: c.cusCode,
         companyName: c.companyName,
-        // Carried through so the registered-contact prompt works when editing too, not only when
-        // creating — an account whose phone was never filled in is the common case for SMS.
+        // Carried through so the registered-contact prompt works when editing too.
         contactEmail: c.contactEmail,
         contactPhone: c.contactPhone,
       })),
@@ -187,10 +170,7 @@ const PortalUsers = () => {
       },
     ]
 
-    // Picking the company is the FIRST step, so its registered contacts fill the empty fields
-    // straight away rather than waiting to be asked for. Only ever into blanks: anything already
-    // typed was typed deliberately and is not overwritten. The note under the fields says where
-    // the values came from, so a prefill is never mistaken for something the admin entered.
+    // Picking the company is the FIRST step.
     const patch = { companies, primaryCusCode: form.primaryCusCode || c.cusCode }
 
     if (!form.id && !form.email.trim() && c.contactEmail) patch.email = c.contactEmail.trim()
@@ -199,27 +179,13 @@ const PortalUsers = () => {
     setField(patch)
   }
 
-  /**
-   * Companies already held by ANOTHER portal account are kept out of the list by default: the
-   * usual case is one login per company, and a picker repeating the ones already covered is what
-   * makes a duplicate easy to create by accident.
-   *
-   * Not removed outright, though — an owner and an accountant can both legitimately need access,
-   * and a company silently missing from the list with no explanation is worse than a crowded one.
-   * The count says how many are hidden and the toggle brings them back, labelled with who has them.
-   */
+  /** Companies already held by ANOTHER portal account are kept out of the list by default. */
   const assigned = companyOptions.filter((c) => c.assignedCount > 0)
   const visibleCompanies = showAssigned
     ? companyOptions
     : companyOptions.filter((c) => !c.assignedCount)
 
-  /**
-   * What the company registered with — the first linked company that has either on file.
-   *
-   * Offered rather than applied. The address on the licence record is the one the company actually
-   * gave us, so it is the best starting point and spares retyping; but it is often the person who
-   * installed the system rather than the person who should read the bills, so an admin confirms it.
-   */
+  /** What the company registered with — the first linked company that has either on file. */
   const registered = (form?.companies ?? []).find((c) => c.contactEmail || c.contactPhone)
 
   const suggestion = registered
@@ -230,8 +196,7 @@ const PortalUsers = () => {
       }
     : null
 
-  // Only worth showing while something it can actually fill in still differs — otherwise the
-  // prompt sits there permanently. On an edit the email is immovable, so it is not counted.
+  // Only worth showing while something it can actually fill in still differs.
   const suggestionPending =
     !!suggestion &&
     ((!form?.id && suggestion.email && suggestion.email !== form?.email?.trim()) ||
@@ -239,8 +204,7 @@ const PortalUsers = () => {
 
   const useRegistered = () =>
     setField({
-      // On an existing account the email is the login identifier and the Update endpoint does not
-      // accept a change to it, so only a NEW account takes the registered address.
+      // On an existing account the email is the login identifier, so it is left alone.
       email: !form.id && suggestion.email ? suggestion.email : form.email,
       phoneNumber: suggestion.phone || form.phoneNumber,
     })
@@ -264,8 +228,7 @@ const PortalUsers = () => {
       const cusCodes = form.companies.map((c) => c.cusCode)
 
       if (form.id) {
-        // Two calls on purpose: the profile and the company grants are separate concerns, and the
-        // grants endpoint is declarative (it receives the full intended set, not a diff).
+        // Two calls on purpose: the profile and the company grants are separate concerns.
         await axios.put(
           `${api}/${form.id}`,
           { name: form.name.trim(), phoneNumber: form.phoneNumber.trim(), isActive: form.isActive },
@@ -719,7 +682,7 @@ const PortalUsers = () => {
 
               <div
                 className="border mt-1"
-                style={{ maxHeight: 190, overflowY: 'auto', borderColor: '#e9edf2' }}
+                style={{ maxHeight: 190, overflowY: 'auto', borderColor: 'var(--cb-border)' }}
               >
                 {companyBusy ? (
                   <div className="text-muted text-center py-3 cb-fs-table">Searching…</div>
@@ -745,8 +708,7 @@ const PortalUsers = () => {
                           <span className="text-truncate">
                             {c.companyName}
                             <span className="text-muted ms-1">({c.cusCode})</span>
-                            {/* Visible before adding, so the admin can tell at a glance whether
-                                this company has a contact on file at all. */}
+                            {/* Visible before adding, so the admin can tell at a glance. */}
                             {(c.contactEmail || c.contactPhone) && (
                               <span className="d-block text-muted cb-fs-meta text-truncate">
                                 {[c.contactEmail, c.contactPhone].filter(Boolean).join(' · ')}
@@ -757,8 +719,7 @@ const PortalUsers = () => {
                             {added ? (
                               'added'
                             ) : c.assignedCount > 0 ? (
-                              // Named, not just flagged: "already taken" invites a second login,
-                              // whereas knowing WHO has it usually answers the question.
+                              // Named, not just flagged: "already taken" invites a second login.
                               <span className="text-warning-emphasis">
                                 {c.assignedTo}
                                 {c.assignedCount > 1 && ` +${c.assignedCount - 1}`}
@@ -813,9 +774,7 @@ const PortalUsers = () => {
                   />
                 </div>
 
-                {/* What the company registered with. Offered, never applied silently — the contact
-                    on the licence record is often whoever installed the system rather than whoever
-                    should be reading the invoices. */}
+                {/* What the company registered with. */}
                 {suggestionPending && (
                   <div className="col-12">
                     <div className="alert alert-info rounded-0 py-2 mb-0 cb-fs-body">
@@ -899,9 +858,7 @@ const PortalUsers = () => {
         </CModalBody>
       </CModal>
 
-      {/* One-time temporary password. Shown once because it is stored only as a hash — there is no
-          way to display it again, and saying so is what stops it being closed unread. It is shown
-          even when the email went out, because the email can bounce and this is the only copy. */}
+      {/* One-time temporary password. */}
       <CModal visible={!!issued} onClose={() => setIssued(null)} alignment="center">
         <CModalHeader closeButton={false}>
           <CModalTitle className="cb-fs-section">
@@ -933,7 +890,7 @@ const PortalUsers = () => {
               <div className="d-flex align-items-center gap-2 mb-2">
                 <code
                   className="flex-grow-1 border px-2 py-2 text-center fw-bold"
-                  style={{ fontSize: 18, letterSpacing: 2, borderColor: '#e9edf2' }}
+                  style={{ fontSize: 18, letterSpacing: 2, borderColor: 'var(--cb-border)' }}
                 >
                   {issued.password}
                 </code>

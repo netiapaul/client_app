@@ -13,20 +13,12 @@ import usePaymentCheckout from '../../hooks/usePaymentCheckout'
 import { Link } from 'react-router-dom'
 const axios = require('axios')
 
-/**
- * Payments — the ledger, and the queue of money nobody has placed yet.
- *
- * The views are the point. "Needs attention" is confirmed money that is not fully applied: either
- * it arrived without a usable reference and nobody knows whose it is, or it is credit beyond what
- * was owed. "Awaiting clearance" is cheques, which bank nothing until they clear. Those are the two
- * piles somebody actually has to work through; everything else is history.
- *
- * Simulation lives here too, behind the server's own switch. It writes to this same ledger, so the
- * rows it creates are badged and can be purged.
- */
+/** Payments — the ledger, and the queue of money nobody has placed yet. */
+/** NEEDS ATTENTION used to mean "confirmed but not fully placed". */
 const VIEWS = [
   { key: '', label: 'All', icon: 'receipt_long' },
-  { key: 'unallocated', label: 'Needs attention', icon: 'error_outline' },
+  { key: 'unmatched', label: 'Unmatched', icon: 'error_outline' },
+  { key: 'credit', label: 'In credit', icon: 'savings' },
   { key: 'pending', label: 'Awaiting clearance', icon: 'hourglass_empty' },
   { key: 'allocated', label: 'Settled', icon: 'task_alt' },
   { key: 'reversed', label: 'Reversed', icon: 'undo' },
@@ -40,8 +32,7 @@ const STATUS_BADGE = {
 }
 
 const Payments = () => {
-  // Replaces window.confirm / window.prompt — the browser prefixes those with its own
-  // hostname, cannot mark a destructive action, and cannot require an answer. See useConfirm.
+  // Replaces window.confirm / window.prompt — the browser prefixes those with its own hostname.
   const [confirm, confirmDialog] = useConfirm()
   const api = `${process.env.REACT_APP_URL_CONFIG}/api/Payments`
   const canRecord = hasModule(MODULES.RecordPayments)
@@ -54,9 +45,7 @@ const Payments = () => {
     }),
     [],
   )
-  // Memoised because it is handed to usePaymentCheckout. The hook no longer depends on its
-  // identity — it holds it behind a ref precisely so an inline formatter cannot cause a refetch
-  // loop — but passing a stable one keeps this screen honest about what it hands to a hook.
+  // Memoised because it is handed to usePaymentCheckout.
   const readErr = useCallback(
     (e) => e?.response?.data?.message || e?.message || 'Something went wrong.',
     [],
@@ -73,8 +62,7 @@ const Payments = () => {
   const [pageSize, setPageSize] = useState(20)
   const [total, setTotal] = useState(0)
 
-  // Simulation. `sim` null means the server has not answered yet; sim.enabled false means the
-  // panel stays hidden entirely rather than offering buttons that would be refused.
+  // Simulation. `sim` null means the server has not answered yet.
   const [sim, setSim] = useState(null)
   const [simOpen, setSimOpen] = useState(false)
   const [simForm, setSimForm] = useState({
@@ -86,12 +74,10 @@ const Payments = () => {
   const [simBusy, setSimBusy] = useState(false)
   const [simResults, setSimResults] = useState(null)
 
-  // The other clients one payment also settles. Staff name them explicitly — unlike the portal,
-  // where a customer can only ask "everything I own" and the server resolves it from their scope.
+  // The other clients one payment also settles.
   const [alsoCovers, setAlsoCovers] = useState([])
 
-  // Clients for the picker, with what each owes — loaded once, since the picker searches in the
-  // browser the way Create Client's account picker does.
+  // Clients for the picker, with what each owes — loaded once.
   const [clients, setClients] = useState([])
 
   // Everyone except the payer, for the "also covers" list.
@@ -100,8 +86,7 @@ const Payments = () => {
     [clients, simForm.cusCode],
   )
 
-  // What a grouped payment would collect if the amount is left blank. Shown so nobody is
-  // surprised by the figure the server defaults to.
+  // What a grouped payment would collect if the amount is left blank.
   const groupOutstanding = useMemo(() => {
     const picked = new Set([simForm.cusCode, ...alsoCovers])
     return clients
@@ -111,9 +96,103 @@ const Payments = () => {
 
   const [detail, setDetail] = useState(null)
 
-  // The step-by-step checkout. The hook owns the state machine — method and mode, the form the
-  // SERVER described, starting the attempt and polling it — and this screen only renders it. The
-  // client portal renders the same hook in its own idiom.
+  // The slip/scan behind a payment.
+  const [docBusy, setDocBusy] = useState(false)
+
+  const uploadDocument = async (row, file, input) => {
+    if (!file) return
+    setDocBusy(true)
+    setError('')
+    try {
+      const body = new FormData()
+      body.append('file', file)
+
+      // Content-Type is left OFF on purpose.
+      const r = await axios.post(`${api}/${row.id}/Document`, body, {
+        headers: { Authorization: `Bearer ${getToken()}`, Accept: 'application/json' },
+      })
+      toast.success(r.data?.message ?? 'Attached.', { theme: 'colored', autoClose: 6000 })
+
+      // The open panel is patched from the RESPONSE rather than re-fetched.
+      setDetail((d) =>
+        d && d.id === row.id
+          ? {
+              ...d,
+              hasDocument: true,
+              documentName: r.data?.name ?? file.name,
+              documentUploadedAt: r.data?.uploadedAt ?? new Date().toISOString(),
+            }
+          : d,
+      )
+      await load()
+    } catch (e) {
+      setError(readErr(e))
+    } finally {
+      setDocBusy(false)
+      // Cleared so choosing the SAME file again still fires onChange after a failure.
+      if (input) input.value = ''
+    }
+  }
+
+  const downloadDocument = async (row) => {
+    setError('')
+    try {
+      const r = await axios.get(`${api}/${row.id}/Document`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+        responseType: 'blob',
+      })
+      const url = window.URL.createObjectURL(r.data)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = row.documentName || `${row.paymentNo}-document`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(readErr(e))
+    }
+  }
+
+  const removeDocument = async (row) => {
+    if (
+      !(await confirm({
+        title: 'Remove this document?',
+        body: `${row.documentName} will be deleted from ${row.paymentNo}.`,
+        detail:
+          'The payment itself is untouched — the money happened whether or not we hold the paper.',
+        danger: true,
+        confirmText: 'Remove it',
+      }))
+    )
+      return
+
+    setDocBusy(true)
+    setError('')
+    try {
+      const r = await axios.delete(`${api}/${row.id}/Document`, { headers: authHeaders() })
+      toast.success(r.data?.message ?? 'Removed.', { theme: 'colored', autoClose: 6000 })
+
+      setDetail((d) =>
+        d && d.id === row.id
+          ? {
+              ...d,
+              hasDocument: false,
+              documentName: null,
+              documentUploadedAt: null,
+              documentUploadedBy: null,
+            }
+          : d,
+      )
+      await load()
+    } catch (e) {
+      setError(readErr(e))
+    } finally {
+      setDocBusy(false)
+    }
+  }
+
+  // The step-by-step checkout.
   const checkoutGet = useCallback(
     async (path) => {
       const r = await axios.get(`${api}/Checkout/${path}`, { headers: authHeaders() })
@@ -164,8 +243,7 @@ const Payments = () => {
       const r = await axios.get(`${api}/Simulation/Status`, { headers: authHeaders() })
       setSim(r.data)
     } catch {
-      // A simulator that cannot be reached simply means no panel — not an error worth shouting
-      // about on a screen whose job is the ledger.
+      // A simulator that cannot be reached simply means no panel.
       setSim({ enabled: false })
     }
   }, [api, authHeaders])
@@ -245,8 +323,7 @@ const Payments = () => {
       },
     })
 
-    // Null covers both cancelling and leaving it blank. window.prompt returned "" for the second,
-    // which went through as a reversal with no reason on it.
+    // Null covers both cancelling and leaving it blank. window.prompt returned "" for the second.
     if (!reason) return
 
     act('Reversed', () =>
@@ -279,8 +356,7 @@ const Payments = () => {
 
   // ---- simulation ----
 
-  // The quick paths share the flow's method and amount rather than carrying their own inputs —
-  // one amount box on the panel, and "quick one-shot" means "this payment, without the steps".
+  // The quick paths share the flow's method and amount rather than carrying their own inputs.
   const simulateOne = async () => {
     setSimBusy(true)
     setError('')
@@ -377,9 +453,7 @@ const Payments = () => {
                 Simulate payments
               </button>
             )}
-            {/* The credentials themselves live under Setup — configuration is a once-in-a-while
-                job and this screen is read every day. A link rather than a panel, so anyone who
-                came here looking for it still finds it. */}
+            {/* The credentials themselves live under Setup. */}
             <Link to="/setup?s=mpesa" className="btn btn-sm cancel-btn rounded-0">
               <span className="material-icons" style={{ fontSize: 14, verticalAlign: -3 }}>
                 settings
@@ -392,8 +466,7 @@ const Payments = () => {
 
       {error && <div className="alert alert-danger rounded-0 py-1 mb-2 cb-fs-body">{error}</div>}
 
-      {/* Test money in the ledger means the totals on this screen are not real. Said once, at the
-          top, rather than relying on anyone noticing the per-row badges. */}
+      {/* Test money in the ledger means the totals on this screen are not real. */}
       {summary?.simulated > 0 && (
         <div className="alert alert-warning rounded-0 py-2 mb-2 cb-fs-body d-flex flex-wrap align-items-center gap-2">
           <span className="material-icons" style={{ fontSize: 17 }}>
@@ -419,13 +492,15 @@ const Payments = () => {
       )}
 
       {summary && (
-        <div className="email-stats email-stats--five">
+        <div className="email-stats email-stats--six">
           {VIEWS.map((v) => {
             const count =
               v.key === ''
                 ? summary.total
-                : v.key === 'unallocated'
-                ? summary.unallocated
+                : v.key === 'unmatched'
+                ? summary.unmatched
+                : v.key === 'credit'
+                ? summary.inCredit
                 : v.key === 'pending'
                 ? summary.awaitingClearance
                 : v.key === 'allocated'
@@ -436,7 +511,7 @@ const Payments = () => {
                 key={v.key || 'all'}
                 type="button"
                 className={`email-stat ${
-                  v.key === 'unallocated'
+                  v.key === 'unmatched'
                     ? 'is-failed'
                     : v.key === 'pending'
                     ? 'is-pending'
@@ -456,9 +531,15 @@ const Payments = () => {
                 <span className="email-stat__body">
                   <span className="email-stat__value">{count}</span>
                   <span className="email-stat__label">{v.label}</span>
-                  {v.key === 'unallocated' && summary.unallocatedTotal > 0 && (
+                  {v.key === 'unmatched' && summary.unmatchedTotal > 0 && (
                     <span className="email-stat__meta">
-                      {money(summary.unallocatedTotal, summary.currency)} unplaced
+                      {money(summary.unmatchedTotal, summary.currency)} — no client yet
+                    </span>
+                  )}
+                  {/* A BALANCE, not a backlog. */}
+                  {v.key === 'credit' && summary.creditTotal > 0 && (
+                    <span className="email-stat__meta">
+                      {money(summary.creditTotal, summary.currency)} — applied on next invoice
                     </span>
                   )}
                   {v.key === '' && (
@@ -519,9 +600,7 @@ const Payments = () => {
                 <label className="cb-fs-meta text-muted d-block mb-1" htmlFor="sim-cus">
                   Client
                 </label>
-                {/* The same picker as Create Client, but listing only clients with an invoice
-                    waiting — a payment is money against a bill, so a client with nothing
-                    outstanding has nothing to receive. Oldest due first, as the server sorts it. */}
+                {/* The same picker as Create Client. */}
                 <ClientPicker
                   id="sim-cus"
                   options={clients}
@@ -551,9 +630,7 @@ const Payments = () => {
                       render: (c) => fmtDate(c.oldestDue),
                     },
                   ]}
-                  // Changing the payer clears the extras: the old selection may now include the
-                  // new payer, and a payment that listed its own payer twice is a payment whose
-                  // covered set disagrees with itself.
+                  // Changing the payer clears the extras.
                   onChange={(id) => {
                     setSimForm({ ...simForm, cusCode: id })
                     setAlsoCovers([])
@@ -580,16 +657,7 @@ const Payments = () => {
                 </div>
               </div>
 
-              {/*
-                One payment covering several clients — a group that pays for three of its
-                companies by one bank transfer, or one M-PESA push.
-
-                One payment row, not three, because that is what actually happened: one transfer
-                with one reference. The engine allocates it oldest-month-first across all of them
-                and moves each client's own licence to its own date.
-
-                Only offered once a payer is chosen, since the list has to exclude them.
-              */}
+              {/* One payment covering several clients. */}
               {!simForm.unmatched && simForm.cusCode && otherClients.length > 0 && (
                 <div className="col-12">
                   <label className="cb-fs-meta text-muted d-block mb-1" htmlFor="sim-also">
@@ -660,8 +728,7 @@ const Payments = () => {
             )}
 
             <div className="d-flex flex-wrap gap-1 mt-3 pt-2 border-top">
-              {/* The quick paths, kept alongside the realistic one: a single shot per method is how
-                  you seed a ledger to look at, where the flow above is how you test one properly. */}
+              {/* The quick paths, kept alongside the realistic one. */}
               <button
                 type="button"
                 className="btn btn-sm filter-btn rounded-0"
@@ -752,8 +819,10 @@ const Payments = () => {
               icon: 'account_balance_wallet',
               title: view ? 'Nothing in this view.' : 'No payments yet.',
               hint:
-                view === 'unallocated'
-                  ? 'Money that cannot be placed shows up here.'
+                view === 'unmatched'
+                  ? 'Payments that arrived without a usable reference show up here, waiting for someone to say whose they are.'
+                  : view === 'credit'
+                  ? 'Nobody is in credit. Overpayments appear here and come off the next invoice on their own.'
                   : 'Record one, or simulate payments to try the flow.',
             }}
             page={{
@@ -770,8 +839,7 @@ const Payments = () => {
             columns={[
               {
                 key: 'paymentNo',
-                // The CONFIRMATION number. What goes out on payment confirms the money
-                // arrived; the official receipt is finance's, issued separately.
+                // The CONFIRMATION number.
                 title: 'Payment no',
                 icon: 'confirmation_number',
                 nowrap: true,
@@ -968,6 +1036,61 @@ const Payments = () => {
 
               {detail.notes && (
                 <div className="alert alert-light rounded-0 py-1 cb-fs-meta">{detail.notes}</div>
+              )}
+
+              {/* THE PHYSICAL DOCUMENT — a bank slip, a scanned cheque, a statement line. */}
+              <div className="divider mb-2 mt-3">Document</div>
+              {detail.hasDocument ? (
+                <div className="d-flex flex-wrap gap-2 align-items-center cb-fs-body mb-3">
+                  <span className="material-icons" style={{ fontSize: 18 }}>
+                    attach_file
+                  </span>
+                  <span>
+                    <strong>{detail.documentName}</strong>
+                    <span className="d-block cb-fs-meta text-muted">
+                      Attached {fmtDate(detail.documentUploadedAt)}
+                      {detail.documentUploadedBy ? ` by ${detail.documentUploadedBy}` : ''}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-sm filter-btn rounded-0 ms-auto"
+                    onClick={() => downloadDocument(detail)}
+                  >
+                    Open
+                  </button>
+                  {canRecord && (
+                    <button
+                      type="button"
+                      className="btn btn-sm delete-btn rounded-0"
+                      disabled={docBusy}
+                      onClick={() => removeDocument(detail)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="mb-3">
+                  {canRecord ? (
+                    <>
+                      <input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                        className="form-control form-control-sm rounded-0"
+                        disabled={docBusy}
+                        onChange={(e) => uploadDocument(detail, e.target.files?.[0], e.target)}
+                      />
+                      <span className="cb-fs-meta text-muted">
+                        {docBusy
+                          ? 'Uploading…'
+                          : 'Optional. Attach the bank slip, cheque or statement line if you have it — a PDF or a photo, up to 10 MB. It can be added later.'}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="cb-fs-meta text-muted">No document attached.</span>
+                  )}
+                </div>
               )}
 
               <div className="divider mb-2">Applied to</div>

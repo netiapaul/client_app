@@ -33,8 +33,6 @@ const emptyBranch = {
 }
 
 const Dashboard = () => {
-  //  "material-table": "^2.0.3",
-  // const [title, setTitle] = useState('')
   const today = new Date()
   const futureDate = new Date(today)
   let tableRef = React.createRef()
@@ -96,7 +94,6 @@ const Dashboard = () => {
           },
           headers: {
             Authorization: `Bearer ${getToken()}`,
-            // Authorization: `Bearer ${getToken()}`,
             Accept: 'application/json',
             'Content-Type': 'application/json',
           },
@@ -127,8 +124,7 @@ const Dashboard = () => {
     getClients()
   }
 
-  // On-demand placement audit: ask the API to confirm every client's database is still on its
-  // expected server. Flags any that drifted (e.g. an admin moved a DB outside the portal).
+  // On-demand placement audit: ask the API to confirm every client's database.
   const verifyPlacements = async () => {
     setVerifying(true)
     setError('')
@@ -283,9 +279,7 @@ const Dashboard = () => {
 
   // Open the "Add Branch" modal for the selected client, pre-filling sensible defaults.
   const openAddBranch = async () => {
-    // Suggest the lowest UNUSED branch code (fill gaps) rather than max+1, so codes stay compact and
-    // don't climb toward the numbering-scheme ceiling (214). The field is still editable; the server
-    // validates uniqueness + range.
+    // Suggest the lowest UNUSED branch code (fill gaps) rather than max+1.
     const used = new Set(
       branches
         .map((b) => Number(b.branchCode || b.psPickBcode || 0))
@@ -382,9 +376,7 @@ const Dashboard = () => {
     )
   }
 
-  // Field-level validation for the Add Branch form. Returns an object keyed by field;
-  // empty object means the form is valid. Used both to show inline errors live and to
-  // guard the submit.
+  // Field-level validation for the Add Branch form.
   const validateBranch = (f, mods) => {
     const errs = {}
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -462,8 +454,7 @@ const Dashboard = () => {
         return
       }
 
-      // Local client completes synchronously (200). A remote client is queued (202) and runs on
-      // that server's worker — poll the job until it finishes before closing/refreshing.
+      // Local client completes synchronously (200).
       if (res.status === 202 && res.data?.jobId) {
         setBranchStatus(`Queued on ${res.data.server || 'the target server'} — provisioning…`)
         const final = await pollJobStatus(res.data.jobId)
@@ -635,7 +626,6 @@ const Dashboard = () => {
                         name="forcloundch"
                         value={filter?.forcloundch}
                         onChange={handleChange}
-                        // onChange={this.function.handleChange}
                       >
                         <option value={''}>Both</option>
                         <option value={'true'}>Cloud</option>
@@ -655,7 +645,6 @@ const Dashboard = () => {
                         name="expirystatus"
                         value={filter?.expirystatus}
                         onChange={handleChange}
-                        // onChange={this.function.handleChange}
                       >
                         <option value={'0'}>All</option>
                         <option value={'1'}>Expired</option>
@@ -681,85 +670,6 @@ const Dashboard = () => {
                 </div>
               </Drawer>
             </React.Fragment>
-            {/* <span className="d-flex flex-row gap-3">
-              <span className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="clientType"
-                  id="desktop"
-                  value={title}
-                  checked={title === 'false'}
-                  onChange={() => setTitle('false')}
-                />
-                <label className="form-check-label fw-semibold" htmlFor="desktop">
-                  Desktop
-                </label>
-              </span>
-              <span className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="clientType"
-                  id="cloud"
-                  value={title}
-                  checked={title === 'true'}
-                  // onChange={() => console.log('true')}
-                  onChange={() => setTitle('true')}
-                />
-                <label className="form-check-label fw-semibold" htmlFor="cloud">
-                  Cloud
-                </label>
-              </span>
-              <span className="form-check">
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  name="clientType"
-                  id="both"
-                  value={title}
-                  checked={title === ''}
-                  onChange={() => setTitle('')}
-                />
-                <label className="form-check-label fw-semibold" htmlFor="both">
-                  Both
-                </label>
-              </span>
-            </span> */}
-            {/* <button
-              className="btn btn-sm filter-btn dropdown-toggle rounded-0"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              Client Type
-            </button>
-            <ul className="dropdown-menu">
-              <li
-                className="dropdown-item"
-                role="button"
-                onClick={() => queryClients('')}
-                style={{ fontSize: '12px' }}
-              >
-                Both
-              </li>
-              <li
-                className="dropdown-item"
-                role="button"
-                onClick={() => queryClients('true')}
-                style={{ fontSize: '12px' }}
-              >
-                Cloud
-              </li>
-              <li
-                className="dropdown-item"
-                role="button"
-                onClick={() => queryClients('false')}
-                style={{ fontSize: '12px' }}
-              >
-                Desktop
-              </li>
-            </ul> */}
             {hasModule(MODULES.CreateClient) && (
               <button
                 type="button"

@@ -1,23 +1,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-/**
- * The one admin listing table.
- *
- * Every admin screen is supposed to look like the client list on the dashboard. That list is a
- * `material-table`, and the look actually comes from a handful of CSS overrides on its MUI classes
- * (.MuiTableCell-root / -head in _darkmode.scss): a dense 10px bordered grid with a #f3f6f9 header
- * and a 45px toolbar. This component reproduces that on plain markup.
- *
- * Plain markup rather than material-table because that library is v1.69.3 — last published around
- * 2020 — and pulls in @material-ui v4 alongside the @mui v5 this project already uses. Putting more
- * screens on it would deepen a dependency that should be going away, and its paging is client-side
- * while Invoices and SMS page on the server.
- *
- * What it covers so screens stop hand-rolling it: the grid, sorting, the toolbar and search, the
- * empty and loading states, row actions, and BOTH paging models — server-side when `page` is given,
- * client-side otherwise.
- */
+/** The one admin listing table. */
 
 /** A column header's sort state, as an icon. Absent when the column is not sortable. */
 const SortMark = ({ dir }) => (
@@ -193,12 +177,10 @@ const DataTable = ({
                   {hasActions && (
                     <td
                       className="cb-dt__actions"
-                      // A row that opens on click must not also open when an action inside it is
-                      // used — otherwise deleting a row navigates into it.
+                      // A row that opens on click must not also open when an action inside it is clicked.
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* The flex row lives here rather than in every screen, so actions line up
-                          the same way everywhere without each caller remembering the wrapper. */}
+                      {/* The flex row lives here rather than in every screen. */}
                       <span className="cb-acts">{actions(row, i)}</span>
                     </td>
                   )}

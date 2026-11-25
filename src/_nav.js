@@ -2,20 +2,7 @@ import React from 'react'
 import { CNavGroup, CNavItem } from '@coreui/react'
 import { MODULES } from './utils/permissions'
 
-/**
- * The sidebar.
- *
- * Grouped rather than one long list: the menu had grown to fourteen links under five headings,
- * which is more than anyone scans. Collapsing them into a handful of groups means the sidebar
- * fits without scrolling and a page is found by category rather than by reading every entry.
- *
- * Each item carries the module code required to see it, and AppSidebarNav prunes what the user
- * lacks — INCLUDING groups whose children all disappear, so nobody gets an empty expandable row.
- * Items with no `module` are always shown. (Admins receive every module code at login.)
- *
- * Licenses stays top-level deliberately: it is the landing page and the most-visited screen, and
- * burying the thing people came for behind a click is a poor trade for tidiness.
- */
+/** The sidebar. Grouped rather than one long list. */
 const _nav = [
   {
     component: CNavItem,
@@ -57,6 +44,14 @@ const _nav = [
         module: MODULES.ViewDuplicateBranches,
         icon: <span className="material-icons nav-icon">content_copy</span>,
       },
+      {
+        // Its own entry rather than a tab on the duplicates screen.
+        component: CNavItem,
+        name: 'Archived Branches',
+        to: '/archived-branches',
+        module: MODULES.ViewArchivedBranches,
+        icon: <span className="material-icons nav-icon">inventory_2</span>,
+      },
     ],
   },
   {
@@ -72,9 +67,7 @@ const _nav = [
         icon: <span className="material-icons nav-icon">payments</span>,
       },
       {
-        // Next to Billing Profiles on purpose: that sets the per-company subscription rate and
-        // this sets the add-on list price. Same job, same person, so they belong together rather
-        // than one of them being filed under Setup with the credentials.
+        // Next to Billing Profiles on purpose.
         component: CNavItem,
         name: 'Add-on Pricing',
         to: '/addon-pricing',
@@ -82,9 +75,7 @@ const _nav = [
         icon: <span className="material-icons nav-icon">extension</span>,
       },
       {
-        // With the other two pricing screens rather than under Setup, for the same reason: this
-        // is what we CHARGE for a thing, decided by the same person who sets the subscription
-        // rate and the add-on list price.
+        // With the other two pricing screens rather than under Setup, for the same reason.
         component: CNavItem,
         name: 'Billable Items',
         to: '/billable-items',
@@ -106,9 +97,7 @@ const _nav = [
         icon: <span className="material-icons nav-icon">account_balance_wallet</span>,
       },
       {
-        // Directly under Payments, because it is the other half of the same question. The ledger
-        // holds money that arrived; this holds every attempt at it, which is where "the customer
-        // says they paid" gets answered.
+        // Directly under Payments, because it is the other half of the same question.
         component: CNavItem,
         name: 'Transactions',
         to: '/payment-attempts',
@@ -204,13 +193,7 @@ const _nav = [
     ],
   },
   {
-    // One entry for every integration and letterhead setting, rather than four panels buried in
-    // the screens they relate to. `modules` is ANY-OF: the page is made of independently-gated
-    // sections, so someone who can set up the mail server but not take money still belongs here
-    // — they will simply see fewer tabs.
-    //
-    // Last on purpose. It is the least-visited screen in the app and the only one nobody opens
-    // twice in a day.
+    // One entry for every integration and letterhead setting.
     component: CNavItem,
     name: 'Setup',
     to: '/setup',
