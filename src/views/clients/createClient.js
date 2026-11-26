@@ -60,6 +60,10 @@ function CreateClient() {
     // Cloud provisioning (restore DB + create company & users)
     provisionDb: true,
     serverName: '',
+    // Company-wide switches. One row each in the client's own databases, so they cover every branch.
+    enablePackages: true,
+    lockUserCount: true,
+    maltiusersLogin: false,
     adminUsername: '',
     adminFullName: '',
     adminCellnumber: '',
@@ -183,6 +187,9 @@ function CreateClient() {
             expiryDate: userData.psActivateExpiryDate || null, // dd/MM/yyyy
             pinNo: formData.pinNo || null,
             vatNo: formData.vatNo || null,
+            enablePackages: formData.enablePackages,
+            lockUserCount: formData.lockUserCount,
+            maltiusersLogin: formData.maltiusersLogin,
           },
           { headers, signal: controller.signal },
         )
@@ -1158,6 +1165,60 @@ function CreateClient() {
                           </ul>
                         </div>
                       )}
+                    </div>
+                  </div>
+                  {/* Company level, not branch: each of these is a single row in the client's own
+                      databases, so there is nothing per-branch to disagree with. */}
+                  <div className="row mb-3">
+                    <label className="col-md-3 col-form-label divider">Company Settings</label>
+                    <div className="col-md align-self-center">
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={formData.enablePackages}
+                          id="enablePackages"
+                          onChange={(e) =>
+                            setFormData({ ...formData, enablePackages: e.target.checked })
+                          }
+                        />
+                        <label className="form-check-label" htmlFor="enablePackages">
+                          Enable packages <span className="text-muted">(EnablePackages)</span>
+                        </label>
+                      </div>
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={formData.lockUserCount}
+                          id="lockUserCount"
+                          onChange={(e) =>
+                            setFormData({ ...formData, lockUserCount: e.target.checked })
+                          }
+                        />
+                        <label className="form-check-label" htmlFor="lockUserCount">
+                          Lock the user count to the licensed seats{' '}
+                          <span className="text-muted">(LockuserCount)</span>
+                        </label>
+                      </div>
+                      <div className="form-check">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={formData.maltiusersLogin}
+                          id="maltiusersLogin"
+                          onChange={(e) =>
+                            setFormData({ ...formData, maltiusersLogin: e.target.checked })
+                          }
+                        />
+                        <label className="form-check-label" htmlFor="maltiusersLogin">
+                          Multi-user login <span className="text-muted">(MaltiusersLogin)</span>
+                        </label>
+                      </div>
+                      <div className="form-text" style={{ fontSize: '11px' }}>
+                        These apply to the whole company, every branch, and can be changed
+                        afterwards from Update Client.
+                      </div>
                     </div>
                   </div>
                   <div className="row mb-3">

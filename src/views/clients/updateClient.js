@@ -13,6 +13,14 @@ import SearchableSelect from '../../components/SearchableSelect'
 import { toast } from 'react-toastify'
 import { useBreadcrumbLabel } from '../../context/BreadcrumbContext'
 const axios = require('axios')
+// The three company-wide switches, in the order they are shown. `column` is the database column
+// behind each, named on screen so an operator can match it to the behaviour they know.
+const COMPANY_SETTING_FIELDS = [
+  { key: 'enablePackages', label: 'Enable packages', column: 'EnablePackages' },
+  { key: 'lockUserCount', label: 'Lock user count to licensed seats', column: 'LockuserCount' },
+  { key: 'maltiusersLogin', label: 'Multi-user login', column: 'MaltiusersLogin' },
+]
+
 const UpdateClient = () => {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -52,6 +60,14 @@ const UpdateClient = () => {
   const [isLoading, setIsLoading] = useState(false)
   // Company level changes every branch of the client; branch level changes only this one row.
   const [activeTab, setActiveTab] = useState('company')
+  // The three company-wide switches, read live from the client's own databases.
+  const [companySettings, setCompanySettings] = useState(null)
+  const [companySettingsModal, setCompanySettingsModal] = useState(false)
+  const [companySettingsForm, setCompanySettingsForm] = useState({
+    enablePackages: true,
+    lockUserCount: true,
+    maltiusersLogin: false,
+  })
   const [data, setData] = useState({
     error: '',
     psCusCode: '',
@@ -468,6 +484,88 @@ const UpdateClient = () => {
     } catch (err) {
       setError(err?.message || 'The change could not be applied.')
       return { ok: false, applied: false }
+    } finally {
+      setIsLoading(false)
+      setTimeout(() => setError(''), 10000)
+    }
+  }
+
+  // Live from the hosting server — these three have no central copy to read instead.
+  const GetCompanySettings = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/GetCompanySettings?id=${id}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        },
+      )
+      const body = await response.json()
+      if (!response.ok) {
+        setCompanySettings({ unavailable: body?.message || 'These settings could not be read.' })
+        return
+      }
+      // A warning means the client's host was unreachable, so there is nothing to show or edit.
+      setCompanySettings(body?.warning ? { unavailable: body.warning } : body)
+    } catch (err) {
+      setCompanySettings({ unavailable: err?.message || 'These settings could not be read.' })
+    }
+  }
+
+  // The Edit button stays disabled until something actually moves.
+  const companySettingsChanged = () =>
+    COMPANY_SETTING_FIELDS.some(
+      (f) => companySettings && companySettingsForm[f.key] !== (companySettings[f.key] === true),
+    )
+
+  // Company level by construction: SYSDEFAULTS and CompanyDetails hold one row for the whole client.
+  const SaveCompanySettings = async (e) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+    try {
+      const qs = new URLSearchParams({
+        id,
+        cpu: data.psPickCpu ?? '',
+        bios: data.psPickBios ?? '',
+        hdd: data.psPickHdd ?? '',
+      })
+      const response = await fetch(
+        `${process.env.REACT_APP_URL_CONFIG}/api/Clients/UpdateCompanySettings?${qs.toString()}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          // A switch whose column is missing is never sent: the server would refuse it.
+          body: JSON.stringify(
+            COMPANY_SETTING_FIELDS.reduce(
+              (acc, f) =>
+                companySettings?.[f.key] === null
+                  ? acc
+                  : { ...acc, [f.key]: companySettingsForm[f.key] },
+              {},
+            ),
+          ),
+        },
+      )
+      const body = await response.json()
+      if (!response.ok) {
+        setError(body?.message || 'The change could not be applied.')
+        return
+      }
+      // Closed either way: a queued approval is nothing more for the operator to do here.
+      handleGatedResponse(body)
+      setCompanySettingsModal(false)
+      GetCompanySettings()
+    } catch (err) {
+      setError(err?.message || 'The change could not be applied.')
     } finally {
       setIsLoading(false)
       setTimeout(() => setError(''), 10000)
@@ -1177,6 +1275,7 @@ const UpdateClient = () => {
     GetRegions()
     GetClientDetails()
     GetAllUsersInCompany()
+    GetCompanySettings()
   }, [])
 
   // Show the loaded client's name in the breadcrumb (instead of the generic "Update Client").
@@ -1780,6 +1879,68 @@ const UpdateClient = () => {
                     >
                       Change
                     </p>
+                  </div>
+                  {/* COMPANY-WIDE SWITCHES — one row each in the client's own databases, so there is
+                      no per-branch copy that could disagree. Read live from the hosting server. */}
+                  <hr className="my-3" />
+                  <div className="row mb-1">
+                    <label className="col-md-3 col-form-label divider">Company Settings</label>
+                    <div className="col-md ps-1">
+                      {!companySettings ? (
+                        <span className="text-muted" style={{ fontSize: 11 }}>
+                          Reading from the client&apos;s database…
+                        </span>
+                      ) : companySettings.unavailable ? (
+                        <div
+                          className="alert alert-warning rounded-0 py-1 px-2 mb-0"
+                          style={{ fontSize: 11 }}
+                        >
+                          {companySettings.unavailable}
+                        </div>
+                      ) : (
+                        COMPANY_SETTING_FIELDS.map((f) => (
+                          <div className="form-check" key={f.key}>
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={companySettings[f.key] === true}
+                              name={`view-${f.key}`}
+                              id={`view-${f.key}`}
+                              readOnly
+                              disabled
+                            />
+                            <label className="form-check-label fw-bold" htmlFor={`view-${f.key}`}>
+                              {f.label}
+                              {companySettings[f.key] === null && (
+                                <span className="text-muted fw-normal">
+                                  {' '}
+                                  — not present in this database
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  <div className="d-flex justify-content-end">
+                    {companySettings && !companySettings.unavailable && (
+                      <p
+                        className="my-1 fw-bold"
+                        role="button"
+                        style={{ fontSize: '10px', color: '#c58c4f' }}
+                        onClick={() => {
+                          setCompanySettingsForm({
+                            enablePackages: companySettings.enablePackages === true,
+                            lockUserCount: companySettings.lockUserCount === true,
+                            maltiusersLogin: companySettings.maltiusersLogin === true,
+                          })
+                          setCompanySettingsModal(true)
+                        }}
+                      >
+                        Change
+                      </p>
+                    )}
                   </div>
                   <hr className="my-3" />
                 </form>
@@ -3375,6 +3536,99 @@ const UpdateClient = () => {
                 className="btn btn-sm cancel-btn float-end rounded-0"
                 onClick={() => {
                   setBranchStatusModal(false)
+                  setError('')
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </CModalBody>
+      </CModal>
+      {/* Company Settings Modal — every branch, by construction */}
+      <CModal alignment="center" visible={companySettingsModal} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Company Settings</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {error && (
+            <div className="alert alert-danger align-items-center rounded-0 py-1" role="alert">
+              <span> {error} </span>
+            </div>
+          )}
+          <form autoComplete="off" onSubmit={SaveCompanySettings}>
+            {COMPANY_SETTING_FIELDS.map((f) => (
+              <div className="row mb-2" key={f.key}>
+                <label htmlFor={`edit-${f.key}`} className="col-md-5 col-form-label divider">
+                  {f.label}
+                </label>
+                <div className="col-md ps-1 align-self-center">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      checked={companySettingsForm[f.key]}
+                      name={`edit-${f.key}`}
+                      id={`edit-${f.key}`}
+                      disabled={companySettings?.[f.key] === null}
+                      onChange={(e) =>
+                        setCompanySettingsForm({
+                          ...companySettingsForm,
+                          [f.key]: e.target.checked,
+                        })
+                      }
+                    />
+                    <label
+                      className={
+                        companySettingsForm[f.key]
+                          ? 'form-check-label text-success fw-bold'
+                          : 'form-check-label fw-bold'
+                      }
+                      htmlFor={`edit-${f.key}`}
+                    >
+                      {companySettingsForm[f.key] ? 'On' : 'Off'}
+                      <span className="text-muted fw-normal"> ({f.column})</span>
+                    </label>
+                  </div>
+                  {companySettings?.[f.key] === null && (
+                    <div className="text-muted" style={{ fontSize: 11 }}>
+                      This column is not present in the client&apos;s database.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div
+              className="alert alert-light border rounded-0 py-1 mb-2 mt-2"
+              style={{ fontSize: 11 }}
+            >
+              Applies to <strong>the whole company</strong> — every branch. These live in the
+              client&apos;s own database (SYSDEFAULTS) and on its hosting server (CompanyDetails),
+              not in central licensing, so the change is written straight there.
+            </div>
+            <div className="d-flex justify-content-end mt-3">
+              <button
+                type="submit"
+                className="btn add-btn btn-sm rounded-0 me-1"
+                style={{ width: '4rem' }}
+                disabled={isLoading || !companySettingsChanged()}
+              >
+                {isLoading ? (
+                  <span
+                    className="spinner-border spinner-border-sm m-auto"
+                    role="status"
+                    aria-hidden="true"
+                  ></span>
+                ) : (
+                  'Edit'
+                )}
+              </button>
+              <button
+                type="button"
+                style={{ width: '4rem' }}
+                className="btn btn-sm cancel-btn float-end rounded-0"
+                onClick={() => {
+                  setCompanySettingsModal(false)
                   setError('')
                 }}
               >
