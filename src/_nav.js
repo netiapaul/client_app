@@ -111,6 +111,15 @@ const _nav = [
         module: MODULES.ManageClientPortalUsers,
         icon: <span className="material-icons nav-icon">groups</span>,
       },
+      {
+        // Last in the group: it is a monitoring screen, not a daily task. It is also the only
+        // place that answers "has the main system been told?".
+        component: CNavItem,
+        name: 'Main System Queue',
+        to: '/main-system-queue',
+        module: MODULES.ViewBilling,
+        icon: <span className="material-icons nav-icon">hub</span>,
+      },
     ],
   },
   {

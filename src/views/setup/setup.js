@@ -4,7 +4,7 @@ import { hasModule } from '../../utils/session'
 import { MODULES } from '../../utils/permissions'
 import SmtpSettings from './smtpSettings'
 import SmsSettings from './smsSettings'
-import MpesaSettings from './mpesaSettings'
+import MainSystemSettings from './mainSystemSettings'
 import PaymentMethods from './paymentMethods'
 import InvoiceSettings from './invoiceSettings'
 import BillingAutomation from './billingAutomation'
@@ -37,13 +37,13 @@ const SECTIONS = [
     Component: PaymentMethods,
   },
   {
-    key: 'mpesa',
-    label: 'M-PESA',
-    sub: 'Safaricom Daraja',
-    icon: 'smartphone',
-    // RecordPayments, not ViewPayments: these credentials authorise taking money.
+    key: 'mainsystem',
+    label: 'Main system',
+    sub: 'Tax invoices and M-PESA',
+    icon: 'hub',
+    // RecordPayments, not ViewPayments: the inbound key here authorises crediting our ledger.
     modules: [MODULES.RecordPayments],
-    Component: MpesaSettings,
+    Component: MainSystemSettings,
   },
   {
     // Add-on PRICING is not here: it lives under Billing, beside Billing profiles.

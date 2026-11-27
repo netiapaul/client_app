@@ -16,6 +16,7 @@ const Emails = React.lazy(() => import('./views/emails/emails'))
 const Sms = React.lazy(() => import('./views/sms/sms'))
 const Payments = React.lazy(() => import('./views/billing/payments'))
 const PaymentAttempts = React.lazy(() => import('./views/billing/paymentAttempts'))
+const MainSystemOutbox = React.lazy(() => import('./views/billing/mainSystemOutbox'))
 const Setup = React.lazy(() => import('./views/setup/setup'))
 const AddOnPricing = React.lazy(() => import('./views/billing/addOnPricing'))
 const BillableItems = React.lazy(() => import('./views/billing/billableItems'))
@@ -187,6 +188,14 @@ const routes = [
     exact: true,
     // Reading needs ViewPayments.
     module: MODULES.ViewPayments,
+  },
+  {
+    path: '/main-system-queue',
+    name: 'Main System Queue',
+    element: MainSystemOutbox,
+    exact: true,
+    // Reading needs ViewBilling; Retry and Send now need ManageBilling, checked inside.
+    module: MODULES.ViewBilling,
   },
   {
     path: '/portal-users',
